@@ -8,13 +8,15 @@ on:
     paths:
       - "**.py"
 
-permissions:
-  contents: read
 
 jobs:
   formatter:
+    permissions:
+      contents: write
     uses: ./.github/workflows/formatter.yml
   lint-and-test:
+    permissions:
+      contents: read
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
