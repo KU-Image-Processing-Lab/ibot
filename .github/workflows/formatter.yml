@@ -4,7 +4,7 @@ name: Format code # ワークフローの名前を指定
 on: # トリガー条件を指定
   pull_request: # プルリクエストに反応
     types: [opened, synchronize] # プルリクエストがオープン、更新された場合にトリガー
-
+  workflow_call:
 jobs: # ジョブの定義を開始
   formatter: # ジョブ名を指定
     name: formatter # ジョブの名前

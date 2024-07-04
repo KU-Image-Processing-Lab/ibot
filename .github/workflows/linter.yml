@@ -12,6 +12,8 @@ permissions:
   contents: read
 
 jobs:
+  formatter:
+    uses: ./.github/workflows/formatter.yml
   lint-and-test:
     runs-on: ubuntu-20.04
     steps:
