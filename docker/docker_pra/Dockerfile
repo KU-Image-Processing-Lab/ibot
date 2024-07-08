@@ -19,24 +19,25 @@ RUN echo 'https_proxy = http://proxy.itc.kansai-u.ac.jp:8080/\nhttp_proxy = http
 RUN sed -i.bak -e "s%http://archive.ubuntu.com/ubuntu/%http://ftp.jaist.ac.jp/pub/Linux/ubuntu/%g" /etc/apt/sources.list
 
 # Install some useful and machine/deep-learning-related packages for Python3.
+RUN pip install --upgrade pip
+RUN pip install --upgrade setuptools
 RUN pip install \
-        opencv-python==4.6.0.66 \
-        opencv-python-headless==4.6.0.66 \
-	albumentations==1.0.3 \
-	scipy \
-	thop \
-	pytorch_ranger \
-        adabelief-pytorch \
-	einops \
-	timm==0.3.2 \
-	ml_collections \
-	tensorboardX \
-	ptflops \
-	mmcv==1.3.0 \
-	cvxpy \
-	PySnooper==1.1.1 \
-	TorchSnooper \
-        
+    opencv-python==4.6.0.66 \
+    opencv-python-headless==4.6.0.66 \
+    albumentations==1.0.3 \
+    scipy \
+    thop \
+    pytorch_ranger \
+    adabelief-pytorch \
+    einops \
+    timm==0.3.2 \
+    ml_collections \
+    tensorboardX \
+    ptflops \
+    mmcv==1.3.0 \
+    cvxpy \
+    PySnooper==1.1.1 \
+    TorchSnooper
 #
 ENV USER student 
 ENV HOME /home/${USER}

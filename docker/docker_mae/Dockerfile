@@ -17,20 +17,21 @@ RUN echo 'https_proxy = http://proxy.itc.kansai-u.ac.jp:8080/\nhttp_proxy = http
 RUN sed -i.bak -e "s%http://archive.ubuntu.com/ubuntu/%http://ftp.jaist.ac.jp/pub/Linux/ubuntu/%g" /etc/apt/sources.list
 
 # Install some useful and machine/deep-learning-related packages for Python3.
+RUN pip install --upgrade pip
+RUN pip install --upgrade setuptools
 RUN pip install \
     opencv-python==3.4.8.29 \
-	opencv-python-headless==4.5.3.56 \
-	albumentations==1.0.3 \
-	scipy==1.6.2 \
-	thop \
-	pytorch_ranger \
+    opencv-python-headless==4.5.3.56 \
+    albumentations==1.0.3 \
+    scipy==1.6.2 \
+    thop \
+    pytorch_ranger \
         adabelief-pytorch \
-	einops \
-	timm==0.3.2 \
-	ml_collections \
-	tensorboardX \
-	ptflops 
-        
+    einops \
+    timm==0.3.2 \
+    ml_collections \
+    tensorboardX \
+    ptflops
 #
 ENV USER student 
 ENV HOME /home/${USER}

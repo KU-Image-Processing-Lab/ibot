@@ -19,20 +19,20 @@ RUN pip install --upgrade pip
 RUN pip install --upgrade setuptools
 RUN pip install \
     opencv-python==4.6.0.66 \
-	opencv-python-headless==4.6.0.66 \
-	albumentations==1.0.3 \
-	scipy==1.6.2 \
-	thop \
-	pytorch_ranger \
+    opencv-python-headless==4.6.0.66 \
+    albumentations==1.0.3 \
+    scipy==1.6.2 \
+    thop \
+    pytorch_ranger \
     adabelief-pytorch \
-	einops \
-	ml_collections \
-	tensorboardX \
-	ptflops \
-	mmcv==1.3.0 \
-	cvxpy \
+    einops \
+    ml_collections \
+    tensorboardX \
+    ptflops \
+    mmcv==1.3.0 \
+    cvxpy \
     torchvision==0.10.0 \
-	timm==0.4.9
+    timm==0.4.9
 #
 ENV USER student 
 ENV HOME /home/${USER}
