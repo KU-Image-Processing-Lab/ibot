@@ -1,38 +1,42 @@
+import math
+
+import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+import torchvision.models as models
+from timm.models.layers import DropPath, to_2tuple, trunc_normal_
+from torch.nn import (Conv2d, CrossEntropyLoss, Dropout, LayerNorm, Linear,
+                      Softmax)
+from torchvision.models import resnet34 as resnet  # 11/08
 from torchvision.models import resnet50 as Resnet
-from torchvision.models import resnet34 as resnet#11/08
+
+from lib.Cara.axial_atten import AA_kernel
+from lib.Cara.context_module import CFPModule
+from lib.Cara.conv_layer import BNPReLU
+from lib.Cara.conv_layer import Conv as Conv2
 # from lib.DeiT import deit_base_patch16_384 as deit_base
 # from lib.models_vit import vit_large_patch16 as vit_large#11/06
-from lib.DeiT import deit_small_patch16_224 as deit#11/06
+from lib.DeiT import deit_small_patch16_224 as deit  # 11/06
 
-from torch.nn import CrossEntropyLoss, Dropout, Softmax, Linear, Conv2d, LayerNorm
-import torch.nn.functional as F
-import numpy as np
-import math
-from timm.models.layers import DropPath, to_2tuple, trunc_normal_
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
 # from .Res2Net_v1b import res2net50_v1b_26w_4s
 from .Res2Net_v1b import res2net50_v1b_26w_4s, res2net101_v1b_26w_4s
 
-import numpy as np
-import torchvision.models as models
-
-from lib.Cara.conv_layer import BNPReLU
-from lib.Cara.conv_layer import Conv as Conv2
-from lib.Cara.axial_atten import AA_kernel
-from lib.Cara.context_module import CFPModule
-
 
 class BasicConv2d(nn.Module):
-    def __init__(self, in_planes, out_planes, kernel_size, stride=1, padding=0, dilation=1):
+    def __init__(
+        self, in_planes, out_planes, kernel_size, stride=1, padding=0, dilation=1
+    ):
         super(BasicConv2d, self).__init__()
-        self.conv = nn.Conv2d(in_planes, out_planes,
-                              kernel_size=kernel_size, stride=stride,
-                              padding=padding, dilation=dilation, bias=False)
+        self.conv = nn.Conv2d(
+            in_planes,
+            out_planes,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            bias=False,
+        )
         self.bn = nn.BatchNorm2d(out_planes)
         self.relu = nn.ReLU(inplace=True)
 
@@ -132,7 +136,7 @@ class BasicConv2d(nn.Module):
 #         return x
 
 
-#TransCaraNetのコード
+# TransCaraNetのコード
 class Trans_CaraNetCNN_oka(nn.Module):
     # res2net based encoder decoder
     def __init__(self, channel=32, pretrained=False):
@@ -142,11 +146,11 @@ class Trans_CaraNetCNN_oka(nn.Module):
         # self.resnet = res2net101_v1b_26w_4s(pretrained=True)
         # self.Resnet = Resnet()
         # self.Resnet.load_state_dict(torch.load('resnet50_a1_0-14fe96d1.pth'))
-        self.resnet = resnet()#11/06
-        if pretrained:#11/06
-            self.resnet.load_state_dict(torch.load('resnet34-43635321.pth'))#11/06
-        self.resnet.fc = nn.Identity()#11/06
-        self.resnet.layer4 = nn.Identity()#11/06###################################
+        self.resnet = resnet()  # 11/06
+        if pretrained:  # 11/06
+            self.resnet.load_state_dict(torch.load("resnet34-43635321.pth"))  # 11/06
+        self.resnet.fc = nn.Identity()  # 11/06
+        self.resnet.layer4 = nn.Identity()  # 11/06###################################
 
         # ---- Receptive Field Block like module ----
         # self.rfb2_1 = RFB_modified(256, channel)
@@ -157,7 +161,6 @@ class Trans_CaraNetCNN_oka(nn.Module):
         # self.rfb3_1 = RFB_modified(128, channel)
         # self.rfb4_1 = RFB_modified(256, channel)
         # self.rfb5_1 = RFB_modified(512, channel)
-
 
         # # ---- Partial Decoder ----
         # self.agg = aggregation(channel)
@@ -177,7 +180,6 @@ class Trans_CaraNetCNN_oka(nn.Module):
 
         drop_rate = 0.2
         self.drop = nn.Dropout2d(drop_rate)
-
 
         # self.up_c = BiFusion_block(ch_1=2048, ch_2=2048, r_2=4, ch_int=2048, ch_out=2048, drop_rate=drop_rate / 2)#11/07  # top
         # self.up_c = BiFusion_block(ch_1=512, ch_2=768, r_2=4, ch_int=512, ch_out=512, drop_rate=drop_rate / 2)#11/07
@@ -203,15 +205,13 @@ class Trans_CaraNetCNN_oka(nn.Module):
         #                                  drop_rate=drop_rate / 2)  # under#11/07
         # self.up_c_3_2 = Up(128, 64, 64, attn=True)#11/07
 
-
         self.drop = nn.Dropout2d(drop_rate)
 
         self.final_x = nn.Sequential(
             Conv(256, 64, 1, bn=True, relu=True),
             Conv(64, 64, 3, bn=True, relu=True),
-            Conv(64, 1, 3, bn=False, relu=False)#num_classes=1
-        )# BiFusion#11/15
-
+            Conv(64, 1, 3, bn=False, relu=False),  # num_classes=1
+        )  # BiFusion#11/15
 
         # self.init_weights()
 
@@ -237,23 +237,23 @@ class Trans_CaraNetCNN_oka(nn.Module):
         # self.aa_kernel_3 = AA_kernel(32, 32)
 
     def forward(self, x):
-    	# ####### ViTの特徴を抽出 #######
+        # ####### ViTの特徴を抽出 #######
         # x_b = self.transformer(x)
         # x_b = torch.transpose(x_b, 1, 2)
         # x_b = x_b.view(x_b.shape[0], -1, 22, 22)
         # x_b = self.drop(x_b)
-	
-	# ####### ResNetの特徴と融合するためにResNetのサイズと同じサイズに変更 #######
-    #     x_b_1 = self.up1(x_b)  # t1 # torch.Size([16, 512, 48, 48])
-    #     x_b_1 = self.drop(x_b_1)
 
-    #     x_b_2 = self.up2(x_b_1)  # transformer pred supervise here #t2 # torch.Size([16, 256, 96, 96])
-    #     x_b_2 = self.drop(x_b_2)
+        # ####### ResNetの特徴と融合するためにResNetのサイズと同じサイズに変更 #######
+        #     x_b_1 = self.up1(x_b)  # t1 # torch.Size([16, 512, 48, 48])
+        #     x_b_1 = self.drop(x_b_1)
 
-    #     x_b_0 = self.down1(x_b)
-    #     x_b_0 = self.drop(x_b_0)
+        #     x_b_2 = self.up2(x_b_1)  # transformer pred supervise here #t2 # torch.Size([16, 256, 96, 96])
+        #     x_b_2 = self.drop(x_b_2)
 
-	####### ResNetの特徴を抽出 #######
+        #     x_b_0 = self.down1(x_b)
+        #     x_b_0 = self.drop(x_b_0)
+
+        ####### ResNetの特徴を抽出 #######
         x = self.resnet.conv1(x)  # torch.Size([16, 64, 192, 192])
         x = self.resnet.bn1(x)
         x = self.resnet.relu(x)
@@ -271,78 +271,78 @@ class Trans_CaraNetCNN_oka(nn.Module):
         # x4 = self.resnet.layer4(x3)  # torch.Size([16, 2048, 12, 12])
         # x4 = self.drop(x4)
 
-	# ####### BiFusion ModuleによりViTの特徴とResNetの特徴を融合 #######
-    #     x_c = self.up_c(x4, x_b_0)  # biFusion pred here #f0 # torch.Size([16, 1024, 24, 24])
+        # ####### BiFusion ModuleによりViTの特徴とResNetの特徴を融合 #######
+        #     x_c = self.up_c(x4, x_b_0)  # biFusion pred here #f0 # torch.Size([16, 1024, 24, 24])
 
-    #     x_c_1_1 = self.up_c_1_1(x3, x_b)  # f1 # torch.Size([16, 512, 48, 48])
-    #     x_c_1 = self.up_c_1_2(x_c, x_c_1_1)  # torch.Size([16, 512, 48, 48])
+        #     x_c_1_1 = self.up_c_1_1(x3, x_b)  # f1 # torch.Size([16, 512, 48, 48])
+        #     x_c_1 = self.up_c_1_2(x_c, x_c_1_1)  # torch.Size([16, 512, 48, 48])
 
-    #     x_c_2_1 = self.up_c_2_1(x2, x_b_1)  # f2 # torch.Size([16, 256, 96, 96])
-    #     x_c_2 = self.up_c_2_2(x_c_1, x_c_2_1)  # joint predict low supervise here # torch.Size([16, 256, 96, 96])
+        #     x_c_2_1 = self.up_c_2_1(x2, x_b_1)  # f2 # torch.Size([16, 256, 96, 96])
+        #     x_c_2 = self.up_c_2_2(x_c_1, x_c_2_1)  # joint predict low supervise here # torch.Size([16, 256, 96, 96])
 
-    #     x_c_3_1 = self.up_c_3_1(x1, x_b_2)
-    #     x_c_3 = self.up_c_3_2(x_c_2, x_c_3_1)
+        #     x_c_3_1 = self.up_c_3_1(x1, x_b_2)
+        #     x_c_3 = self.up_c_3_2(x_c_2, x_c_3_1)
 
-	# ####### partial decoder #######
-    #     x2_rfb = self.rfb2_1(x_c_3)  # channel -> 32
-    #     x3_rfb = self.rfb3_1(x_c_2)  # channel -> 32
-    #     x4_rfb = self.rfb4_1(x_c_1)  # channel -> 32
-    #     x5_rfb = self.rfb5_1(x_c)  # channel -> 32
+        # ####### partial decoder #######
+        #     x2_rfb = self.rfb2_1(x_c_3)  # channel -> 32
+        #     x3_rfb = self.rfb3_1(x_c_2)  # channel -> 32
+        #     x4_rfb = self.rfb4_1(x_c_1)  # channel -> 32
+        #     x5_rfb = self.rfb5_1(x_c)  # channel -> 32
 
+        #     ra5_feat = self.agg(x5_rfb, x4_rfb, x3_rfb, x2_rfb)
 
-    #     ra5_feat = self.agg(x5_rfb, x4_rfb, x3_rfb, x2_rfb)
-	
-	# ####### 1つ目の出力 #######
-    #     lateral_map_5 = F.interpolate(ra5_feat, scale_factor=4,
-    #                                   mode='bilinear')  # NOTES: Sup-1 (bs, 1, 44, 44) -> (bs, 1, 352, 352)
+        # ####### 1つ目の出力 #######
+        #     lateral_map_5 = F.interpolate(ra5_feat, scale_factor=4,
+        #                                   mode='bilinear')  # NOTES: Sup-1 (bs, 1, 44, 44) -> (bs, 1, 352, 352)
 
-	# ####### CFP ModuleとA-RAの機構1 #######
-    #     decoder_2 = F.interpolate(ra5_feat, scale_factor=0.25, mode='bilinear')
-    #     cfp_out_1 = self.CFP_3(x4_rfb)  # 32 - 32
-    #     decoder_2_ra = -1 * (torch.sigmoid(decoder_2)) + 1
-    #     aa_atten_3 = self.aa_kernel_3(cfp_out_1)
-    #     aa_atten_3_o = decoder_2_ra.expand(-1, 32, -1, -1).mul(aa_atten_3)
+        # ####### CFP ModuleとA-RAの機構1 #######
+        #     decoder_2 = F.interpolate(ra5_feat, scale_factor=0.25, mode='bilinear')
+        #     cfp_out_1 = self.CFP_3(x4_rfb)  # 32 - 32
+        #     decoder_2_ra = -1 * (torch.sigmoid(decoder_2)) + 1
+        #     aa_atten_3 = self.aa_kernel_3(cfp_out_1)
+        #     aa_atten_3_o = decoder_2_ra.expand(-1, 32, -1, -1).mul(aa_atten_3)
 
-    #     ra_3 = self.ra3_conv1(aa_atten_3_o)  # 32 - 32
-    #     ra_3 = self.ra3_conv2(ra_3)  # 32 - 32
-    #     ra_3 = self.ra3_conv3(ra_3)  # 32 - 1
+        #     ra_3 = self.ra3_conv1(aa_atten_3_o)  # 32 - 32
+        #     ra_3 = self.ra3_conv2(ra_3)  # 32 - 32
+        #     ra_3 = self.ra3_conv3(ra_3)  # 32 - 1
 
-    #     x_3 = ra_3 + decoder_2
-    #     ####### 2つ目の出力 #######
-    #     lateral_map_4 = F.interpolate(x_3, scale_factor=16, mode='bilinear')
+        #     x_3 = ra_3 + decoder_2
+        #     ####### 2つ目の出力 #######
+        #     lateral_map_4 = F.interpolate(x_3, scale_factor=16, mode='bilinear')
 
-    #     ####### CFP ModuleとA-RAの機構2 #######
-    #     decoder_3 = F.interpolate(x_3, scale_factor=2, mode='bilinear')
-    #     cfp_out_2 = self.CFP_2(x3_rfb)  # 32 - 32
-    #     decoder_3_ra = -1 * (torch.sigmoid(decoder_3)) + 1
-    #     aa_atten_2 = self.aa_kernel_2(cfp_out_2)
-    #     aa_atten_2_o = decoder_3_ra.expand(-1, 32, -1, -1).mul(aa_atten_2)
+        #     ####### CFP ModuleとA-RAの機構2 #######
+        #     decoder_3 = F.interpolate(x_3, scale_factor=2, mode='bilinear')
+        #     cfp_out_2 = self.CFP_2(x3_rfb)  # 32 - 32
+        #     decoder_3_ra = -1 * (torch.sigmoid(decoder_3)) + 1
+        #     aa_atten_2 = self.aa_kernel_2(cfp_out_2)
+        #     aa_atten_2_o = decoder_3_ra.expand(-1, 32, -1, -1).mul(aa_atten_2)
 
-    #     ra_2 = self.ra2_conv1(aa_atten_2_o)  # 32 - 32
-    #     ra_2 = self.ra2_conv2(ra_2)  # 32 - 32
-    #     ra_2 = self.ra2_conv3(ra_2)  # 32 - 1
+        #     ra_2 = self.ra2_conv1(aa_atten_2_o)  # 32 - 32
+        #     ra_2 = self.ra2_conv2(ra_2)  # 32 - 32
+        #     ra_2 = self.ra2_conv3(ra_2)  # 32 - 1
 
-    #     x_2 = ra_2 + decoder_3
-    #     ####### 3つ目の出力 #######
-    #     lateral_map_3 = F.interpolate(x_2, scale_factor=8, mode='bilinear')
+        #     x_2 = ra_2 + decoder_3
+        #     ####### 3つ目の出力 #######
+        #     lateral_map_3 = F.interpolate(x_2, scale_factor=8, mode='bilinear')
 
-    #     ####### CFP ModuleとA-RAの機構3 #######
-    #     decoder_4 = F.interpolate(x_2, scale_factor=2, mode='bilinear')
-    #     cfp_out_3 = self.CFP_1(x2_rfb)  # 32 - 32
-    #     decoder_4_ra = -1 * (torch.sigmoid(decoder_4)) + 1
-    #     aa_atten_1 = self.aa_kernel_1(cfp_out_3)
-    #     aa_atten_1_o = decoder_4_ra.expand(-1, 32, -1, -1).mul(aa_atten_1)
+        #     ####### CFP ModuleとA-RAの機構3 #######
+        #     decoder_4 = F.interpolate(x_2, scale_factor=2, mode='bilinear')
+        #     cfp_out_3 = self.CFP_1(x2_rfb)  # 32 - 32
+        #     decoder_4_ra = -1 * (torch.sigmoid(decoder_4)) + 1
+        #     aa_atten_1 = self.aa_kernel_1(cfp_out_3)
+        #     aa_atten_1_o = decoder_4_ra.expand(-1, 32, -1, -1).mul(aa_atten_1)
 
-    #     ra_1 = self.ra1_conv1(aa_atten_1_o)  # 32 - 32
-    #     ra_1 = self.ra1_conv2(ra_1)  # 32 - 32
-    #     ra_1 = self.ra1_conv3(ra_1)  # 32 - 1
+        #     ra_1 = self.ra1_conv1(aa_atten_1_o)  # 32 - 32
+        #     ra_1 = self.ra1_conv2(ra_1)  # 32 - 32
+        #     ra_1 = self.ra1_conv3(ra_1)  # 32 - 1
 
-    #     x_1 = ra_1 + decoder_4
-    #     lateral_map_2 = F.interpolate(x_1, scale_factor=4, mode='bilinear')
-    #     ####### 4つ目の出力 #######
+        #     x_1 = ra_1 + decoder_4
+        #     lateral_map_2 = F.interpolate(x_1, scale_factor=4, mode='bilinear')
+        #     ####### 4つ目の出力 #######
 
-        map_x = F.interpolate(self.final_x(x3), scale_factor=16, mode='bilinear') #11/15
-
+        map_x = F.interpolate(
+            self.final_x(x3), scale_factor=16, mode="bilinear"
+        )  # 11/15
 
         return map_x
 
@@ -358,7 +358,9 @@ class Trans_CaraNetCNN_oka(nn.Module):
 
 class ChannelPool(nn.Module):
     def forward(self, x):
-        return torch.cat((torch.max(x, 1)[0].unsqueeze(1), torch.mean(x, 1).unsqueeze(1)), dim=1)
+        return torch.cat(
+            (torch.max(x, 1)[0].unsqueeze(1), torch.mean(x, 1).unsqueeze(1)), dim=1
+        )
 
 
 # class BiFusion_block(nn.Module):
@@ -422,13 +424,13 @@ def init_weights(m):
     :return: None
     """
     if isinstance(m, nn.Conv2d):
-        '''
+        """
         fan_in, _ = nn.init._calculate_fan_in_and_fan_out(m.weight)
         trunc_normal_(m.weight, std=math.sqrt(1.0/fan_in)/.87962566103423978)
         if m.bias is not None:
             nn.init.zeros_(m.bias)
-        '''
-        nn.init.kaiming_normal_(m.weight, mode='fan_in', nonlinearity='relu')
+        """
+        nn.init.kaiming_normal_(m.weight, mode="fan_in", nonlinearity="relu")
         if m.bias is not None:
             fan_in, _ = nn.init._calculate_fan_in_and_fan_out(m.weight)
             bound = 1 / math.sqrt(fan_in)
@@ -445,7 +447,7 @@ class Up(nn.Module):
     def __init__(self, in_ch1, out_ch, in_ch2=0, attn=False):
         super().__init__()
 
-        self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+        self.up = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
         self.conv = DoubleConv(in_ch1 + in_ch2, out_ch)
 
         if attn:
@@ -461,8 +463,9 @@ class Up(nn.Module):
             diffY = torch.tensor([x2.size()[2] - x1.size()[2]])
             diffX = torch.tensor([x2.size()[3] - x1.size()[3]])
 
-            x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2,
-                            diffY // 2, diffY - diffY // 2])
+            x1 = F.pad(
+                x1, [diffX // 2, diffX - diffX // 2, diffY // 2, diffY - diffY // 2]
+            )
 
             if self.attn_block is not None:
                 x2 = self.attn_block(x1, x2)
@@ -493,8 +496,9 @@ class Down(nn.Module):
             diffY = torch.tensor([x2.size()[2] - x1.size()[2]])
             diffX = torch.tensor([x2.size()[3] - x1.size()[3]])
 
-            x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2,
-                            diffY // 2, diffY - diffY // 2])
+            x1 = F.pad(
+                x1, [diffX // 2, diffX - diffX // 2, diffY // 2, diffY - diffY // 2]
+            )
 
             if self.attn_block is not None:
                 x2 = self.attn_block(x1, x2)
@@ -502,21 +506,22 @@ class Down(nn.Module):
         x = x1
         return self.conv(x)
 
+
 class Attention_block(nn.Module):
     def __init__(self, F_g, F_l, F_int):
         super(Attention_block, self).__init__()
         self.W_g = nn.Sequential(
             nn.Conv2d(F_g, F_int, kernel_size=1, stride=1, padding=0, bias=True),
-            nn.BatchNorm2d(F_int)
+            nn.BatchNorm2d(F_int),
         )
         self.W_x = nn.Sequential(
             nn.Conv2d(F_l, F_int, kernel_size=1, stride=1, padding=0, bias=True),
-            nn.BatchNorm2d(F_int)
+            nn.BatchNorm2d(F_int),
         )
         self.psi = nn.Sequential(
             nn.Conv2d(F_int, 1, kernel_size=1, stride=1, padding=0, bias=True),
             nn.BatchNorm2d(1),
-            nn.Sigmoid()
+            nn.Sigmoid(),
         )
         self.relu = nn.ReLU(inplace=True)
 
@@ -536,11 +541,11 @@ class DoubleConv(nn.Module):
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
             nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
-            nn.BatchNorm2d(out_channels)
+            nn.BatchNorm2d(out_channels),
         )
         self.identity = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=1, padding=0),
-            nn.BatchNorm2d(out_channels)
+            nn.BatchNorm2d(out_channels),
         )
         self.relu = nn.ReLU(inplace=True)
 
@@ -583,10 +588,19 @@ class Residual(nn.Module):
 
 
 class Conv(nn.Module):
-    def __init__(self, inp_dim, out_dim, kernel_size=3, stride=1, bn=False, relu=True, bias=True):
+    def __init__(
+        self, inp_dim, out_dim, kernel_size=3, stride=1, bn=False, relu=True, bias=True
+    ):
         super(Conv, self).__init__()
         self.inp_dim = inp_dim
-        self.conv = nn.Conv2d(inp_dim, out_dim, kernel_size, stride, padding=(kernel_size - 1) // 2, bias=bias)
+        self.conv = nn.Conv2d(
+            inp_dim,
+            out_dim,
+            kernel_size,
+            stride,
+            padding=(kernel_size - 1) // 2,
+            bias=bias,
+        )
         self.relu = None
         self.bn = None
         if relu:
@@ -604,7 +618,7 @@ class Conv(nn.Module):
         return x
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ras = TransFuse_S().cuda()
     input_tensor = torch.randn(1, 3, 384, 384).cuda()
     out = ras(input_tensor)

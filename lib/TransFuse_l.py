@@ -1,27 +1,32 @@
+import math
+
+import numpy as np
+import timm
 import torch
 import torch.nn as nn
-from torchvision.models import resnet50 as Resnet
-from lib.DeiT import deit_base_patch16_384 as deit_base
-# from lib.DeiT2 import deit_base_patch16_384 as deit_base #TODO: DeiT or DeiT2
-from torch.nn import CrossEntropyLoss, Dropout, Softmax, Linear, Conv2d, LayerNorm
 import torch.nn.functional as F
-import numpy as np
-import math
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
+# from lib.DeiT2 import deit_base_patch16_384 as deit_base #TODO: DeiT or DeiT2
+from torch.nn import (Conv2d, CrossEntropyLoss, Dropout, LayerNorm, Linear,
+                      Softmax)
+from torchvision.models import resnet50 as Resnet
 
-import timm
+from lib.DeiT import deit_base_patch16_384 as deit_base
 
-assert timm.__version__ == "0.3.2" # version check
+assert timm.__version__ == "0.3.2"  # version check
 
 from lib.models_vit import vit_large_patch16 as vit_large
 
+
 class ChannelPool(nn.Module):
     def forward(self, x):
-        return torch.cat((torch.max(x, 1)[0].unsqueeze(1), torch.mean(x, 1).unsqueeze(1)), dim=1)
+        return torch.cat(
+            (torch.max(x, 1)[0].unsqueeze(1), torch.mean(x, 1).unsqueeze(1)), dim=1
+        )
 
 
 class BiFusion_block(nn.Module):
-    def __init__(self, ch_1, ch_2, r_2, ch_int, ch_out, drop_rate=0.):
+    def __init__(self, ch_1, ch_2, r_2, ch_int, ch_out, drop_rate=0.0):
         super(BiFusion_block, self).__init__()
 
         # channel attention for F_g, use SE Block
@@ -74,12 +79,14 @@ class BiFusion_block(nn.Module):
 
 
 class TransFuse_L(nn.Module):
-    def __init__(self, num_classes=1, drop_rate=0.2, normal_init=True, pretrained=False):
+    def __init__(
+        self, num_classes=1, drop_rate=0.2, normal_init=True, pretrained=False
+    ):
         super(TransFuse_L, self).__init__()
 
         self.Resnet = Resnet()
         if pretrained:
-            self.Resnet.load_state_dict(torch.load('resnet50_a1_0-14fe96d1.pth'))
+            self.Resnet.load_state_dict(torch.load("resnet50_a1_0-14fe96d1.pth"))
         self.Resnet.fc = nn.Identity()
         self.Resnet.layer4 = nn.Identity()
 
@@ -87,39 +94,48 @@ class TransFuse_L(nn.Module):
         self.transformer = vit_large(pretrained=pretrained)
         # self.transformer = vit_large(pretrained=False)
 
-    #############################################################################################
-        self.up1 = Up(in_ch1=1024, out_ch=512) # vit
+        #############################################################################################
+        self.up1 = Up(in_ch1=1024, out_ch=512)  # vit
         # self.up1 = Up(in_ch1=768, out_ch=512) # deit
-    #############################################################################################
+        #############################################################################################
         self.up2 = Up(512, 256)
 
         self.final_x = nn.Sequential(
             Conv(1024, 256, 1, bn=True, relu=True),
             Conv(256, 256, 3, bn=True, relu=True),
-            Conv(256, num_classes, 3, bn=False, relu=False)
+            Conv(256, num_classes, 3, bn=False, relu=False),
         )  # BiFusion
 
         self.final_1 = nn.Sequential(
             Conv(256, 256, 3, bn=True, relu=True),
-            Conv(256, num_classes, 3, bn=False, relu=False)
+            Conv(256, num_classes, 3, bn=False, relu=False),
         )  # Transformer
 
         self.final_2 = nn.Sequential(
             Conv(256, 256, 3, bn=True, relu=True),
-            Conv(256, num_classes, 3, bn=False, relu=False)
+            Conv(256, num_classes, 3, bn=False, relu=False),
         )  # Joint
 
         #############################################################################################
-        self.up_c = BiFusion_block(ch_1=1024, ch_2=1024, r_2=4, ch_int=1024, ch_out=1024, drop_rate=drop_rate / 2)  # top # vit
+        self.up_c = BiFusion_block(
+            ch_1=1024,
+            ch_2=1024,
+            r_2=4,
+            ch_int=1024,
+            ch_out=1024,
+            drop_rate=drop_rate / 2,
+        )  # top # vit
         # self.up_c = BiFusion_block(ch_1=1024, ch_2=768, r_2=4, ch_int=1024, ch_out=1024, drop_rate=drop_rate / 2)  # top # deit
         #############################################################################################
 
-        self.up_c_1_1 = BiFusion_block(ch_1=512, ch_2=512, r_2=2, ch_int=512, ch_out=512,
-                                       drop_rate=drop_rate / 2)  # mid
+        self.up_c_1_1 = BiFusion_block(
+            ch_1=512, ch_2=512, r_2=2, ch_int=512, ch_out=512, drop_rate=drop_rate / 2
+        )  # mid
         self.up_c_1_2 = Up(in_ch1=1024, out_ch=512, in_ch2=512, attn=True)
 
-        self.up_c_2_1 = BiFusion_block(ch_1=256, ch_2=256, r_2=1, ch_int=256, ch_out=256,
-                                       drop_rate=drop_rate / 2)  # under
+        self.up_c_2_1 = BiFusion_block(
+            ch_1=256, ch_2=256, r_2=1, ch_int=256, ch_out=256, drop_rate=drop_rate / 2
+        )  # under
         self.up_c_2_2 = Up(512, 256, 256, attn=True)
 
         self.drop = nn.Dropout2d(drop_rate)
@@ -129,23 +145,29 @@ class TransFuse_L(nn.Module):
 
     def forward(self, imgs, labels=None):
         # bottom-up path
-        x_b = self.transformer(imgs) # torch.Size([16, 3, 224, 224]) → torch.Size([16, 196, 1024])
-        x_b = torch.transpose(x_b, 1, 2) # torch.Size([16, 1024, 196])
+        x_b = self.transformer(
+            imgs
+        )  # torch.Size([16, 3, 224, 224]) → torch.Size([16, 196, 1024])
+        x_b = torch.transpose(x_b, 1, 2)  # torch.Size([16, 1024, 196])
         # x_b = x_b.view(x_b.shape[0], -1, 14, 14)  # t0 # torch.Size([16, 1024, 14, 14]) # 224*224
-        x_b = x_b.view(x_b.shape[0], -1, 22, 22)  # t0 # torch.Size([16, 1024, 14, 14]) # 352*352
+        x_b = x_b.view(
+            x_b.shape[0], -1, 22, 22
+        )  # t0 # torch.Size([16, 1024, 14, 14]) # 352*352
 
         x_b = self.drop(x_b)
         x_b_1 = self.up1(x_b)  # t1 # torch.Size([16, 512, 28, 28])
         x_b_1 = self.drop(x_b_1)
 
-        x_b_2 = self.up2(x_b_1)  # transformer pred supervise here #t2 # torch.Size([16, 256, 56, 56])
+        x_b_2 = self.up2(
+            x_b_1
+        )  # transformer pred supervise here #t2 # torch.Size([16, 256, 56, 56])
         x_b_2 = self.drop(x_b_2)
 
         # top-down path
-        x_u = self.Resnet.conv1(imgs) # torch.Size([16, 64, 112, 112])
+        x_u = self.Resnet.conv1(imgs)  # torch.Size([16, 64, 112, 112])
         x_u = self.Resnet.bn1(x_u)
         x_u = self.Resnet.relu(x_u)
-        x_u = self.Resnet.maxpool(x_u) # torch.Size([16, 64, 56, 56])
+        x_u = self.Resnet.maxpool(x_u)  # torch.Size([16, 64, 56, 56])
 
         x_u_2 = self.Resnet.layer1(x_u)  # g2 # torch.Size([16, 256, 56, 56])
         x_u_2 = self.drop(x_u_2)
@@ -157,16 +179,26 @@ class TransFuse_L(nn.Module):
         x_u = self.drop(x_u)
 
         # joint path
-        x_c = self.up_c(x_u, x_b)  # biFusion pred here #f0 # torch.Size([16, 1024, 14, 14])
+        x_c = self.up_c(
+            x_u, x_b
+        )  # biFusion pred here #f0 # torch.Size([16, 1024, 14, 14])
         x_c_1_1 = self.up_c_1_1(x_u_1, x_b_1)  # f1 # torch.Size([16, 512, 28, 28])
-        x_c_1 = self.up_c_1_2(x_c, x_c_1_1) # torch.Size([16, 512, 28, 28])
+        x_c_1 = self.up_c_1_2(x_c, x_c_1_1)  # torch.Size([16, 512, 28, 28])
         x_c_2_1 = self.up_c_2_1(x_u_2, x_b_2)  # f2 # torch.Size([16, 256, 56, 56])
-        x_c_2 = self.up_c_2_2(x_c_1, x_c_2_1)  # joint predict low supervise here # torch.Size([16, 256, 56, 56])
+        x_c_2 = self.up_c_2_2(
+            x_c_1, x_c_2_1
+        )  # joint predict low supervise here # torch.Size([16, 256, 56, 56])
 
         # decoder part
-        map_x = F.interpolate(self.final_x(x_c), scale_factor=16, mode='bilinear')  # BiFusion pred map
-        map_1 = F.interpolate(self.final_1(x_b_2), scale_factor=4, mode='bilinear')  # Transformer pred map
-        map_2 = F.interpolate(self.final_2(x_c_2), scale_factor=4, mode='bilinear')  # Joint pred map
+        map_x = F.interpolate(
+            self.final_x(x_c), scale_factor=16, mode="bilinear"
+        )  # BiFusion pred map
+        map_1 = F.interpolate(
+            self.final_1(x_b_2), scale_factor=4, mode="bilinear"
+        )  # Transformer pred map
+        map_2 = F.interpolate(
+            self.final_2(x_c_2), scale_factor=4, mode="bilinear"
+        )  # Joint pred map
         return map_x, map_1, map_2
 
     def init_weights(self):
@@ -190,13 +222,13 @@ def init_weights(m):
     :return: None
     """
     if isinstance(m, nn.Conv2d):
-        '''
+        """
         fan_in, _ = nn.init._calculate_fan_in_and_fan_out(m.weight)
         trunc_normal_(m.weight, std=math.sqrt(1.0/fan_in)/.87962566103423978)
         if m.bias is not None:
             nn.init.zeros_(m.bias)
-        '''
-        nn.init.kaiming_normal_(m.weight, mode='fan_in', nonlinearity='relu')
+        """
+        nn.init.kaiming_normal_(m.weight, mode="fan_in", nonlinearity="relu")
         if m.bias is not None:
             fan_in, _ = nn.init._calculate_fan_in_and_fan_out(m.weight)
             bound = 1 / math.sqrt(fan_in)
@@ -213,7 +245,7 @@ class Up(nn.Module):
     def __init__(self, in_ch1, out_ch, in_ch2=0, attn=False):
         super().__init__()
 
-        self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+        self.up = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
         self.conv = DoubleConv(in_ch1 + in_ch2, out_ch)
 
         if attn:
@@ -229,8 +261,9 @@ class Up(nn.Module):
             diffY = torch.tensor([x2.size()[2] - x1.size()[2]])
             diffX = torch.tensor([x2.size()[3] - x1.size()[3]])
 
-            x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2,
-                            diffY // 2, diffY - diffY // 2])
+            x1 = F.pad(
+                x1, [diffX // 2, diffX - diffX // 2, diffY // 2, diffY - diffY // 2]
+            )
 
             if self.attn_block is not None:
                 x2 = self.attn_block(x1, x2)
@@ -244,16 +277,16 @@ class Attention_block(nn.Module):
         super(Attention_block, self).__init__()
         self.W_g = nn.Sequential(
             nn.Conv2d(F_g, F_int, kernel_size=1, stride=1, padding=0, bias=True),
-            nn.BatchNorm2d(F_int)
+            nn.BatchNorm2d(F_int),
         )
         self.W_x = nn.Sequential(
             nn.Conv2d(F_l, F_int, kernel_size=1, stride=1, padding=0, bias=True),
-            nn.BatchNorm2d(F_int)
+            nn.BatchNorm2d(F_int),
         )
         self.psi = nn.Sequential(
             nn.Conv2d(F_int, 1, kernel_size=1, stride=1, padding=0, bias=True),
             nn.BatchNorm2d(1),
-            nn.Sigmoid()
+            nn.Sigmoid(),
         )
         self.relu = nn.ReLU(inplace=True)
 
@@ -273,11 +306,11 @@ class DoubleConv(nn.Module):
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
             nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
-            nn.BatchNorm2d(out_channels)
+            nn.BatchNorm2d(out_channels),
         )
         self.identity = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=1, padding=0),
-            nn.BatchNorm2d(out_channels)
+            nn.BatchNorm2d(out_channels),
         )
         self.relu = nn.ReLU(inplace=True)
 
@@ -320,10 +353,19 @@ class Residual(nn.Module):
 
 
 class Conv(nn.Module):
-    def __init__(self, inp_dim, out_dim, kernel_size=3, stride=1, bn=False, relu=True, bias=True):
+    def __init__(
+        self, inp_dim, out_dim, kernel_size=3, stride=1, bn=False, relu=True, bias=True
+    ):
         super(Conv, self).__init__()
         self.inp_dim = inp_dim
-        self.conv = nn.Conv2d(inp_dim, out_dim, kernel_size, stride, padding=(kernel_size - 1) // 2, bias=bias)
+        self.conv = nn.Conv2d(
+            inp_dim,
+            out_dim,
+            kernel_size,
+            stride,
+            padding=(kernel_size - 1) // 2,
+            bias=bias,
+        )
         self.relu = None
         self.bn = None
         if relu:
@@ -341,7 +383,7 @@ class Conv(nn.Module):
         return x
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ras = TransFuse_L().cuda()
     input_tensor = torch.randn(1, 3, 352, 352).cuda()
     out = ras(input_tensor)

@@ -1,20 +1,28 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .Res2Net_v1b import res2net50_v1b_26w_4s
-import numpy as np
 import torchvision.models as models
+
+from .Res2Net_v1b import res2net50_v1b_26w_4s
 
 
 class BasicConv2d(nn.Module):
-    def __init__(self, in_planes, out_planes, kernel_size, stride=1, padding=0, dilation=1):
+    def __init__(
+        self, in_planes, out_planes, kernel_size, stride=1, padding=0, dilation=1
+    ):
         super(BasicConv2d, self).__init__()
-        self.conv = nn.Conv2d(in_planes, out_planes,
-                              kernel_size=kernel_size, stride=stride,
-                              padding=padding, dilation=dilation, bias=False)
+        self.conv = nn.Conv2d(
+            in_planes,
+            out_planes,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            bias=False,
+        )
         self.bn = nn.BatchNorm2d(out_planes)
         self.relu = nn.ReLU(inplace=True)
-
 
     def forward(self, x):
         x = self.conv(x)
@@ -69,7 +77,7 @@ class aggregation(nn.Module):
         super(aggregation, self).__init__()
         self.relu = nn.ReLU(True)
 
-        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+        self.upsample = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
         self.conv_upsample1 = BasicConv2d(channel, channel, 3, padding=1)
         self.conv_upsample2 = BasicConv2d(channel, channel, 3, padding=1)
         self.conv_upsample3 = BasicConv2d(channel, channel, 3, padding=1)
@@ -84,8 +92,11 @@ class aggregation(nn.Module):
     def forward(self, x1, x2, x3):
         x1_1 = x1
         x2_1 = self.conv_upsample1(self.upsample(x1)) * x2
-        x3_1 = self.conv_upsample2(self.upsample(self.upsample(x1))) \
-               * self.conv_upsample3(self.upsample(x2)) * x3
+        x3_1 = (
+            self.conv_upsample2(self.upsample(self.upsample(x1)))
+            * self.conv_upsample3(self.upsample(x2))
+            * x3
+        )
 
         x2_2 = torch.cat((x2_1, self.conv_upsample4(self.upsample(x1_1))), 1)
         x2_2 = self.conv_concat2(x2_2)
@@ -145,11 +156,12 @@ class PraNet(nn.Module):
         x4_rfb = self.rfb4_1(x4)  # channel -> 32
 
         ra5_feat = self.agg1(x4_rfb, x3_rfb, x2_rfb)
-        lateral_map_5 = F.interpolate(ra5_feat, scale_factor=8,
-                                      mode='bilinear')  # NOTES: Sup-1 (bs, 1, 44, 44) -> (bs, 1, 352, 352)
+        lateral_map_5 = F.interpolate(
+            ra5_feat, scale_factor=8, mode="bilinear"
+        )  # NOTES: Sup-1 (bs, 1, 44, 44) -> (bs, 1, 352, 352)
 
         # ---- reverse attention branch_4 ----
-        crop_4 = F.interpolate(ra5_feat, scale_factor=0.25, mode='bilinear')
+        crop_4 = F.interpolate(ra5_feat, scale_factor=0.25, mode="bilinear")
         x = -1 * (torch.sigmoid(crop_4)) + 1
         x = x.expand(-1, 2048, -1, -1).mul(x4)
         x = self.ra4_conv1(x)
@@ -158,11 +170,12 @@ class PraNet(nn.Module):
         x = F.relu(self.ra4_conv4(x))
         ra4_feat = self.ra4_conv5(x)
         x = ra4_feat + crop_4
-        lateral_map_4 = F.interpolate(x, scale_factor=32,
-                                      mode='bilinear')  # NOTES: Sup-2 (bs, 1, 11, 11) -> (bs, 1, 352, 352)
+        lateral_map_4 = F.interpolate(
+            x, scale_factor=32, mode="bilinear"
+        )  # NOTES: Sup-2 (bs, 1, 11, 11) -> (bs, 1, 352, 352)
 
         # ---- reverse attention branch_3 ----
-        crop_3 = F.interpolate(x, scale_factor=2, mode='bilinear')
+        crop_3 = F.interpolate(x, scale_factor=2, mode="bilinear")
         x = -1 * (torch.sigmoid(crop_3)) + 1
         x = x.expand(-1, 1024, -1, -1).mul(x3)
         x = self.ra3_conv1(x)
@@ -170,11 +183,12 @@ class PraNet(nn.Module):
         x = F.relu(self.ra3_conv3(x))
         ra3_feat = self.ra3_conv4(x)
         x = ra3_feat + crop_3
-        lateral_map_3 = F.interpolate(x, scale_factor=16,
-                                      mode='bilinear')  # NOTES: Sup-3 (bs, 1, 22, 22) -> (bs, 1, 352, 352)
+        lateral_map_3 = F.interpolate(
+            x, scale_factor=16, mode="bilinear"
+        )  # NOTES: Sup-3 (bs, 1, 22, 22) -> (bs, 1, 352, 352)
 
         # ---- reverse attention branch_2 ----
-        crop_2 = F.interpolate(x, scale_factor=2, mode='bilinear')
+        crop_2 = F.interpolate(x, scale_factor=2, mode="bilinear")
         x = -1 * (torch.sigmoid(crop_2)) + 1
         x = x.expand(-1, 512, -1, -1).mul(x2)
         x = self.ra2_conv1(x)
@@ -182,13 +196,14 @@ class PraNet(nn.Module):
         x = F.relu(self.ra2_conv3(x))
         ra2_feat = self.ra2_conv4(x)
         x = ra2_feat + crop_2
-        lateral_map_2 = F.interpolate(x, scale_factor=8,
-                                      mode='bilinear')  # NOTES: Sup-4 (bs, 1, 44, 44) -> (bs, 1, 352, 352)
+        lateral_map_2 = F.interpolate(
+            x, scale_factor=8, mode="bilinear"
+        )  # NOTES: Sup-4 (bs, 1, 44, 44) -> (bs, 1, 352, 352)
 
         return lateral_map_5, lateral_map_4, lateral_map_3, lateral_map_2
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ras = PraNet().cuda()
     input_tensor = torch.randn(1, 3, 352, 352).cuda()
 

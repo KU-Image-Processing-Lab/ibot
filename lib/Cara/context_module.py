@@ -3,11 +3,13 @@
 Created on Tue Aug 10 17:18:49 2021
 @author: angelou
 """
+import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from lib.Cara.conv_layer import Conv, BNPReLU
-import math
+
+from lib.Cara.conv_layer import BNPReLU, Conv
 
 
 class CFPModule(nn.Module):
@@ -18,41 +20,137 @@ class CFPModule(nn.Module):
         self.bn_relu_2 = BNPReLU(nIn)
         self.conv1x1_1 = Conv(nIn, nIn // 4, KSize, 1, padding=1, bn_acti=True)
 
-        self.dconv_4_1 = Conv(nIn // 4, nIn // 16, (dkSize, dkSize), 1, padding=(1 * d + 1, 1 * d + 1),
-                              dilation=(d + 1, d + 1), groups=nIn // 16, bn_acti=True)
+        self.dconv_4_1 = Conv(
+            nIn // 4,
+            nIn // 16,
+            (dkSize, dkSize),
+            1,
+            padding=(1 * d + 1, 1 * d + 1),
+            dilation=(d + 1, d + 1),
+            groups=nIn // 16,
+            bn_acti=True,
+        )
 
-        self.dconv_4_2 = Conv(nIn // 16, nIn // 16, (dkSize, dkSize), 1, padding=(1 * d + 1, 1 * d + 1),
-                              dilation=(d + 1, d + 1), groups=nIn // 16, bn_acti=True)
+        self.dconv_4_2 = Conv(
+            nIn // 16,
+            nIn // 16,
+            (dkSize, dkSize),
+            1,
+            padding=(1 * d + 1, 1 * d + 1),
+            dilation=(d + 1, d + 1),
+            groups=nIn // 16,
+            bn_acti=True,
+        )
 
-        self.dconv_4_3 = Conv(nIn // 16, nIn // 8, (dkSize, dkSize), 1, padding=(1 * d + 1, 1 * d + 1),
-                              dilation=(d + 1, d + 1), groups=nIn // 16, bn_acti=True)
+        self.dconv_4_3 = Conv(
+            nIn // 16,
+            nIn // 8,
+            (dkSize, dkSize),
+            1,
+            padding=(1 * d + 1, 1 * d + 1),
+            dilation=(d + 1, d + 1),
+            groups=nIn // 16,
+            bn_acti=True,
+        )
 
-        self.dconv_1_1 = Conv(nIn // 4, nIn // 16, (dkSize, dkSize), 1, padding=(1, 1),
-                              dilation=(1, 1), groups=nIn // 16, bn_acti=True)
+        self.dconv_1_1 = Conv(
+            nIn // 4,
+            nIn // 16,
+            (dkSize, dkSize),
+            1,
+            padding=(1, 1),
+            dilation=(1, 1),
+            groups=nIn // 16,
+            bn_acti=True,
+        )
 
-        self.dconv_1_2 = Conv(nIn // 16, nIn // 16, (dkSize, dkSize), 1, padding=(1, 1),
-                              dilation=(1, 1), groups=nIn // 16, bn_acti=True)
+        self.dconv_1_2 = Conv(
+            nIn // 16,
+            nIn // 16,
+            (dkSize, dkSize),
+            1,
+            padding=(1, 1),
+            dilation=(1, 1),
+            groups=nIn // 16,
+            bn_acti=True,
+        )
 
-        self.dconv_1_3 = Conv(nIn // 16, nIn // 8, (dkSize, dkSize), 1, padding=(1, 1),
-                              dilation=(1, 1), groups=nIn // 16, bn_acti=True)
+        self.dconv_1_3 = Conv(
+            nIn // 16,
+            nIn // 8,
+            (dkSize, dkSize),
+            1,
+            padding=(1, 1),
+            dilation=(1, 1),
+            groups=nIn // 16,
+            bn_acti=True,
+        )
 
-        self.dconv_2_1 = Conv(nIn // 4, nIn // 16, (dkSize, dkSize), 1, padding=(int(d / 4 + 1), int(d / 4 + 1)),
-                              dilation=(int(d / 4 + 1), int(d / 4 + 1)), groups=nIn // 16, bn_acti=True)
+        self.dconv_2_1 = Conv(
+            nIn // 4,
+            nIn // 16,
+            (dkSize, dkSize),
+            1,
+            padding=(int(d / 4 + 1), int(d / 4 + 1)),
+            dilation=(int(d / 4 + 1), int(d / 4 + 1)),
+            groups=nIn // 16,
+            bn_acti=True,
+        )
 
-        self.dconv_2_2 = Conv(nIn // 16, nIn // 16, (dkSize, dkSize), 1, padding=(int(d / 4 + 1), int(d / 4 + 1)),
-                              dilation=(int(d / 4 + 1), int(d / 4 + 1)), groups=nIn // 16, bn_acti=True)
+        self.dconv_2_2 = Conv(
+            nIn // 16,
+            nIn // 16,
+            (dkSize, dkSize),
+            1,
+            padding=(int(d / 4 + 1), int(d / 4 + 1)),
+            dilation=(int(d / 4 + 1), int(d / 4 + 1)),
+            groups=nIn // 16,
+            bn_acti=True,
+        )
 
-        self.dconv_2_3 = Conv(nIn // 16, nIn // 8, (dkSize, dkSize), 1, padding=(int(d / 4 + 1), int(d / 4 + 1)),
-                              dilation=(int(d / 4 + 1), int(d / 4 + 1)), groups=nIn // 16, bn_acti=True)
+        self.dconv_2_3 = Conv(
+            nIn // 16,
+            nIn // 8,
+            (dkSize, dkSize),
+            1,
+            padding=(int(d / 4 + 1), int(d / 4 + 1)),
+            dilation=(int(d / 4 + 1), int(d / 4 + 1)),
+            groups=nIn // 16,
+            bn_acti=True,
+        )
 
-        self.dconv_3_1 = Conv(nIn // 4, nIn // 16, (dkSize, dkSize), 1, padding=(int(d / 2 + 1), int(d / 2 + 1)),
-                              dilation=(int(d / 2 + 1), int(d / 2 + 1)), groups=nIn // 16, bn_acti=True)
+        self.dconv_3_1 = Conv(
+            nIn // 4,
+            nIn // 16,
+            (dkSize, dkSize),
+            1,
+            padding=(int(d / 2 + 1), int(d / 2 + 1)),
+            dilation=(int(d / 2 + 1), int(d / 2 + 1)),
+            groups=nIn // 16,
+            bn_acti=True,
+        )
 
-        self.dconv_3_2 = Conv(nIn // 16, nIn // 16, (dkSize, dkSize), 1, padding=(int(d / 2 + 1), int(d / 2 + 1)),
-                              dilation=(int(d / 2 + 1), int(d / 2 + 1)), groups=nIn // 16, bn_acti=True)
+        self.dconv_3_2 = Conv(
+            nIn // 16,
+            nIn // 16,
+            (dkSize, dkSize),
+            1,
+            padding=(int(d / 2 + 1), int(d / 2 + 1)),
+            dilation=(int(d / 2 + 1), int(d / 2 + 1)),
+            groups=nIn // 16,
+            bn_acti=True,
+        )
 
-        self.dconv_3_3 = Conv(nIn // 16, nIn // 8, (dkSize, dkSize), 1, padding=(int(d / 2 + 1), int(d / 2 + 1)),
-                              dilation=(int(d / 2 + 1), int(d / 2 + 1)), groups=nIn // 16, bn_acti=True)
+        self.dconv_3_3 = Conv(
+            nIn // 16,
+            nIn // 8,
+            (dkSize, dkSize),
+            1,
+            padding=(int(d / 2 + 1), int(d / 2 + 1)),
+            dilation=(int(d / 2 + 1), int(d / 2 + 1)),
+            groups=nIn // 16,
+            bn_acti=True,
+        )
 
         self.conv1x1 = Conv(nIn, nIn, 1, 1, padding=0, bn_acti=False)
 

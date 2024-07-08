@@ -7,7 +7,6 @@ Using weighted sum
 import torch
 
 
-
 class ChannelSELayer(torch.nn.Module):
     """
     Implements Squeeze and Excitation
@@ -35,7 +34,6 @@ class ChannelSELayer(torch.nn.Module):
         self.sigmoid = torch.nn.Sigmoid()
         self.bn = torch.nn.BatchNorm2d(num_channels)
 
-
     def forward(self, inp):
 
         batch_size, num_channels, H, W = inp.size()
@@ -49,7 +47,6 @@ class ChannelSELayer(torch.nn.Module):
         out = self.act(out)
 
         return out
-
 
 
 class HANCLayer(torch.nn.Module):
@@ -74,7 +71,6 @@ class HANCLayer(torch.nn.Module):
         self.cnv = torch.nn.Conv2d((2 * k - 1) * in_chnl, out_chnl, kernel_size=(1, 1))
         self.act = torch.nn.LeakyReLU()
         self.bn = torch.nn.BatchNorm2d(out_chnl)
-
 
     def forward(self, inp):
 
@@ -144,7 +140,6 @@ class HANCLayer(torch.nn.Module):
         return x
 
 
-
 class Conv2d_batchnorm(torch.nn.Module):
     """
     2D Convolutional layers
@@ -180,7 +175,6 @@ class Conv2d_batchnorm(torch.nn.Module):
         self.batchnorm = torch.nn.BatchNorm2d(num_out_filters)
         self.sqe = ChannelSELayer(num_out_filters)
 
-
     def forward(self, x):
         x = self.conv1(x)
         x = self.batchnorm(x)
@@ -190,7 +184,7 @@ class Conv2d_batchnorm(torch.nn.Module):
 
 class Conv2d_channel(torch.nn.Module):
     """
-    2D pointwise Convolutional layers        
+    2D pointwise Convolutional layers
     """
 
     def __init__(self, num_in_filters, num_out_filters):
@@ -215,12 +209,10 @@ class Conv2d_channel(torch.nn.Module):
         self.batchnorm = torch.nn.BatchNorm2d(num_out_filters)
         self.sqe = ChannelSELayer(num_out_filters)
 
-
     def forward(self, x):
         x = self.conv1(x)
         x = self.batchnorm(x)
         return self.sqe(self.activation(x))
-
 
 
 class HANCBlock(torch.nn.Module):
@@ -265,7 +257,6 @@ class HANCBlock(torch.nn.Module):
 
         self.activation = torch.nn.LeakyReLU()
 
-
     def forward(self, inp):
 
         x = self.conv1(inp)
@@ -286,7 +277,6 @@ class HANCBlock(torch.nn.Module):
         x = self.sqe(x)
 
         return x
-
 
 
 class ResPath(torch.nn.Module):
@@ -321,14 +311,12 @@ class ResPath(torch.nn.Module):
             self.bns.append(torch.nn.BatchNorm2d(in_chnls))
             self.sqes.append(ChannelSELayer(in_chnls))
 
-
     def forward(self, x):
 
         for i in range(len(self.convs)):
             x = x + self.sqes[i](self.act(self.bns[i](self.convs[i](x))))
 
         return self.sqe(self.act(self.bn(x)))
-
 
 
 class MLFC(torch.nn.Module):
@@ -351,7 +339,7 @@ class MLFC(torch.nn.Module):
 
         super().__init__()
 
-        self.W = torch.nn.Parameter(torch.zeros(1))        
+        self.W = torch.nn.Parameter(torch.zeros(1))
 
         self.in_filters1 = in_filters1
         self.in_filters2 = in_filters2
@@ -420,7 +408,6 @@ class MLFC(torch.nn.Module):
         self.sqe3 = ChannelSELayer(in_filters3)
         self.sqe4 = ChannelSELayer(in_filters4)
 
-
     def forward(self, x1, x2, x3, x4):
 
         batch_size, _, h1, w1 = x1.shape
@@ -437,7 +424,9 @@ class MLFC(torch.nn.Module):
                                 x1,
                                 self.no_param_up(x2),
                                 self.no_param_up(self.no_param_up(x3)),
-                                self.no_param_up(self.no_param_up(self.no_param_up(x4))),
+                                self.no_param_up(
+                                    self.no_param_up(self.no_param_up(x4))
+                                ),
                             ],
                             dim=1,
                         )
@@ -479,7 +468,9 @@ class MLFC(torch.nn.Module):
                     self.cnv_blks4[i](
                         torch.cat(
                             [
-                                self.no_param_down(self.no_param_down(self.no_param_down(x1))),
+                                self.no_param_down(
+                                    self.no_param_down(self.no_param_down(x1))
+                                ),
                                 self.no_param_down(self.no_param_down(x2)),
                                 self.no_param_down(x3),
                                 x4,
@@ -493,33 +484,45 @@ class MLFC(torch.nn.Module):
             x_c1 = self.act(
                 self.bns_mrg1[i](
                     self.cnv_mrg1[i](
-                        torch.cat([x_c1, x1], dim=2).view(batch_size, 2 * self.in_filters1, h1, w1)
-                    )*self.W
-                    + x1*(1-self.W)
+                        torch.cat([x_c1, x1], dim=2).view(
+                            batch_size, 2 * self.in_filters1, h1, w1
+                        )
+                    )
+                    * self.W
+                    + x1 * (1 - self.W)
                 )
             )
             x_c2 = self.act(
                 self.bns_mrg2[i](
                     self.cnv_mrg2[i](
-                        torch.cat([x_c2, x2], dim=2).view(batch_size, 2 * self.in_filters2, h2, w2)
-                    )*self.W
-                    + x2*(1-self.W)
+                        torch.cat([x_c2, x2], dim=2).view(
+                            batch_size, 2 * self.in_filters2, h2, w2
+                        )
+                    )
+                    * self.W
+                    + x2 * (1 - self.W)
                 )
             )
             x_c3 = self.act(
                 self.bns_mrg3[i](
                     self.cnv_mrg3[i](
-                        torch.cat([x_c3, x3], dim=2).view(batch_size, 2 * self.in_filters3, h3, w3)
-                    )*self.W
-                    + x3*(1-self.W)
+                        torch.cat([x_c3, x3], dim=2).view(
+                            batch_size, 2 * self.in_filters3, h3, w3
+                        )
+                    )
+                    * self.W
+                    + x3 * (1 - self.W)
                 )
             )
             x_c4 = self.act(
                 self.bns_mrg4[i](
                     self.cnv_mrg4[i](
-                        torch.cat([x_c4, x4], dim=2).view(batch_size, 2 * self.in_filters4, h4, w4)
-                    )*self.W
-                    + x4*(1-self.W)
+                        torch.cat([x_c4, x4], dim=2).view(
+                            batch_size, 2 * self.in_filters4, h4, w4
+                        )
+                    )
+                    * self.W
+                    + x4 * (1 - self.W)
                 )
             )
 
@@ -579,19 +582,27 @@ class ACC_UNet_W(torch.nn.Module):
         self.mlfc2 = MLFC(n_filts, n_filts * 2, n_filts * 4, n_filts * 8, lenn=1)
         self.mlfc3 = MLFC(n_filts, n_filts * 2, n_filts * 4, n_filts * 8, lenn=1)
 
-        self.up6 = torch.nn.ConvTranspose2d(n_filts * 16, n_filts * 8, kernel_size=(2, 2), stride=2)
+        self.up6 = torch.nn.ConvTranspose2d(
+            n_filts * 16, n_filts * 8, kernel_size=(2, 2), stride=2
+        )
         self.cnv61 = HANCBlock(n_filts * 8 + n_filts * 8, n_filts * 8, k=2, inv_fctr=3)
         self.cnv62 = HANCBlock(n_filts * 8, n_filts * 8, k=2, inv_fctr=3)
 
-        self.up7 = torch.nn.ConvTranspose2d(n_filts * 8, n_filts * 4, kernel_size=(2, 2), stride=2)
+        self.up7 = torch.nn.ConvTranspose2d(
+            n_filts * 8, n_filts * 4, kernel_size=(2, 2), stride=2
+        )
         self.cnv71 = HANCBlock(n_filts * 4 + n_filts * 4, n_filts * 4, k=3, inv_fctr=3)
         self.cnv72 = HANCBlock(n_filts * 4, n_filts * 4, k=3, inv_fctr=34)
 
-        self.up8 = torch.nn.ConvTranspose2d(n_filts * 4, n_filts * 2, kernel_size=(2, 2), stride=2)
+        self.up8 = torch.nn.ConvTranspose2d(
+            n_filts * 4, n_filts * 2, kernel_size=(2, 2), stride=2
+        )
         self.cnv81 = HANCBlock(n_filts * 2 + n_filts * 2, n_filts * 2, k=3, inv_fctr=3)
         self.cnv82 = HANCBlock(n_filts * 2, n_filts * 2, k=3, inv_fctr=3)
 
-        self.up9 = torch.nn.ConvTranspose2d(n_filts * 2, n_filts, kernel_size=(2, 2), stride=2)
+        self.up9 = torch.nn.ConvTranspose2d(
+            n_filts * 2, n_filts, kernel_size=(2, 2), stride=2
+        )
         self.cnv91 = HANCBlock(n_filts + n_filts, n_filts, k=3, inv_fctr=3)
         self.cnv92 = HANCBlock(n_filts, n_filts, k=3, inv_fctr=3)
 

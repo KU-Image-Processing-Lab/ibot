@@ -1,15 +1,14 @@
 from functools import partial
-from typing import Any, cast, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, cast
 
 import torch
 import torch.nn as nn
 
 from ..transforms._presets import ImageClassification
 from ..utils import _log_api_usage_once
-from ._api import register_model, Weights, WeightsEnum
+from ._api import Weights, WeightsEnum, register_model
 from ._meta import _IMAGENET_CATEGORIES
 from ._utils import _ovewrite_named_param, handle_legacy_interface
-
 
 __all__ = [
     "VGG",
@@ -34,7 +33,11 @@ __all__ = [
 
 class VGG(nn.Module):
     def __init__(
-        self, features: nn.Module, num_classes: int = 1000, init_weights: bool = True, dropout: float = 0.5
+        self,
+        features: nn.Module,
+        num_classes: int = 1000,
+        init_weights: bool = True,
+        dropout: float = 0.5,
     ) -> None:
         super().__init__()
         _log_api_usage_once(self)
@@ -52,7 +55,9 @@ class VGG(nn.Module):
         if init_weights:
             for m in self.modules():
                 if isinstance(m, nn.Conv2d):
-                    nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
+                    nn.init.kaiming_normal_(
+                        m.weight, mode="fan_out", nonlinearity="relu"
+                    )
                     if m.bias is not None:
                         nn.init.constant_(m.bias, 0)
                 elif isinstance(m, nn.BatchNorm2d):
@@ -90,16 +95,65 @@ def make_layers(cfg: List[Union[str, int]], batch_norm: bool = False) -> nn.Sequ
 cfgs: Dict[str, List[Union[str, int]]] = {
     "A": [64, "M", 128, "M", 256, 256, "M", 512, 512, "M", 512, 512, "M"],
     "B": [64, 64, "M", 128, 128, "M", 256, 256, "M", 512, 512, "M", 512, 512, "M"],
-    "D": [64, 64, "M", 128, 128, "M", 256, 256, 256, "M", 512, 512, 512, "M", 512, 512, 512, "M"],
-    "E": [64, 64, "M", 128, 128, "M", 256, 256, 256, 256, "M", 512, 512, 512, 512, "M", 512, 512, 512, 512, "M"],
+    "D": [
+        64,
+        64,
+        "M",
+        128,
+        128,
+        "M",
+        256,
+        256,
+        256,
+        "M",
+        512,
+        512,
+        512,
+        "M",
+        512,
+        512,
+        512,
+        "M",
+    ],
+    "E": [
+        64,
+        64,
+        "M",
+        128,
+        128,
+        "M",
+        256,
+        256,
+        256,
+        256,
+        "M",
+        512,
+        512,
+        512,
+        512,
+        "M",
+        512,
+        512,
+        512,
+        512,
+        "M",
+    ],
 }
 
 
-def _vgg(cfg: str, batch_norm: bool, weights: Optional[WeightsEnum], progress: bool, **kwargs: Any) -> VGG:
+def _vgg(
+    cfg: str,
+    batch_norm: bool,
+    weights: Optional[WeightsEnum],
+    progress: bool,
+    **kwargs: Any
+) -> VGG:
     if weights is not None:
         kwargs["init_weights"] = False
         if weights.meta["categories"] is not None:
-            _ovewrite_named_param(kwargs, "num_classes", len(weights.meta["categories"]))
+            _ovewrite_named_param(
+                kwargs, "num_classes", len(weights.meta["categories"])
+            )
     model = VGG(make_layers(cfgs[cfg], batch_norm=batch_norm), **kwargs)
     if weights is not None:
         model.load_state_dict(weights.get_state_dict(progress=progress))
@@ -305,7 +359,9 @@ class VGG19_BN_Weights(WeightsEnum):
 
 @register_model()
 @handle_legacy_interface(weights=("pretrained", VGG11_Weights.IMAGENET1K_V1))
-def vgg11(*, weights: Optional[VGG11_Weights] = None, progress: bool = True, **kwargs: Any) -> VGG:
+def vgg11(
+    *, weights: Optional[VGG11_Weights] = None, progress: bool = True, **kwargs: Any
+) -> VGG:
     """VGG-11 from `Very Deep Convolutional Networks for Large-Scale Image Recognition <https://arxiv.org/abs/1409.1556>`__.
 
     Args:
@@ -331,7 +387,9 @@ def vgg11(*, weights: Optional[VGG11_Weights] = None, progress: bool = True, **k
 
 @register_model()
 @handle_legacy_interface(weights=("pretrained", VGG11_BN_Weights.IMAGENET1K_V1))
-def vgg11_bn(*, weights: Optional[VGG11_BN_Weights] = None, progress: bool = True, **kwargs: Any) -> VGG:
+def vgg11_bn(
+    *, weights: Optional[VGG11_BN_Weights] = None, progress: bool = True, **kwargs: Any
+) -> VGG:
     """VGG-11-BN from `Very Deep Convolutional Networks for Large-Scale Image Recognition <https://arxiv.org/abs/1409.1556>`__.
 
     Args:
@@ -357,7 +415,9 @@ def vgg11_bn(*, weights: Optional[VGG11_BN_Weights] = None, progress: bool = Tru
 
 @register_model()
 @handle_legacy_interface(weights=("pretrained", VGG13_Weights.IMAGENET1K_V1))
-def vgg13(*, weights: Optional[VGG13_Weights] = None, progress: bool = True, **kwargs: Any) -> VGG:
+def vgg13(
+    *, weights: Optional[VGG13_Weights] = None, progress: bool = True, **kwargs: Any
+) -> VGG:
     """VGG-13 from `Very Deep Convolutional Networks for Large-Scale Image Recognition <https://arxiv.org/abs/1409.1556>`__.
 
     Args:
@@ -383,7 +443,9 @@ def vgg13(*, weights: Optional[VGG13_Weights] = None, progress: bool = True, **k
 
 @register_model()
 @handle_legacy_interface(weights=("pretrained", VGG13_BN_Weights.IMAGENET1K_V1))
-def vgg13_bn(*, weights: Optional[VGG13_BN_Weights] = None, progress: bool = True, **kwargs: Any) -> VGG:
+def vgg13_bn(
+    *, weights: Optional[VGG13_BN_Weights] = None, progress: bool = True, **kwargs: Any
+) -> VGG:
     """VGG-13-BN from `Very Deep Convolutional Networks for Large-Scale Image Recognition <https://arxiv.org/abs/1409.1556>`__.
 
     Args:
@@ -409,7 +471,9 @@ def vgg13_bn(*, weights: Optional[VGG13_BN_Weights] = None, progress: bool = Tru
 
 @register_model()
 @handle_legacy_interface(weights=("pretrained", VGG16_Weights.IMAGENET1K_V1))
-def vgg16(*, weights: Optional[VGG16_Weights] = None, progress: bool = True, **kwargs: Any) -> VGG:
+def vgg16(
+    *, weights: Optional[VGG16_Weights] = None, progress: bool = True, **kwargs: Any
+) -> VGG:
     """VGG-16 from `Very Deep Convolutional Networks for Large-Scale Image Recognition <https://arxiv.org/abs/1409.1556>`__.
 
     Args:
@@ -435,7 +499,9 @@ def vgg16(*, weights: Optional[VGG16_Weights] = None, progress: bool = True, **k
 
 @register_model()
 @handle_legacy_interface(weights=("pretrained", VGG16_BN_Weights.IMAGENET1K_V1))
-def vgg16_bn(*, weights: Optional[VGG16_BN_Weights] = None, progress: bool = True, **kwargs: Any) -> VGG:
+def vgg16_bn(
+    *, weights: Optional[VGG16_BN_Weights] = None, progress: bool = True, **kwargs: Any
+) -> VGG:
     """VGG-16-BN from `Very Deep Convolutional Networks for Large-Scale Image Recognition <https://arxiv.org/abs/1409.1556>`__.
 
     Args:
@@ -461,7 +527,9 @@ def vgg16_bn(*, weights: Optional[VGG16_BN_Weights] = None, progress: bool = Tru
 
 @register_model()
 @handle_legacy_interface(weights=("pretrained", VGG19_Weights.IMAGENET1K_V1))
-def vgg19(*, weights: Optional[VGG19_Weights] = None, progress: bool = True, **kwargs: Any) -> VGG:
+def vgg19(
+    *, weights: Optional[VGG19_Weights] = None, progress: bool = True, **kwargs: Any
+) -> VGG:
     """VGG-19 from `Very Deep Convolutional Networks for Large-Scale Image Recognition <https://arxiv.org/abs/1409.1556>`__.
 
     Args:
@@ -487,7 +555,9 @@ def vgg19(*, weights: Optional[VGG19_Weights] = None, progress: bool = True, **k
 
 @register_model()
 @handle_legacy_interface(weights=("pretrained", VGG19_BN_Weights.IMAGENET1K_V1))
-def vgg19_bn(*, weights: Optional[VGG19_BN_Weights] = None, progress: bool = True, **kwargs: Any) -> VGG:
+def vgg19_bn(
+    *, weights: Optional[VGG19_BN_Weights] = None, progress: bool = True, **kwargs: Any
+) -> VGG:
     """VGG-19_BN from `Very Deep Convolutional Networks for Large-Scale Image Recognition <https://arxiv.org/abs/1409.1556>`__.
 
     Args:

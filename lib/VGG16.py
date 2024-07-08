@@ -1,33 +1,97 @@
-from typing import List, Union, Dict, Any
+from typing import Any, Dict, List, Union
 
 import torch
 import torch.nn as nn
-
 
 cfgs: Dict[str, List[Union[str, int]]] = {
     "A": [64, "M", 128, "M", 256, 256, "M", 512, 512, "M", 512, 512, "M"],
     "A_LRN": [64, "L", "M", 128, "M", 256, 256, "M", 512, 512, "M", 512, 512, "M"],
     "B": [64, 64, "M", 128, 128, "M", 256, 256, "M", 512, 512, "M", 512, 512, "M"],
-    "C": [64, 64, "M", 128, 128, "M", 256, 256, "C", "M", 512, 512, "C", "M", 512, 512, "C", "M"],
-    "D": [64, 64, "M", 128, 128, "M", 256, 256, 256, "M", 512, 512, 512, "M", 512, 512, 512, "M"],
-    "E": [64, 64, "M", 128, 128, "M", 256, 256, 256, 256, "M", 512, 512, 512, 512, "M", 512, 512, 512, 512, "M"],
+    "C": [
+        64,
+        64,
+        "M",
+        128,
+        128,
+        "M",
+        256,
+        256,
+        "C",
+        "M",
+        512,
+        512,
+        "C",
+        "M",
+        512,
+        512,
+        "C",
+        "M",
+    ],
+    "D": [
+        64,
+        64,
+        "M",
+        128,
+        128,
+        "M",
+        256,
+        256,
+        256,
+        "M",
+        512,
+        512,
+        512,
+        "M",
+        512,
+        512,
+        512,
+        "M",
+    ],
+    "E": [
+        64,
+        64,
+        "M",
+        128,
+        128,
+        "M",
+        256,
+        256,
+        256,
+        256,
+        "M",
+        512,
+        512,
+        512,
+        512,
+        "M",
+        512,
+        512,
+        512,
+        512,
+        "M",
+    ],
 }
 
 
 class VGG(nn.Module):
-    def __init__(self, features: nn.Module, num_classes=2, 
-                 dropout: float=0.5, init_weights: bool=True):
+    def __init__(
+        self,
+        features: nn.Module,
+        num_classes=2,
+        dropout: float = 0.5,
+        init_weights: bool = True,
+    ):
         super(VGG, self).__init__()
         self.features = features
-        self.avepool=nn.AdaptiveAvgPool2d((7,7))
+        self.avepool = nn.AdaptiveAvgPool2d((7, 7))
         self.classifier = nn.Sequential(
-            nn.Linear(512*7*7, 4096),
+            nn.Linear(512 * 7 * 7, 4096),
             nn.ReLU(True),
             nn.Dropout(dropout),
             nn.Linear(4096, 4096),
             nn.ReLU(True),
             nn.Dropout(dropout),
-            nn.Linear(4096, num_classes)
+            nn.Linear(4096, num_classes),
         )
 
         if init_weights:
