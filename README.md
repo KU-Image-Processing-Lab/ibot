@@ -9,6 +9,7 @@ lib | モデルの定義
 weights | モデルの重みファイル
 snapshots | 学習済みモデルのスナップショット
 scripts | 実行スクリプト
+dataset | データセット
 
 ## このリポジトリの意義
 

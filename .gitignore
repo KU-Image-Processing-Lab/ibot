@@ -5,3 +5,5 @@
 # directories
 weights/
 snapshots/
+dataset/
+docker/**/docker-compose.yml
