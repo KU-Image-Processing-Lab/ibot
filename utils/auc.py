@@ -1,8 +1,9 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import cv2
 import glob
 import os
+
+import cv2
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 def imread(filename, flags=cv2.IMREAD_COLOR, dtype=np.uint8):
@@ -21,7 +22,7 @@ def imwrite(filename, img, params=None):
         result, n = cv2.imencode(ext, img, params)
 
         if result:
-            with open(filename, mode='w+b') as f:
+            with open(filename, mode="w+b") as f:
                 n.tofile(f)
             return True
         else:
@@ -33,6 +34,7 @@ def imwrite(filename, img, params=None):
 
 ###############実験結果のaucはこれを用いている###################
 ###############しきい値を動かしてAUCを求める#####################
+
 
 def all_area(files1, files2):  #############正解画像ではなく出力画像のフォルダ##########
     all_area_list = []
@@ -63,7 +65,6 @@ def test(files1, files2, lower_size, upper_size=352 * 352 + 1):
         img2 = imread(files2 + basename)
         gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
         nlabels2, labels2, stats2, centroids2 = cv2.connectedComponentsWithStats(gray2)
-
 
         if lower_size == 0:
             if nlabels1 > 1:
@@ -143,8 +144,8 @@ if (TP + FP) != 0 and (TP + FN) != 0 and TP != 0:
     recall = TP / (TP + FN)
     F_measure = (2 * precision * recall) / (precision + recall)
     specificity = TN / (TN + FP)
-    print('------------------------------')
-    print('---------Youden index---------')
+    print("------------------------------")
+    print("---------Youden index---------")
     TPR = TP / (TP + FN)
     FPR = FP / (FP + TN)
     print("TPR-FPR:", TPR - FPR)
@@ -168,7 +169,10 @@ n1 = 0
 match_list = []
 for fpr, tpr in zip(False_Positive_Rate_list, True_Positive_Rate_list):
     if n1 != 0:
-        if [fpr, tpr] == [False_Positive_Rate_list[n1 - 1], True_Positive_Rate_list[n1 - 1]]:
+        if [fpr, tpr] == [
+            False_Positive_Rate_list[n1 - 1],
+            True_Positive_Rate_list[n1 - 1],
+        ]:
             match_list.append(n1)
     n1 += 1
 False_Positive_Rate_list = list(False_Positive_Rate_list)
@@ -197,17 +201,21 @@ n3 = 0
 auc = 0
 for fpr, tpr in zip(False_Positive_Rate_list, True_Positive_Rate_list):
     if n3 != 0:
-        auc += (fpr - False_Positive_Rate_list[n3 - 1]) * (tpr + True_Positive_Rate_list[n3 - 1]) / 2
+        auc += (
+            (fpr - False_Positive_Rate_list[n3 - 1])
+            * (tpr + True_Positive_Rate_list[n3 - 1])
+            / 2
+        )
     n3 += 1
 
 print("AUC:", auc)
 fig = plt.figure()
 
 plt.plot(False_Positive_Rate_list, True_Positive_Rate_list)
-plt.xlabel('FPR: False positive rate')
-plt.ylabel('TPR: True positive rate')
+plt.xlabel("FPR: False positive rate")
+plt.ylabel("TPR: True positive rate")
 plt.grid()
-plt.savefig('./fig/roc_curve.png')
+plt.savefig("./fig/roc_curve.png")
 
 # plt.plot(False_Positive_Rate_list, True_Positive_Rate_list, label='ROC curve (area = %.3f)' % auc)
 # plt.legend()

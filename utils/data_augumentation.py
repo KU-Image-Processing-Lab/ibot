@@ -1,13 +1,13 @@
 # パッケージのimport
-import torch
-from torchvision import transforms
-from PIL import Image, ImageOps, ImageFilter
 import numpy as np
+import torch
+from PIL import Image, ImageFilter, ImageOps
+from torchvision import transforms
 
 
 class Compose(object):
     """引数transformに格納された変形を順番に実行するクラス
-       対象画像とアノテーション画像を同時に変換させます。
+    対象画像とアノテーション画像を同時に変換させます。
     """
 
     def __init__(self, transforms):
@@ -38,8 +38,7 @@ class Scale(object):
         img = img.resize((scaled_w, scaled_h), Image.BICUBIC)
 
         # アノテーションのリサイズ
-        anno_class_img = anno_class_img.resize(
-            (scaled_w, scaled_h), Image.NEAREST)
+        anno_class_img = anno_class_img.resize((scaled_w, scaled_h), Image.NEAREST)
 
         # 画像を元の大きさに
         # 切り出し位置を求める
@@ -47,12 +46,13 @@ class Scale(object):
             left = scaled_w - width
             left = int(np.random.uniform(0, left))
 
-            top = scaled_h-height
+            top = scaled_h - height
             top = int(np.random.uniform(0, top))
 
-            img = img.crop((left, top, left+width, top+height))
+            img = img.crop((left, top, left + width, top + height))
             anno_class_img = anno_class_img.crop(
-                (left, top, left+width, top+height))
+                (left, top, left + width, top + height)
+            )
 
         else:
             # input_sizeよりも短い辺はpaddingする
@@ -61,19 +61,19 @@ class Scale(object):
             img_original = img.copy()
             anno_class_img_original = anno_class_img.copy()
 
-            pad_width = width-scaled_w
+            pad_width = width - scaled_w
             pad_width_left = int(np.random.uniform(0, pad_width))
 
-            pad_height = height-scaled_h
+            pad_height = height - scaled_h
             pad_height_top = int(np.random.uniform(0, pad_height))
 
             img = Image.new(img.mode, (width, height), (0, 0, 0))
             img.paste(img_original, (pad_width_left, pad_height_top))
 
-            anno_class_img = Image.new(
-                anno_class_img.mode, (width, height), (0))
-            anno_class_img.paste(anno_class_img_original,
-                                 (pad_width_left, pad_height_top))
+            anno_class_img = Image.new(anno_class_img.mode, (width, height), (0))
+            anno_class_img.paste(
+                anno_class_img_original, (pad_width_left, pad_height_top)
+            )
             # anno_class_img.putpalette(p_palette)###グレースケールに変換してるからバグる
 
         return img, anno_class_img
@@ -86,7 +86,7 @@ class RandomRotation(object):
     def __call__(self, img, anno_class_img):
 
         # 回転角度を決める
-        rotate_angle = (np.random.uniform(self.angle[0], self.angle[1]))
+        rotate_angle = np.random.uniform(self.angle[0], self.angle[1])
 
         # 回転
         img = img.rotate(rotate_angle, Image.BILINEAR)
@@ -116,10 +116,10 @@ class Resize(object):
         # width = img.size[0]  # img.size=[幅][高さ]
         # height = img.size[1]  # img.size=[幅][高さ]
 
-        img = img.resize((self.input_size, self.input_size),
-                         Image.BICUBIC)
+        img = img.resize((self.input_size, self.input_size), Image.BICUBIC)
         anno_class_img = anno_class_img.resize(
-            (self.input_size, self.input_size), Image.NEAREST)
+            (self.input_size, self.input_size), Image.NEAREST
+        )
 
         return img, anno_class_img
 
@@ -135,8 +135,7 @@ class Normalize_Tensor(object):
         img = transforms.functional.to_tensor(img)
 
         # 色情報の標準化
-        img = transforms.functional.normalize(
-            img, self.color_mean, self.color_std)
+        img = transforms.functional.normalize(img, self.color_mean, self.color_std)
 
         # アノテーション画像をNumpyに変換
         anno_class_img = np.array(anno_class_img)  # [高さ][幅]
