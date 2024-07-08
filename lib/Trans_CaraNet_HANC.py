@@ -24,11 +24,6 @@ from lib.TransFuse_s import TransFuse_S
 # from lib.models_vit import vit_large_patch16 as vit_large
 
 
-
-
-
-
-
 class ChannelSELayer(torch.nn.Module):
     """
     Implements Squeeze and Excitation
