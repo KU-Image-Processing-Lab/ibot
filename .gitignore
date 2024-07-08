@@ -3,6 +3,7 @@
 .env
 
 # directories
+__pycache__/
 weights/
 snapshots/
 dataset/
