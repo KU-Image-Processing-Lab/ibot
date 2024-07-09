@@ -25,10 +25,6 @@ from utils.weight_methods import WeightMethods
 # TODO Add pre-processing model import
 
 
-
-
-
-
 # データローダー、モデル、オプティマイザー、損失関数などを受け取り、エポックごとのトレーニングと検証を実行する関数
 def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best2_loss):
     val_loss = 0  # 検証損失の初期化

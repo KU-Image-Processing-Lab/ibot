@@ -35,7 +35,6 @@ from utils.dataloader import test_dataset
 # from lib.ResNet_10 import ResNet10#
 
 
-
 #################################################
 # epoch1~20の重みを全部テストする。
 

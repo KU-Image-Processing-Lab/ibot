@@ -20,7 +20,6 @@ from utils.weight_methods import WeightMethods
 # TODO Add pre-processing model import
 
 
-
 matplotlib.use("Agg")
 import random
 import time

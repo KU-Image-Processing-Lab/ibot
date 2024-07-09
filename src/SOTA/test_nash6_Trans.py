@@ -29,7 +29,6 @@ from utils.dataloader import test_dataset
 # from lib.Trans_CaraNet import Trans_CaraNet_L
 
 
-
 # import sys
 # sys.path.append('../../git/laboratory/python/py/tools/')
 # from slack_bot import Slack_bot

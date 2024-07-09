@@ -26,7 +26,6 @@ from utils.dataloader2 import test_dataset
 # from lib.models_vit_discriminator import vit_large_patch16 as vit_large
 
 
-
 # from lib.Trans_CaraNet import Trans_CaraNet_L
 
 
