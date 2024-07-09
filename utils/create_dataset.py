@@ -29,8 +29,9 @@ class CrossValidationDataset:
             file_name = al.stem
             if not any(file_name == f.stem for f in self.sekkai):
                 self.not_sekkai.append(al)
-        assert len(self.not_sekkai) + len(self.sekkai) == len(self.all), \
-            f"len(not_sekkai) + len(sekkai) != len(all) {len(self.not_sekkai)} + {len(self.sekkai)} != {len(self.all)}"
+        assert len(self.not_sekkai) + len(self.sekkai) == len(
+            self.all
+        ), f"len(not_sekkai) + len(sekkai) != len(all) {len(self.not_sekkai)} + {len(self.sekkai)} != {len(self.all)}"
 
         # ---- split size ----
         self._get_split_size()
@@ -59,9 +60,7 @@ class CrossValidationDataset:
         val_sekkai = self.sekkai[
             self.sekkai_train_size : self.sekkai_train_size + self.sekkai_val_size
         ]
-        test_sekkai = self.sekkai[
-            self.sekkai_train_size + self.sekkai_val_size :
-        ]
+        test_sekkai = self.sekkai[self.sekkai_train_size + self.sekkai_val_size :]
 
         train_not_sekkai = self.not_sekkai[: self.not_sekkai_train_size]
         val_not_sekkai = self.not_sekkai[
