@@ -1,8 +1,8 @@
-import numpy as np
 import cv2
+import numpy as np
 
 # 画像をロードし、NumPy配列に変換
-image = cv2.imread('./dataset/sekkai_TrainDataset/images/left_2020_030690.png')
+image = cv2.imread("./dataset/sekkai_TrainDataset/images/left_2020_030690.png")
 image = image[:, :, 2]
 
 # NumPy配列の形状を確認

@@ -2,31 +2,30 @@ import argparse
 import glob
 import os
 
-from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
-from sklearn.metrics import roc_curve, roc_auc_score
-import matplotlib.pyplot as plt
-
 import cv2
+import imageio
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import torch.nn.functional as F
 import torch.nn as nn
-from scipy import misc
-
-import imageio
-from torchvision import transforms
+import torch.nn.functional as F
 import torchvision.models as torch_model
-
-from lib.TransFuse_l import TransFuse_L#使いたいモデルのインポート#
-# from lib.models_vit_discriminator import vit_large_patch16 as vit_large
+from scipy import misc
+from skimage import img_as_ubyte
+from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
+                             precision_score, recall_score, roc_auc_score,
+                             roc_curve)
+from torchvision import transforms
 
 from lib.Discriminator_ResNet import Discriminator
-
 from lib.Trans_CaraNet import Trans_CaraNet_L
-
+from lib.TransFuse_l import TransFuse_L  # 使いたいモデルのインポート#
 from utils.dataloader import test_dataset
-from skimage import img_as_ubyte
-import glob
+
+# from lib.models_vit_discriminator import vit_large_patch16 as vit_large
+
+
+
 
 # import sys
 # sys.path.append('../../git/laboratory/python/py/tools/')
@@ -49,11 +48,10 @@ def mean_iou_np(y_true, y_pred, **kwargs):
     """
     axes = (0, 1)
     intersection = np.sum(np.abs(y_pred * y_true), axis=axes)
-    mask_sum = np.sum(np.abs(y_true), axis=axes) + \
-        np.sum(np.abs(y_pred), axis=axes)
+    mask_sum = np.sum(np.abs(y_true), axis=axes) + np.sum(np.abs(y_pred), axis=axes)
     union = mask_sum - intersection
 
-    smooth = .001
+    smooth = 0.001
     iou = (intersection + smooth) / (union + smooth)
     return iou
 
@@ -64,10 +62,9 @@ def mean_dice_np(y_true, y_pred, **kwargs):
     """
     axes = (0, 1)  # W,H axes of each image
     intersection = np.sum(np.abs(y_pred * y_true), axis=axes)
-    mask_sum = np.sum(np.abs(y_true), axis=axes) + \
-        np.sum(np.abs(y_pred), axis=axes)
+    mask_sum = np.sum(np.abs(y_true), axis=axes) + np.sum(np.abs(y_pred), axis=axes)
 
-    smooth = .001
+    smooth = 0.001
     dice = 2 * (intersection + smooth) / (mask_sum + smooth)
     return dice
 
@@ -88,7 +85,7 @@ def imwrite(filename, img, params=None):
         result, n = cv2.imencode(ext, img, params)
 
         if result:
-            with open(filename, mode='w+b') as f:
+            with open(filename, mode="w+b") as f:
                 n.tofile(f)
             return True
         else:
@@ -99,30 +96,50 @@ def imwrite(filename, img, params=None):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--testsize', type=int, default=352, help='testing size')
+parser.add_argument("--testsize", type=int, default=352, help="testing size")
 # parser.add_argument('--pth_path', type=str, default='./snapshots/Transfuse_S/Transfuse-99.pth')
 # parser.add_argument('--pth_path', type=str, default='./snapshots/Transfuse_S/Transfuse-59.pth')
 # parser.add_argument('--pth_path', type=str, default='./snapshots/Transfuse_S/Transfuse-24.pth')
-parser.add_argument('--pth_path', type=str,
-                    default='./TransFuse_L/weight/TransFuse-L+MAE/vit-l_352/石灰化なし含む/Transfuse-best.pth')#TransFuse重み#
+parser.add_argument(
+    "--pth_path",
+    type=str,
+    default="./TransFuse_L/weight/TransFuse-L+MAE/vit-l_352/石灰化なし含む/Transfuse-best.pth",
+)  # TransFuse重み#
 # parser.add_argument('--pth_path', type=str, default='./snapshots/STLT/Transfuse-4.pth')
 # parser.add_argument('--pth_path', type=str, default='./weights/修論/mtl/nash/Tuning/TransCaraNet/Transfuse-best.pth')
 
 # parser.add_argument('--pth_path2', type=str, default='./snapshots/Transfuse_S/Discriminator-99.pth')
 # parser.add_argument('--pth_path2', type=str, default='./snapshots/Transfuse_S/Discriminator-59.pth')
 # parser.add_argument('--pth_path2', type=str, default='./snapshots/Transfuse_S/Discriminator-24.pth')
-parser.add_argument('--pth_path2', type=str,
-                    default='./weight2/nash/TransCaraNet/Discriminator-best.pth')#識別機の重み(このコードの目的と関係ない)
+parser.add_argument(
+    "--pth_path2",
+    type=str,
+    default="./weight2/nash/TransCaraNet/Discriminator-best.pth",
+)  # 識別機の重み(このコードの目的と関係ない)
 # parser.add_argument('--pth_path2', type=str, default='./snapshots/STLT/Discriminator-4.pth')
 # parser.add_argument('--pth_path2', type=str, default='./weights/修論/mtl/nash/Tuning/TransCaraNet/Discriminator-best.pth')
-parser.add_argument('--test_path1', type=str, default='./dataset/TestDataset', help='path to test dataset')#テンソルに変化させたいデータ#
-parser.add_argument('--test_path2', type=str, default='./dataset/sekkai_TestDataset', help='path to test dataset')#dice,iouを出力するためのパス（セグメンテーションの精度）(変えなくていい)
+parser.add_argument(
+    "--test_path1",
+    type=str,
+    default="./dataset/TestDataset",
+    help="path to test dataset",
+)  # テンソルに変化させたいデータ#
+parser.add_argument(
+    "--test_path2",
+    type=str,
+    default="./dataset/sekkai_TestDataset",
+    help="path to test dataset",
+)  # dice,iouを出力するためのパス（セグメンテーションの精度）(変えなくていい)
 # parser.add_argument('--save_path', type=str, default='./MAE_Lnasihukumu/Test/images/', help='path to result')#image（予測）の保存場所#
 # #parser.add_argument('--save_path', type=str, default='./fig/cus/', help='path to result')
 # parser.add_argument('--save_path2', type=str, default='./MAE_Lnasihukumu/Test/tensor/', help='path to result')#テンソルの保存場所#
-parser.add_argument('--save_path', type=str, default='./imagetest/images/', help='path to result')#image（予測）の保存場所#
-#parser.add_argument('--save_path', type=str, default='./fig/cus/', help='path to result')
-parser.add_argument('--save_path2', type=str, default='./imagetest/tensor/', help='path to result')#テンソルの保存場所#
+parser.add_argument(
+    "--save_path", type=str, default="./imagetest/images/", help="path to result"
+)  # image（予測）の保存場所#
+# parser.add_argument('--save_path', type=str, default='./fig/cus/', help='path to result')
+parser.add_argument(
+    "--save_path2", type=str, default="./imagetest/tensor/", help="path to result"
+)  # テンソルの保存場所#
 
 opt = parser.parse_args()
 
@@ -132,7 +149,7 @@ data_path2 = opt.test_path2
 save_path = opt.save_path
 save_path2 = opt.save_path2
 
-model = TransFuse_L()#使いたいモデル#
+model = TransFuse_L()  # 使いたいモデル#
 model.load_state_dict(torch.load(opt.pth_path))
 model.cuda()
 model.eval()
@@ -148,26 +165,26 @@ model2.cuda()
 model2.eval()
 
 os.makedirs(save_path, exist_ok=True)
-for file in glob.glob('./fig/*.png'):
+for file in glob.glob("./fig/*.png"):
     os.remove(file)
-os.makedirs('./fig/TP', exist_ok=True)
-for file in glob.glob('./fig/TP/*.png'):
+os.makedirs("./fig/TP", exist_ok=True)
+for file in glob.glob("./fig/TP/*.png"):
     os.remove(file)
-os.makedirs('./fig/FN', exist_ok=True)
-for file in glob.glob('./fig/FN/*.png'):
+os.makedirs("./fig/FN", exist_ok=True)
+for file in glob.glob("./fig/FN/*.png"):
     os.remove(file)
-os.makedirs('./fig/FP', exist_ok=True)
-for file in glob.glob('./fig/FP/*.png'):
+os.makedirs("./fig/FP", exist_ok=True)
+for file in glob.glob("./fig/FP/*.png"):
     os.remove(file)
-os.makedirs('./fig/TN', exist_ok=True)
-for file in glob.glob('./fig/TN/*.png'):
+os.makedirs("./fig/TN", exist_ok=True)
+for file in glob.glob("./fig/TN/*.png"):
     os.remove(file)
-image_root1 = '{}/images/'.format(data_path1)
-gt_root1 = '{}/masks/'.format(data_path1)
+image_root1 = "{}/images/".format(data_path1)
+gt_root1 = "{}/masks/".format(data_path1)
 test_loader1 = test_dataset(image_root1, gt_root1, opt.testsize)
 
-image_root2 = '{}/images/'.format(data_path2)
-gt_root2 = '{}/masks/'.format(data_path2)
+image_root2 = "{}/images/".format(data_path2)
+gt_root2 = "{}/masks/".format(data_path2)
 test_loader2 = test_dataset(image_root2, gt_root2, opt.testsize)
 
 dice_bank = []
@@ -193,8 +210,7 @@ for i in range(test_loader1.size):
     image = image.cuda()
 
     with torch.no_grad():
-        _, _, res = model(image)#TransFuseは_2個,TransCaraNetは_3個
-
+        _, _, res = model(image)  # TransFuseは_2個,TransCaraNetは_3個
 
         # res1 = F.upsample(res, size=gt.shape,
         #                   mode='bilinear', align_corners=False) #しきい値をまたぐ処理の場合必要
@@ -203,18 +219,18 @@ for i in range(test_loader1.size):
         # print(res1.max(),res1.min(),res1.mean())
 
         # res1 = (res1 - res1.min()) / (res1.max() - res1.min() + 1e-8)  ############################
-        #res1 = 1. * (res1 > 0.5)#しきい値をまたぐ処理の場合必要
+        # res1 = 1. * (res1 > 0.5)#しきい値をまたぐ処理の場合必要
         # print(res1.max(),res1.min(),res1.mean())
 
-        #imageio.imsave(save_path + name, img_as_ubyte(res1))#しきい値をまたぐ処理の場合必要
-        res_cpu = res.cpu()#
-        res_cpu_clipped = torch.clamp(res_cpu, -1.0, 1.0) #
-        image_2d = res_cpu_clipped.squeeze()#
-        #print(image_2d.shape)
+        # imageio.imsave(save_path + name, img_as_ubyte(res1))#しきい値をまたぐ処理の場合必要
+        res_cpu = res.cpu()  #
+        res_cpu_clipped = torch.clamp(res_cpu, -1.0, 1.0)  #
+        image_2d = res_cpu_clipped.squeeze()  #
+        # print(image_2d.shape)
         imageio.imsave(save_path + name, img_as_ubyte(image_2d))
         # print(image_2d.shape)
         res = res.repeat(1, 3, 1, 1)
-        
+
         torch.save(res, save_path2 + name + ".pt")
         # print(res.shape)
 
@@ -222,9 +238,9 @@ for i in range(test_loader1.size):
         # res = 1. * (res > 0.5)  ############################
         # res = res * image
 
-        out = model2(res)#
-        #out = model2(res1)
-        #out = model2(res, image)
+        out = model2(res)  #
+        # out = model2(res1)
+        # out = model2(res, image)
 
         # predicted = torch.round(out)
         _, predicted = torch.max(out, dim=1)
@@ -239,55 +255,55 @@ for i in range(test_loader1.size):
 
     if label == 1:
         if predicted == 1:
-            res_cpu = res.cpu()#
-            res_cpu_clipped = torch.clamp(res_cpu, -1.0, 1.0) #
-            image_2d = res_cpu_clipped.squeeze()#
-            image_2d_permuted = image_2d.permute(1, 2, 0) #
-            #imageio.imsave(save_path + '/TP/' + name, img_as_ubyte(res1))
-            imageio.imsave(save_path + '/TP/' + name, img_as_ubyte(image_2d_permuted))
+            res_cpu = res.cpu()  #
+            res_cpu_clipped = torch.clamp(res_cpu, -1.0, 1.0)  #
+            image_2d = res_cpu_clipped.squeeze()  #
+            image_2d_permuted = image_2d.permute(1, 2, 0)  #
+            # imageio.imsave(save_path + '/TP/' + name, img_as_ubyte(res1))
+            imageio.imsave(save_path + "/TP/" + name, img_as_ubyte(image_2d_permuted))
 
         else:
-            res_cpu = res.cpu()#
-            res_cpu_clipped = torch.clamp(res_cpu, -1.0, 1.0) #
-            image_2d = res_cpu_clipped.squeeze()#
-            image_2d_permuted = image_2d.permute(1, 2, 0)#
-            #imageio.imsave(save_path + '/FN/' + name, img_as_ubyte(res1))
-            imageio.imsave(save_path + '/FN/' + name, img_as_ubyte(image_2d_permuted))
+            res_cpu = res.cpu()  #
+            res_cpu_clipped = torch.clamp(res_cpu, -1.0, 1.0)  #
+            image_2d = res_cpu_clipped.squeeze()  #
+            image_2d_permuted = image_2d.permute(1, 2, 0)  #
+            # imageio.imsave(save_path + '/FN/' + name, img_as_ubyte(res1))
+            imageio.imsave(save_path + "/FN/" + name, img_as_ubyte(image_2d_permuted))
 
     else:
         if predicted == 1:
-            res_cpu = res.cpu()#
-            res_cpu_clipped = torch.clamp(res_cpu, -1.0, 1.0) #
-            image_2d = res_cpu_clipped.squeeze()#
-            image_2d_permuted = image_2d.permute(1, 2, 0)#
-            #imageio.imsave(save_path + '/FP/' + name, img_as_ubyte(res1))
-            imageio.imsave(save_path + '/FP/' + name, img_as_ubyte(image_2d_permuted))
+            res_cpu = res.cpu()  #
+            res_cpu_clipped = torch.clamp(res_cpu, -1.0, 1.0)  #
+            image_2d = res_cpu_clipped.squeeze()  #
+            image_2d_permuted = image_2d.permute(1, 2, 0)  #
+            # imageio.imsave(save_path + '/FP/' + name, img_as_ubyte(res1))
+            imageio.imsave(save_path + "/FP/" + name, img_as_ubyte(image_2d_permuted))
 
         else:
-            res_cpu = res.cpu()#
-            res_cpu_clipped = torch.clamp(res_cpu, -1.0, 1.0) #
-            image_2d = res_cpu_clipped.squeeze()#
-            image_2d_permuted = image_2d.permute(1, 2, 0)#
-            #print(image_2d.shape)
-            #imageio.imsave(save_path + '/TN/' + name, img_as_ubyte(res1))
-            imageio.imsave(save_path + '/TN/' + name, img_as_ubyte(image_2d_permuted))
+            res_cpu = res.cpu()  #
+            res_cpu_clipped = torch.clamp(res_cpu, -1.0, 1.0)  #
+            image_2d = res_cpu_clipped.squeeze()  #
+            image_2d_permuted = image_2d.permute(1, 2, 0)  #
+            # print(image_2d.shape)
+            # imageio.imsave(save_path + '/TN/' + name, img_as_ubyte(res1))
+            imageio.imsave(save_path + "/TN/" + name, img_as_ubyte(image_2d_permuted))
 
 
 for i in range(test_loader2.size):
     image, gt, name = test_loader2.load_data()
     gt = np.asarray(gt, np.float32)
 
-    gt = 1. * (gt > 0.5)
+    gt = 1.0 * (gt > 0.5)
 
     image = image.cuda()
 
     with torch.no_grad():
-        _, _, res = model(image)#TransFuseは_2個,TransCaraNetは_3個
+        _, _, res = model(image)  # TransFuseは_2個,TransCaraNetは_3個
 
-    res = F.upsample(res, size=gt.shape, mode='bilinear', align_corners=False)
+    res = F.upsample(res, size=gt.shape, mode="bilinear", align_corners=False)
     res = res.sigmoid().data.cpu().numpy().squeeze()
     # res = (res - res.min()) / (res.max() - res.min() + 1e-8)  ############################
-    res = 1. * (res > 0.5)
+    res = 1.0 * (res > 0.5)
 
     dice = mean_dice_np(gt, res)
     iou = mean_iou_np(gt, res)
@@ -298,15 +314,18 @@ for i in range(test_loader2.size):
     iou_bank.append(iou)
 
 
-print('Dice: {:.4f}, IoU: {:.4f}, Acc: {:.4f}'.
-      format(np.mean(dice_bank), np.mean(iou_bank), np.mean(acc_bank)))
+print(
+    "Dice: {:.4f}, IoU: {:.4f}, Acc: {:.4f}".format(
+        np.mean(dice_bank), np.mean(iou_bank), np.mean(acc_bank)
+    )
+)
 
 cm = confusion_matrix(y_true, y_pred)
 TN, FP, FN, TP = cm.flatten()
 TPR = TP / (TP + FN)
 FPR = FP / (FP + TN)
 print("----------discriminator-----------")
-print("TPR-FPR:", TPR-FPR)
+print("TPR-FPR:", TPR - FPR)
 print("TP:", TP)
 print("FN:", FN)
 print("FP:", FP)
@@ -333,10 +352,10 @@ fpr, tpr, thresholds = roc_curve(y_true, y_score)
 
 plt.plot(fpr, tpr)
 
-plt.xlabel('FPR: False positive rate')
-plt.ylabel('TPR: True positive rate')
+plt.xlabel("FPR: False positive rate")
+plt.ylabel("TPR: True positive rate")
 plt.grid()
-plt.savefig('./fig/roc_curve.png')
+plt.savefig("./fig/roc_curve.png")
 
 AUC = roc_auc_score(y_true, y_score)
 print("AUC:", AUC)

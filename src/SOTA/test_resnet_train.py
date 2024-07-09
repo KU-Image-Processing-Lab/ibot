@@ -2,33 +2,32 @@ import argparse
 import glob
 import os
 
-from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
-from sklearn.metrics import roc_curve, roc_auc_score
-import matplotlib.pyplot as plt
-
 import cv2
+import imageio
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import torch.nn.functional as F
 import torch.nn as nn
-from scipy import misc
-
-import imageio
-from torchvision import transforms
+import torch.nn.functional as F
 import torchvision.models as torch_model
-
-from lib.TransFuse_l import TransFuse_L
-# from lib.models_vit_discriminator import vit_large_patch16 as vit_large
+from scipy import misc
+from skimage import img_as_ubyte
+from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
+                             precision_score, recall_score, roc_auc_score,
+                             roc_curve)
+from torchinfo import summary
+from torchvision import transforms
 
 # from lib.Discriminator_ResNet import Discriminator
 from lib.ResNet_train import ResNet
-from torchinfo import summary
+from lib.TransFuse_l import TransFuse_L
+from utils.dataloader2 import test_dataset
+
+# from lib.models_vit_discriminator import vit_large_patch16 as vit_large
+
 
 # from lib.Trans_CaraNet import Trans_CaraNet_L
 
-from utils.dataloader2 import test_dataset
-from skimage import img_as_ubyte
-import glob
 
 # import sys
 # sys.path.append('../../git/laboratory/python/py/tools/')
@@ -51,11 +50,10 @@ def mean_iou_np(y_true, y_pred, **kwargs):
     """
     axes = (0, 1)
     intersection = np.sum(np.abs(y_pred * y_true), axis=axes)
-    mask_sum = np.sum(np.abs(y_true), axis=axes) + \
-        np.sum(np.abs(y_pred), axis=axes)
+    mask_sum = np.sum(np.abs(y_true), axis=axes) + np.sum(np.abs(y_pred), axis=axes)
     union = mask_sum - intersection
 
-    smooth = .001
+    smooth = 0.001
     iou = (intersection + smooth) / (union + smooth)
     return iou
 
@@ -66,10 +64,9 @@ def mean_dice_np(y_true, y_pred, **kwargs):
     """
     axes = (0, 1)  # W,H axes of each image
     intersection = np.sum(np.abs(y_pred * y_true), axis=axes)
-    mask_sum = np.sum(np.abs(y_true), axis=axes) + \
-        np.sum(np.abs(y_pred), axis=axes)
+    mask_sum = np.sum(np.abs(y_true), axis=axes) + np.sum(np.abs(y_pred), axis=axes)
 
-    smooth = .001
+    smooth = 0.001
     dice = 2 * (intersection + smooth) / (mask_sum + smooth)
     return dice
 
@@ -90,7 +87,7 @@ def imwrite(filename, img, params=None):
         result, n = cv2.imencode(ext, img, params)
 
         if result:
-            with open(filename, mode='w+b') as f:
+            with open(filename, mode="w+b") as f:
                 n.tofile(f)
             return True
         else:
@@ -101,7 +98,7 @@ def imwrite(filename, img, params=None):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--testsize', type=int, default=352, help='testing size')
+parser.add_argument("--testsize", type=int, default=352, help="testing size")
 # parser.add_argument('--pth_path', type=str, default='./snapshots/Transfuse_S/Transfuse-99.pth')
 # parser.add_argument('--pth_path', type=str, default='./snapshots/Transfuse_S/Transfuse-59.pth')
 # parser.add_argument('--pth_path', type=str, default='./snapshots/Transfuse_S/Transfuse-24.pth')
@@ -117,15 +114,26 @@ parser.add_argument('--testsize', type=int, default=352, help='testing size')
 #                     default='./weight2/nash/TransCaraNet/Discriminator-best.pth')
 # parser.add_argument('--pth_path2', type=str,
 #                     default='./snapshots/Res2Net/ten/Discriminator-best2.pth')
-parser.add_argument('--pth_path2', type=str,
-                    default='./snapshots/ResNet50/seed/Discriminator-best2.pth')#学習した重みをロード#
+parser.add_argument(
+    "--pth_path2", type=str, default="./snapshots/ResNet50/seed/Discriminator-best2.pth"
+)  # 学習した重みをロード#
 # parser.add_argument('--pth_path2', type=str, default='./snapshots/Transfuse_S/Discriminator-best2.pth')
 # parser.add_argument('--pth_path2', type=str, default='./weights/修論/mtl/nash/Tuning/TransCaraNet/Discriminator-best.pth')
-parser.add_argument('--test_path1', type=str, default='./discri_dataset/Test/', help='path to test dataset')#テストしたいデータセットのパス#
-parser.add_argument('--test_path2', type=str, default='./fig/tensor/tensor/', help='path to test dataset')
+parser.add_argument(
+    "--test_path1",
+    type=str,
+    default="./discri_dataset/Test/",
+    help="path to test dataset",
+)  # テストしたいデータセットのパス#
+parser.add_argument(
+    "--test_path2",
+    type=str,
+    default="./fig/tensor/tensor/",
+    help="path to test dataset",
+)
 # parser.add_argument('--test_path2', type=str, default='./dataset/sekkai_TestDataset', help='path to test dataset')
 # parser.add_argument('--save_path', type=str, default='./fig/Test/', help='path to result')
-#parser.add_argument('--save_path', type=str, default='./fig/cus/', help='path to result')
+# parser.add_argument('--save_path', type=str, default='./fig/cus/', help='path to result')
 
 
 opt = parser.parse_args()
@@ -172,11 +180,11 @@ model2.eval()
 # for file in glob.glob('./fig/TN/*.png'):
 #     os.remove(file)
 
-image_root1 = '{}/images/'.format(data_path1)
-gt_root1 = '{}/masks/'.format(data_path1)
-res_root='{}'.format(data_path2)#
+image_root1 = "{}/images/".format(data_path1)
+gt_root1 = "{}/masks/".format(data_path1)
+res_root = "{}".format(data_path2)  #
 test_loader1 = test_dataset(image_root1, gt_root1, opt.testsize)
-res_loader1=test_dataset(res_root,gt_root1,opt.testsize)
+res_loader1 = test_dataset(res_root, gt_root1, opt.testsize)
 
 # image_root2 = '{}/images/'.format(data_path2)
 # gt_root2 = '{}/masks/'.format(data_path2)
@@ -201,10 +209,9 @@ for i in range(res_loader1.size):
     # gt /= (gt.max() + 1e-8)  ##########################
 
     # image = image.cuda()
-    res=res.cuda()
+    res = res.cuda()
     with torch.no_grad():
-        #_, _, _, res = model(image)
-
+        # _, _, _, res = model(image)
 
         # res1 = F.upsample(res, size=gt.shape,
         #                   mode='bilinear', align_corners=False) #しきい値をまたぐ処理の場合必要
@@ -213,26 +220,26 @@ for i in range(res_loader1.size):
         # print(res1.max(),res1.min(),res1.mean())
 
         # res1 = (res1 - res1.min()) / (res1.max() - res1.min() + 1e-8)  ############################
-        #res1 = 1. * (res1 > 0.5)#しきい値をまたぐ処理の場合必要
+        # res1 = 1. * (res1 > 0.5)#しきい値をまたぐ処理の場合必要
         # print(res1.max(),res1.min(),res1.mean())
 
-        #imageio.imsave(save_path + name, img_as_ubyte(res1))#しきい値をまたぐ処理の場合必要
-        #res_cpu = res.cpu()#
+        # imageio.imsave(save_path + name, img_as_ubyte(res1))#しきい値をまたぐ処理の場合必要
+        # res_cpu = res.cpu()#
         # res_cpu_clipped = torch.clamp(res_cpu, -1.0, 1.0) #
         # image_2d = res_cpu_clipped.squeeze()#
         # #print(image_2d.shape)
         # imageio.imsave(save_path + name, img_as_ubyte(image_2d))
         # res = res.repeat(1, 3, 1, 1)
-        #image = image.repeat(1, 3, 1, 1)
+        # image = image.repeat(1, 3, 1, 1)
 
         # res = res.sigmoid()  #########################
         # res = 1. * (res > 0.5)  ############################
         # res = res * image
         # print(image.shape)
-    
-        out = model2(res)#
-        #out = model2(res1)
-        #out = model2(res, image)
+
+        out = model2(res)  #
+        # out = model2(res1)
+        # out = model2(res, image)
 
         # predicted = torch.round(out)
         _, predicted = torch.max(out, dim=1)
@@ -314,7 +321,7 @@ TN, FP, FN, TP = cm.flatten()
 TPR = TP / (TP + FN)
 FPR = FP / (FP + TN)
 print("----------discriminator-----------")
-print("TPR-FPR:", TPR-FPR)
+print("TPR-FPR:", TPR - FPR)
 print("TP:", TP)
 print("FN:", FN)
 print("FP:", FP)
@@ -378,6 +385,6 @@ print("AUC:", AUC)
 #     print("specificity:", specificity)
 
 #     # slack(output_text_1 +
-    #       "----------cutoff-----------\n"
-    #       f"Accuracy: {accuracy}\n"
-    #       f"F-measuer: {F_measure}\n")
+#       "----------cutoff-----------\n"
+#       f"Accuracy: {accuracy}\n"
+#       f"F-measuer: {F_measure}\n")

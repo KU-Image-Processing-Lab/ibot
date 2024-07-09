@@ -2,24 +2,18 @@ import argparse
 import glob
 import os
 
-from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
-from sklearn.metrics import roc_curve, roc_auc_score
-import matplotlib.pyplot as plt
-
 import cv2
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
-
+from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
+                             precision_score, recall_score, roc_auc_score,
+                             roc_curve)
+from torchinfo import summary
 from torchvision import transforms
 
-from torchinfo import summary
-
 from lib.ResNet_4 import ResNet4
-
 from utils.dataloader2 import test_dataset
-
-import glob
-
 
 #################################################
 # epoch1~20の重みを全部テストする。
@@ -38,11 +32,10 @@ def mean_iou_np(y_true, y_pred, **kwargs):
     """
     axes = (0, 1)
     intersection = np.sum(np.abs(y_pred * y_true), axis=axes)
-    mask_sum = np.sum(np.abs(y_true), axis=axes) + \
-        np.sum(np.abs(y_pred), axis=axes)
+    mask_sum = np.sum(np.abs(y_true), axis=axes) + np.sum(np.abs(y_pred), axis=axes)
     union = mask_sum - intersection
 
-    smooth = .001
+    smooth = 0.001
     iou = (intersection + smooth) / (union + smooth)
     return iou
 
@@ -53,10 +46,9 @@ def mean_dice_np(y_true, y_pred, **kwargs):
     """
     axes = (0, 1)  # W,H axes of each image
     intersection = np.sum(np.abs(y_pred * y_true), axis=axes)
-    mask_sum = np.sum(np.abs(y_true), axis=axes) + \
-        np.sum(np.abs(y_pred), axis=axes)
+    mask_sum = np.sum(np.abs(y_true), axis=axes) + np.sum(np.abs(y_pred), axis=axes)
 
-    smooth = .001
+    smooth = 0.001
     dice = 2 * (intersection + smooth) / (mask_sum + smooth)
     return dice
 
@@ -77,7 +69,7 @@ def imwrite(filename, img, params=None):
         result, n = cv2.imencode(ext, img, params)
 
         if result:
-            with open(filename, mode='w+b') as f:
+            with open(filename, mode="w+b") as f:
                 n.tofile(f)
             return True
         else:
@@ -88,11 +80,22 @@ def imwrite(filename, img, params=None):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--testsize', type=int, default=352, help='testing size')
-parser.add_argument('--pth_path', type=str,
-                    default='./snapshots/ResNet4/3/Discriminator-best2.pth')
-parser.add_argument('--test_path1', type=str, default='./discri_dataset/Test', help='path to test dataset')
-parser.add_argument('--test_path2', type=str, default='./discri_dataset/Test/tensor/', help='path to test dataset')
+parser.add_argument("--testsize", type=int, default=352, help="testing size")
+parser.add_argument(
+    "--pth_path", type=str, default="./snapshots/ResNet4/3/Discriminator-best2.pth"
+)
+parser.add_argument(
+    "--test_path1",
+    type=str,
+    default="./discri_dataset/Test",
+    help="path to test dataset",
+)
+parser.add_argument(
+    "--test_path2",
+    type=str,
+    default="./discri_dataset/Test/tensor/",
+    help="path to test dataset",
+)
 # parser.add_argument('--test_path3', type=str, default='./discri_dataset/Train', help='path to test dataset')#
 # parser.add_argument('--test_path4', type=str, default='./discri_dataset/Train/tensor/', help='path to test dataset')#
 # parser.add_argument('--test_path5', type=str, default='./discri_dataset/Val', help='path to test dataset')#
@@ -112,7 +115,7 @@ model2 = ResNet4()
 
 # summary(model2,input_size=(16, 3, 352, 352),col_names=["output_size", "num_params"],)
 
-model2.load_state_dict(torch.load(opt.pth_path))#modelのbestを読み込み
+model2.load_state_dict(torch.load(opt.pth_path))  # modelのbestを読み込み
 
 model2.cuda()
 model2.eval()
@@ -137,7 +140,7 @@ model2.eval()
 
 #     res1=res1.cuda()
 #     with torch.no_grad():
-    
+
 #         out1 = model2(res1)#
 
 #         _, predicted1= torch.max(out1, dim=1)
@@ -238,7 +241,7 @@ model2.eval()
 
 #     res2=res2.cuda()
 #     with torch.no_grad():
-    
+
 #         out2 = model2(res2)#
 
 #         _, predicted2= torch.max(out2, dim=1)
@@ -319,9 +322,9 @@ model2.eval()
 #     print("recall:", recall2)
 #     print("specificity:", specificity2)
 ##################Test#########################################
-gt_root = '{}/masks/'.format(data_path1)
-res_root='{}'.format(data_path2)
-res_loader=test_dataset(res_root,gt_root,opt.testsize)
+gt_root = "{}/masks/".format(data_path1)
+res_root = "{}".format(data_path2)
+res_loader = test_dataset(res_root, gt_root, opt.testsize)
 
 y_true = np.array([])
 y_score = np.array([])
@@ -336,9 +339,9 @@ for i in range(res_loader.size):
 
     # gt /= (gt.max() + 1e-8)  ##########################
 
-    res=res.cuda()
+    res = res.cuda()
     with torch.no_grad():
-    
+
         out = model2(res)
 
         _, predicted = torch.max(out, dim=1)
