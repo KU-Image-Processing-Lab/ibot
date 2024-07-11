@@ -1,6 +1,8 @@
 # files
 .DS_Store
 .env
+Pipfile
+Pipfile.lock
 
 # directories
 __pycache__/
