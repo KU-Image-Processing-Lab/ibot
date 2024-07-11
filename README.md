@@ -22,7 +22,7 @@ dataset | データセット
 
 Dropboxにて、[クロスバリデーション用のデータセット](https://www.dropbox.com/scl/fo/yju10bfpm49iqe7cxhnxs/AIPBAL7VqyirIbHUdoGTBio?rlkey=estw1f81uug3ddwoes4q0w2ph&dl=0)を配布しています。
 
-パスワードは休憩室と同じです。
+パスワードは休憩室の番号の2乗です。
 
 
 ## このリポジトリの意義
