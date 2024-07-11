@@ -18,6 +18,13 @@ snapshots | 学習済みモデルのスナップショット
 scripts | 実行スクリプト
 dataset | データセット
 
+## データセット
+
+Dropboxにて、[クロスバリデーション用のデータセット](https://www.dropbox.com/scl/fo/yju10bfpm49iqe7cxhnxs/AIPBAL7VqyirIbHUdoGTBio?rlkey=estw1f81uug3ddwoes4q0w2ph&dl=0)を配布しています。
+
+パスワードは休憩室と同じです。
+
+
 ## このリポジトリの意義
 
 医用画像処理に関するコードを共通化するためのリポジトリです。
