@@ -44,7 +44,7 @@ mainブランチには直接コミットせず、各自のブランチを切っ�
 `feature/機能名` でブランチを作成してください。
 
 ```bash
-$ git checkout -b feature/機能名
+$ git switch -c feature/機能名
 ```
 
 ### プルリクエストについて
