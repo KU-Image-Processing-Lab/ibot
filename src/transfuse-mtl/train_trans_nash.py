@@ -1,8 +1,10 @@
 import argparse
 import os
+import time
 import sys
 from datetime import datetime
 
+import matplotlib
 import matplotlib.pyplot as plt
 import torch
 import torch.nn.functional as F
@@ -11,13 +13,16 @@ from torch.autograd import Variable
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
 sys.path.append(project_root)
 
-from lib.Discriminator_ResNet import Discriminator
 from lib.TransFuse_l import TransFuse_L
 from utils.dataloader import get_loader
 from utils.mtl import extract_weight_method_parameters_from_args
 from utils.smooth_cross_entropy import SmoothCrossEntropy
 from utils.utils import AvgMeter, adjust_lr, clip_gradient
 from utils.weight_methods import WeightMethods
+from utils.set_seed import seed_everything
+
+matplotlib.use("Agg")
+seed_everything(42)
 
 
 def structure_loss(pred, mask):
@@ -61,8 +66,6 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
                 labels = torch.einsum("ijkl->i", gts) > 0
 
                 labels = torch.where(labels > 0, torch.tensor(1), torch.tensor(0))
-                # labels = labels.view(-1, 1)
-                # labels = F.one_hot(labels, num_classes=2)
 
                 images = Variable(images).cuda()
                 gts = Variable(gts).cuda()
@@ -92,20 +95,14 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
                     loss4 = structure_loss(lateral_map_4, gts)
                     loss3 = structure_loss(lateral_map_3, gts)
                     loss2 = structure_loss(lateral_map_2, gts)
-                    # d_loss = criterion(d_out, labels)
-                    loss = 0.5 * loss2 + 0.3 * loss3 + 0.2 * loss4
-                    # TODO: try different weights for loss
-                    # loss = loss1 + loss2 + loss3 + loss4 + loss5
+                    loss = (
+                        0.5 * loss2 + 0.3 * loss3 + 0.2 * loss4
+                    )  # TODO: try different weights for loss
 
-                    # lateral_map_2 = lateral_map_2.sigmoid()#########################
-                    # lateral_map_2 = 1. * (lateral_map_2 > 0.5)
-                    # lateral_map_2 = images * lateral_map_2
                     lateral_map_2 = lateral_map_2.repeat(1, 3, 1, 1)
 
                     d_out = models["Discriminator"](lateral_map_2)
-                    # d_out = models['Discriminator'](lateral_map_2, images)
                     d_loss = criterion(d_out, labels)
-                    # losses = [loss, d_loss]
                     losses = torch.stack((loss, d_loss))
                     # ---- backward ----
                     if phase == "train":
@@ -116,19 +113,8 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
                             # last_shared_parameters=list(model.last_shared_parameters()),
                             # representation=features,
                         )
-                        # optimizer.pc_backward(losses)
                         clip_gradient(optimizer, opt.clip)
                         optimizer.step()
-
-                        # loss.backward(retain_graph=True)
-                        # clip_gradient(optimizer, opt.clip)
-                        # optimizer.step()
-                        # # optimizer.zero_grad()
-                        # d_loss.backward()
-                        # clip_gradient(optimizer, opt.clip)
-                        # clip_gradient(d_optimizer, opt.clip)
-                        # optimizer.step()
-                        # d_optimizer.step()
 
                         # ---- recording loss ----
                 if rate == 1:
@@ -136,7 +122,7 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
                     loss_record2.update(loss2.data, opt.batchsize)
                     loss_record3.update(loss3.data, opt.batchsize)
                     loss_record4.update(loss4.data, opt.batchsize)
-            if (i % 20 == 0 or i == total_step) and phase == "train":
+            if (i % opt.log_epoch == 0 or i == total_step) and phase == "train":
                 print(
                     "{} Epoch [{:03d}/{:03d}], Step [{:04d}/{:04d}], "
                     "[lateral-2: {:.4f}, lateral-3: {:0.4f}, lateral-4: {:0.4f}, d_loss: {:0.4f}".format(
@@ -160,7 +146,6 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
             if val_loss < best_loss:
                 best_loss = val_loss
                 save_path = "snapshots/{}/".format(opt.train_save)
-                os.makedirs(save_path, exist_ok=True)
                 torch.save(
                     models["Transfuse"].state_dict(), save_path + "Transfuse-best.pth"
                 )
@@ -172,7 +157,6 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
             if val_d_loss < best2_loss:
                 best2_loss = val_d_loss
                 save_path = "snapshots/{}/".format(opt.train_save)
-                os.makedirs(save_path, exist_ok=True)
                 torch.save(
                     models["Transfuse"].state_dict(), save_path + "Transfuse-best2.pth"
                 )
@@ -183,8 +167,7 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
                 print("[Saving best Snapshot:]", save_path + "Discriminator-best2.pth")
 
     save_path = "snapshots/{}/".format(opt.train_save)
-    os.makedirs(save_path, exist_ok=True)
-    if (epoch + 1) % 5 == 0:
+    if (epoch + 1) % opt.save_epoch == 0:
         torch.save(
             models["Transfuse"].state_dict(), save_path + "Transfuse-%d.pth" % epoch
         )
@@ -208,7 +191,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "--trainsize", type=int, default=352, help="training dataset size"
     )
-    # parser.add_argument('--trainsize', type=int, default=384, help='training dataset size')
     parser.add_argument(
         "--clip", type=float, default=0.5, help="gradient clipping margin"
     )
@@ -233,8 +215,6 @@ if __name__ == "__main__":
         default="./dataset/ValDataset",
         help="path to val dataset",
     )
-    # parser.add_argument('--train_path', type=str, default='./dataset/sekkai_TrainDataset', help='path to train dataset')
-    # parser.add_argument('--val_path', type=str, default='./dataset/sekkai_ValDataset', help='path to val dataset')
     parser.add_argument("--train_save", type=str, default="Transfuse_S")
     parser.add_argument(
         "--beta1", type=float, default=0.5, help="beta1 of adam optimizer"
@@ -244,62 +224,61 @@ if __name__ == "__main__":
     )
 
     parser.add_argument("--tuning", type=bool, default=True)
-    # parser.add_argument('--tuning', type=bool, default=False)
 
-    # parser.add_argument('--mtl', type=str, default='nashmtl')
-    # parser.add_argument('--mtl', type=str, default='pcgrad')
-    # parser.add_argument('--mtl', type=str, default='cagrad')
-    # parser.add_argument('--mtl', type=str, default='imtl')
-    # parser.add_argument('--mtl', type=str, default='mgda')
-    # parser.add_argument('--mtl', type=str, default='dwa')
-    # parser.add_argument('--mtl', type=str, default='uw')
-    # parser.add_argument('--mtl', type=str, default='ls')
-    # parser.add_argument('--mtl', type=str, default='scaleinvls')
-    # parser.add_argument('--mtl', type=str, default='rlw')
-    parser.add_argument("--mtl", type=str, default="stl")
+    parser.add_argument("--mtl", type=str, default="nashmtl")
+
+    parser.add_argument(
+        "--discriminator",
+        type=str,
+        default="resnet10",
+        help="Discriminatorに使うモデル",
+    )
+    parser.add_argument(
+        "--log_epoch", type=int, default=20, help="ログ出力するエポックの単位"
+    )
+    parser.add_argument(
+        "--save_epoch", type=int, default=5, help="重み保存するエポックの単位"
+    )
+    parser.add_argument(
+        "--mae_weight",
+        type=str,
+        default="./weights/修論/segmentation/TransFuse-L+MAE/vit-l_352/石灰化ありのみ/Transfuse-best.pth",
+        help="MAEの重み(TransFuse)",
+    )
 
     opt = parser.parse_args()
-    print("Tuning:", opt.tuning)
-    print("MTL:", opt.mtl)
+
+    # ---- print all hyperparameters ----
+    for k, v in sorted(vars(opt).items()):
+        print("{0}: {1}".format(k, v))
+
+    # ---- save hyperparameters ----
+    os.makedirs(f"snapshots/{opt.train_save}", exist_ok=True)
+    with open(f"snapshots/{opt.train_save}/hyperparameters.txt", "w") as f:
+        for k, v in sorted(vars(opt).items()):
+            f.write("{0}: {1}\n".format(k, v))
+
     # ---- build models ----
-    # torch.cuda.set_device(0)  # set your gpu device
-    # model = U_PraNet().cuda()
-    # model = PraNet().cuda()
+    if opt.discriminator == "resnet10":
+        from lib.ResNet_10 import ResNet10
+        model2 = ResNet10()
 
-    # model2 = vit_large(pretrained=True)
-
-    # model2 = torch_model.vgg16(pretrained=True)
-    # model2.classifier[6] = nn.Linear(in_features=4096, out_features=2)
+    if opt.discriminator == "res2net":
+        from lib.Discriminator_ResNet import Discriminator
+        model2 = Discriminator()
 
     model1 = TransFuse_L(pretrained=True)
     if opt.tuning:
-        model1.load_state_dict(
-            torch.load(
-                "./weights/修論/segmentation/TransFuse-L+MAE/vit-l_352/石灰化ありのみ/Transfuse-best.pth"
-            )
-        )
+        model1.load_state_dict(torch.load(opt.mae_weight))
 
     if opt.tuning and opt.mtl == "stl":
         for param in model1.parameters():
             param.requires_grad = False
 
     model1.cuda()
-
-    model2 = Discriminator()
-
     model2 = model2.cuda()
 
     models = {"Transfuse": model1, "Discriminator": model2}
-    # models = {'Transfuse': TransFuse_L(pretrained=True).cuda(),
-    #           'Discriminator': Discriminator().cuda()}
-
-    # model_state = torch.load('PraNet-19.pth')
-    # model.load_state_dict(model_state)############################################
-
-    # ---- flops and params ----
-    # from utils.utils import CalParams
-    # x = torch.randn(1, 3, 352, 352).cuda()
-    # CalParams(lib, x)
 
     weight_methods_parameters = extract_weight_method_parameters_from_args()
     weight_method = WeightMethods(
@@ -307,7 +286,6 @@ if __name__ == "__main__":
     )
 
     params = [p for v in models.values() for p in list(v.parameters())]
-    # shared_parameters = [p for v in models.values() for p in list(v.parameters())]
 
     shared_parameters = [
         p
@@ -320,22 +298,7 @@ if __name__ == "__main__":
         if "final_x" in n or "final_1" in n or "cls" in n
     ]
     for n, p in model2.named_parameters():
-        # if ("final_x" or 'final_1') in n:
         task_specific_parameters.append(p)
-
-    # no=1
-    # for n, p in model1.named_parameters():
-    #     # if ("final_x" or 'final_1') in n:
-    #     print(no)
-    #     print(n)
-    #     no+=1
-
-    # shared_parameters = [print(n) for n, p in model1.named_parameters() if "final_x" in n or "final_1" in n]
-    # print()
-    # task_specific_parameters = [print(n) for n, p in model2.named_parameters()]
-
-    # params = model.parameters()
-    # params2 = model2.parameters()
 
     optimizer = torch.optim.Adam(
         [
@@ -343,11 +306,6 @@ if __name__ == "__main__":
             dict(params=weight_method.parameters(), lr=0.025),
         ],
     )
-
-    # optimizer = torch.optim.Adam(params, opt.lr, betas=(opt.beta1, opt.beta2))
-    # optimizer = PCGrad(optimizer)
-
-    # d_optimizer = torch.optim.Adam(params2, opt.lr)
 
     # criterion = nn.CrossEntropyLoss(reduction='mean')
     # criterion = nn.BCEWithLogitsLoss(reduction='mean')
@@ -384,21 +342,29 @@ if __name__ == "__main__":
     best_loss = 100000
     best2_loss = 100000
 
+    # 学習開始時間の記録
+    start_time = time.time()
+
     for epoch in range(1, opt.epoch):
         adjust_lr(
             optimizer, opt.lr, epoch, opt.decay_rate, opt.decay_epoch
         )  ###################################
-        # train(train_loader, model, optimizer, epoch)
-        epoch, train_loss, val_loss, train_d_loss, val_d_loss, best_loss, best2_loss = (
-            train(
-                dataloaders_dict,
-                models,
-                optimizer,
-                criterion,
-                epoch,
-                best_loss,
-                best2_loss,
-            )
+        (
+            epoch,
+            train_loss,
+            val_loss,
+            train_d_loss,
+            val_d_loss,
+            best_loss,
+            best2_loss,
+        ) = train(
+            dataloaders_dict,
+            models,
+            optimizer,
+            criterion,
+            epoch,
+            best_loss,
+            best2_loss,
         )
         epoch_list.append(epoch)
         train_loss = train_loss.cpu().data.numpy()
@@ -410,6 +376,12 @@ if __name__ == "__main__":
         val_d_loss = val_d_loss.cpu().data.numpy()
         val_d_loss_list.append(val_d_loss)
 
+    # 学習終了時間の記録
+    end_time = time.time()
+
+    # 学習にかかった時間の計算
+    training_time = end_time - start_time
+    print(f"学習にかかった時間:{training_time}秒")
     fig = plt.figure()
     plt.plot(epoch_list, train_loss_list, label="train_loss")
     plt.plot(epoch_list, val_loss_list, label="val_loss", linestyle="--")
