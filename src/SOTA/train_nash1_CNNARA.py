@@ -25,10 +25,6 @@ from utils.weight_methods import WeightMethods
 # TODO Add pre-processing model import
 
 
-
-
-
-
 def seed_everything(seed=42):
     random.seed(seed)  # Pythonの組み込み乱数生成器を固定
     os.environ["PYTHONHASHSEED"] = str(seed)  # Pythonのハッシュ乱数生成器を固定

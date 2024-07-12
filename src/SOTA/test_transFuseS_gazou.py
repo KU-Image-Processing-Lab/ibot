@@ -25,8 +25,6 @@ from utils.dataloader import test_dataset
 # from lib.models_vit_discriminator import vit_large_patch16 as vit_large
 
 
-
-
 # import sys
 # sys.path.append('../../git/laboratory/python/py/tools/')
 # from slack_bot import Slack_bot

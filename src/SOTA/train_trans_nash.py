@@ -19,7 +19,6 @@ from utils.weight_methods import WeightMethods
 # from lib.models_vit_discriminator import vit_large_patch16 as vit_large
 
 
-
 matplotlib.use("Agg")
 import random
 import time

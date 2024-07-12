@@ -25,9 +25,6 @@ from utils.weight_methods import WeightMethods
 # TODO Add pre-processing model import
 
 
-
-
-
 def structure_loss(pred, mask):
     weit = 1 + 5 * torch.abs(
         F.avg_pool2d(mask, kernel_size=31, stride=1, padding=15) - mask

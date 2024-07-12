@@ -25,7 +25,6 @@ from lib.ACC_UNetl import ACC_UNet
 # from nets.UCTransNet import UCTransNet
 
 
-
 # ロガーの設定を行う関数
 def logger_config(log_path):
     loggerr = logging.getLogger()  # ロガーを取得

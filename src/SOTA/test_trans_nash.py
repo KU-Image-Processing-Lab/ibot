@@ -33,8 +33,6 @@ from utils.dataloader import test_dataset
 # from lib.Discriminator_v3 import Discriminator
 
 
-
-
 #################################################
 # epoch1~20の重みを全部テストする。
 
