@@ -8,7 +8,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 # from VAE.vae_medical352 import VAE2
 from torch.autograd import Variable
-
 from VAE.vae_medical224 import VAE2
 
 
