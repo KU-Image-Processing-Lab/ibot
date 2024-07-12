@@ -1,7 +1,7 @@
 import argparse
 import os
-import time
 import sys
+import time
 from datetime import datetime
 
 import matplotlib
@@ -16,10 +16,10 @@ sys.path.append(project_root)
 from lib.TransFuse_l import TransFuse_L
 from utils.dataloader import get_loader
 from utils.mtl import extract_weight_method_parameters_from_args
+from utils.set_seed import seed_everything
 from utils.smooth_cross_entropy import SmoothCrossEntropy
 from utils.utils import AvgMeter, adjust_lr, clip_gradient
 from utils.weight_methods import WeightMethods
-from utils.set_seed import seed_everything
 
 matplotlib.use("Agg")
 seed_everything(42)
@@ -261,10 +261,12 @@ if __name__ == "__main__":
     # ---- build models ----
     if opt.discriminator == "resnet10":
         from lib.ResNet_10 import ResNet10
+
         model2 = ResNet10()
 
     if opt.discriminator == "res2net":
         from lib.Discriminator_ResNet import Discriminator
+
         model2 = Discriminator()
 
     model1 = TransFuse_L(pretrained=True)
