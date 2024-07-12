@@ -17,7 +17,6 @@ from utils.dataloader import test_dataset
 # from lib.ResUPraNet import ResUPraNet
 
 
-
 def mean_iou_np(y_true, y_pred, **kwargs):
     """
     compute mean iou for binary segmentation map via numpy

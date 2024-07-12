@@ -23,7 +23,6 @@ from utils.utils import AvgMeter, adjust_lr, clip_gradient
 # from sam import SAM
 
 
-
 def structure_loss(pred, mask):
     weit = 1 + 5 * torch.abs(
         F.avg_pool2d(mask, kernel_size=31, stride=1, padding=15) - mask
