@@ -1,16 +1,19 @@
+import argparse
+import glob
+import os
+
+import imageio
+import numpy as np
 import torch
 import torch.nn.functional as F
-import numpy as np
-import os, argparse
 from scipy import misc
-import imageio
-from lib.TransFuse_s import TransFuse_S
-from lib.se_TransFuse_s import SE_TransFuse_S
+from skimage import img_as_ubyte
+
 from lib.Bi_TransFuse_s import Bi_TransFuse_S
 from lib.enhanced_TransFuse import enhanced_TransFuse
+from lib.se_TransFuse_s import SE_TransFuse_S
+from lib.TransFuse_s import TransFuse_S
 from utils.dataloaderT import test_dataset
-from skimage import img_as_ubyte
-import glob
 
 
 def mean_iou_np(y_true, y_pred, **kwargs):
@@ -22,7 +25,7 @@ def mean_iou_np(y_true, y_pred, **kwargs):
     mask_sum = np.sum(np.abs(y_true), axis=axes) + np.sum(np.abs(y_pred), axis=axes)
     union = mask_sum - intersection
 
-    smooth = .001
+    smooth = 0.001
     iou = (intersection + smooth) / (union + smooth)
     return iou
 
@@ -35,7 +38,7 @@ def mean_dice_np(y_true, y_pred, **kwargs):
     intersection = np.sum(np.abs(y_pred * y_true), axis=axes)
     mask_sum = np.sum(np.abs(y_true), axis=axes) + np.sum(np.abs(y_pred), axis=axes)
 
-    smooth = .001
+    smooth = 0.001
     dice = 2 * (intersection + smooth) / (mask_sum + smooth)
     return dice
 
@@ -49,21 +52,27 @@ def count_trainable_parameters(model):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--testsize', type=int, default=224, help='testing size')
+parser.add_argument("--testsize", type=int, default=224, help="testing size")
 # parser.add_argument('--pth_path', type=str, default='./snapshots/TransFuse_S/TransFuse-59.pth')
-parser.add_argument('--pth_path', type=str, default='./snapshots/Weight_discri/TransFuse_vat528unified_max-59.pth')
-parser.add_argument('--data_path', type=str, default='./dataset/sekkai_TestDataset_unity')
-parser.add_argument('--dice', type=int, default=1)
+parser.add_argument(
+    "--pth_path",
+    type=str,
+    default="./snapshots/Weight_discri/TransFuse_vat528unified_max-59.pth",
+)
+parser.add_argument(
+    "--data_path", type=str, default="./dataset/sekkai_TestDataset_unity"
+)
+parser.add_argument("--dice", type=int, default=1)
 
 opt = parser.parse_args()
 
-#data_path = './dataset/TestDataset/'
-#data_path = './dataset/ValDataset/'
-#data_path = './dataset/sekkai_TestDataset/'
+# data_path = './dataset/TestDataset/'
+# data_path = './dataset/ValDataset/'
+# data_path = './dataset/sekkai_TestDataset/'
 # data_path = './dataset/sekkai_ValDataset/'
 data_path = opt.data_path
 
-save_path = './results/TransFuse_S/'
+save_path = "./results/TransFuse_S/"
 
 model = TransFuse_S()
 # model = SE_TransFuse_S()
@@ -74,10 +83,10 @@ model.cuda()
 model.eval()
 
 os.makedirs(save_path, exist_ok=True)
-for file in glob.glob('./results/TransFuse_S/*.png'):
+for file in glob.glob("./results/TransFuse_S/*.png"):
     os.remove(file)
-image_root = '{}/images/'.format(data_path)
-gt_root = '{}/masks/'.format(data_path)
+image_root = "{}/images/".format(data_path)
+gt_root = "{}/masks/".format(data_path)
 test_loader = test_dataset(image_root, gt_root, opt.testsize)
 
 dice_bank = []
@@ -88,19 +97,19 @@ for i in range(test_loader.size):
     image, gt, name = test_loader.load_data()
     gt = np.asarray(gt, np.float32)
     if opt.dice:
-        gt = 1. * (gt > 0.5)
+        gt = 1.0 * (gt > 0.5)
     else:
-        gt /= (gt.max() + 1e-8)
+        gt /= gt.max() + 1e-8
 
     image = image.cuda()
 
     with torch.no_grad():
         _, _, res = model(image)
 
-    res = F.upsample(res, size=gt.shape, mode='bilinear', align_corners=False)
+    res = F.upsample(res, size=gt.shape, mode="bilinear", align_corners=False)
     res = res.sigmoid().data.cpu().numpy().squeeze()
     if opt.dice:
-        res = 1. * (res > 0.5)
+        res = 1.0 * (res > 0.5)
     else:
         res = (res - res.min()) / (res.max() - res.min() + 1e-8)
 
@@ -113,8 +122,11 @@ for i in range(test_loader.size):
     iou_bank.append(iou)
     imageio.imsave(save_path + name, img_as_ubyte(res))
 
-print('Dice: {:.4f}, IoU: {:.4f}, Acc: {:.4f}'.
-      format(np.mean(dice_bank), np.mean(iou_bank), np.mean(acc_bank)))
+print(
+    "Dice: {:.4f}, IoU: {:.4f}, Acc: {:.4f}".format(
+        np.mean(dice_bank), np.mean(iou_bank), np.mean(acc_bank)
+    )
+)
 
 # number of parameters
 num_parameters = count_parameters(model)

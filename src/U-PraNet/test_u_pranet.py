@@ -2,18 +2,20 @@ import argparse
 import glob
 import os
 import time
+
 import cv2
-import numpy as np
 import imageio
+import numpy as np
 import torch
 import torch.nn.functional as F
 from scipy import misc
 from skimage import img_as_ubyte
 
 from lib.U_PraNet_Res2Net import U_PraNet
+from utils.dataloader import test_dataset
+
 # from lib.ResUPraNet import ResUPraNet
 
-from utils.dataloader import test_dataset
 
 
 def mean_iou_np(y_true, y_pred, **kwargs):
@@ -25,7 +27,7 @@ def mean_iou_np(y_true, y_pred, **kwargs):
     mask_sum = np.sum(np.abs(y_true), axis=axes) + np.sum(np.abs(y_pred), axis=axes)
     union = mask_sum - intersection
 
-    smooth = .001
+    smooth = 0.001
     iou = (intersection + smooth) / (union + smooth)
     return iou
 
@@ -38,7 +40,7 @@ def mean_dice_np(y_true, y_pred, **kwargs):
     intersection = np.sum(np.abs(y_pred * y_true), axis=axes)
     mask_sum = np.sum(np.abs(y_true), axis=axes) + np.sum(np.abs(y_pred), axis=axes)
 
-    smooth = .001
+    smooth = 0.001
     dice = 2 * (intersection + smooth) / (mask_sum + smooth)
     return dice
 
@@ -67,7 +69,7 @@ def imwrite(filename, img, params=None):
         result, n = cv2.imencode(ext, img, params)
 
         if result:
-            with open(filename, mode='w+b') as f:
+            with open(filename, mode="w+b") as f:
                 n.tofile(f)
             return True
         else:
@@ -78,24 +80,29 @@ def imwrite(filename, img, params=None):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--testsize', type=int, default=352, help='testing size')
-parser.add_argument('--epoch', type=int, default=20)
-parser.add_argument('--test_path', type=str, default='./dataset/TestDataset/', help='path to test dataset')
-parser.add_argument('--normalization', type=bool, default=True)
+parser.add_argument("--testsize", type=int, default=352, help="testing size")
+parser.add_argument("--epoch", type=int, default=20)
+parser.add_argument(
+    "--test_path",
+    type=str,
+    default="./dataset/TestDataset/",
+    help="path to test dataset",
+)
+parser.add_argument("--normalization", type=bool, default=True)
 
 opt = parser.parse_args()
 
 # data_path = opt.test_path
 # data_path = './dataset/TestDataset/'
 # data_path = './dataset/ValDataset/'
-data_path = './dataset/sekkai_TestDataset/'
+data_path = "./dataset/sekkai_TestDataset/"
 # data_path = './dataset/sekkai_ValDataset/'
 
 # norm = opt.normalization
 norm = False
 
 
-save_path = './results/PraNet/'
+save_path = "./results/PraNet/"
 # for ep in range(opt.epoch):
 for ep in range(99, 100):
     TP = 0
@@ -110,7 +117,7 @@ for ep in range(99, 100):
     # model = ResUPraNet()
     # model.load_state_dict(torch.load('./snapshots/PraNet_Res2Net/PraNet-' + str(ep + 1) + '.pth'))
     # model.load_state_dict(torch.load('./snapshots/PraNet_Res2Net/PraNet-best.pth'))
-    model.load_state_dict(torch.load('./snapshots/PraNet_vat/PraNet-best.pth'))
+    model.load_state_dict(torch.load("./snapshots/PraNet_vat/PraNet-best.pth"))
 
     # model.load_state_dict(torch.load('./snapshots/PraNet_Res2Net/PraNet-100.pth'))
 
@@ -118,12 +125,11 @@ for ep in range(99, 100):
     model.eval()
 
     os.makedirs(save_path, exist_ok=True)
-    for file in glob.glob('./results/PraNet/*.png'):
+    for file in glob.glob("./results/PraNet/*.png"):
         os.remove(file)
-    image_root = '{}/images/'.format(data_path)
-    gt_root = '{}/masks/'.format(data_path)
+    image_root = "{}/images/".format(data_path)
+    gt_root = "{}/masks/".format(data_path)
     test_loader = test_dataset(image_root, gt_root, opt.testsize)
-
 
     dice_bank = []
     iou_bank = []
@@ -137,22 +143,24 @@ for ep in range(99, 100):
         gt = np.asarray(gt, np.float32)
 
         if norm:
-            gt /= (gt.max() + 1e-8)  ##########################
+            gt /= gt.max() + 1e-8  ##########################
         else:
-            gt = 1. * (gt > 0.5)  ########################
+            gt = 1.0 * (gt > 0.5)  ########################
 
         image = image.cuda()
         with torch.no_grad():
             res5, res4, res3, res2 = model(image)
         res = res2
         # res = res5
-        res = F.upsample(res, size=gt.shape, mode='bilinear', align_corners=False)
+        res = F.upsample(res, size=gt.shape, mode="bilinear", align_corners=False)
         res = res.sigmoid().data.cpu().numpy().squeeze()
 
         if norm:
-            res = (res - res.min()) / (res.max() - res.min() + 1e-8)  ############################
+            res = (res - res.min()) / (
+                res.max() - res.min() + 1e-8
+            )  ############################
         else:
-            res = 1. * (res > 0.5)  ############################
+            res = 1.0 * (res > 0.5)  ############################
 
         dice = mean_dice_np(gt, res)
         iou = mean_iou_np(gt, res)
@@ -164,26 +172,29 @@ for ep in range(99, 100):
         imageio.imsave(save_path + name, img_as_ubyte(res))
 
     time_finish = time.time()
-    print('timer: {:.4f} sec.'.format((time_finish - time_start) / no))
-    print('Dice: {:.4f}, IoU: {:.4f}, Acc: {:.4f}'.
-          format(np.mean(dice_bank), np.mean(iou_bank), np.mean(acc_bank)))
+    print("timer: {:.4f} sec.".format((time_finish - time_start) / no))
+    print(
+        "Dice: {:.4f}, IoU: {:.4f}, Acc: {:.4f}".format(
+            np.mean(dice_bank), np.mean(iou_bank), np.mean(acc_bank)
+        )
+    )
 
     files = glob.glob(data_path + "masks/*.png")  ###正解画像
 
-    os.makedirs('./bbox_result/', exist_ok=True)
-    for file in glob.glob('./bbox_result/*.png'):
+    os.makedirs("./bbox_result/", exist_ok=True)
+    for file in glob.glob("./bbox_result/*.png"):
         os.remove(file)
-    os.makedirs('./bbox_result/TP', exist_ok=True)
-    for file in glob.glob('./bbox_result/TP/*.png'):
+    os.makedirs("./bbox_result/TP", exist_ok=True)
+    for file in glob.glob("./bbox_result/TP/*.png"):
         os.remove(file)
-    os.makedirs('./bbox_result/FN', exist_ok=True)
-    for file in glob.glob('./bbox_result/FN/*.png'):
+    os.makedirs("./bbox_result/FN", exist_ok=True)
+    for file in glob.glob("./bbox_result/FN/*.png"):
         os.remove(file)
-    os.makedirs('./bbox_result/FP', exist_ok=True)
-    for file in glob.glob('./bbox_result/FP/*.png'):
+    os.makedirs("./bbox_result/FP", exist_ok=True)
+    for file in glob.glob("./bbox_result/FP/*.png"):
         os.remove(file)
-    os.makedirs('./bbox_result/TN', exist_ok=True)
-    for file in glob.glob('./bbox_result/TN/*.png'):
+    os.makedirs("./bbox_result/TN", exist_ok=True)
+    for file in glob.glob("./bbox_result/TN/*.png"):
         os.remove(file)
     for i in files:
         basename = os.path.basename(i)
@@ -206,8 +217,8 @@ for ep in range(99, 100):
         output = np.zeros((height, width))
         for s in top2_idx2:
             output += np.where(labels2 == s, 255, 0)
-        output = output.astype('uint8')
-        cv2.imwrite('./re/vat_test/' + basename, output)
+        output = output.astype("uint8")
+        cv2.imwrite("./re/vat_test/" + basename, output)
 
         #################################################################
         #########kai_pra_test######################################
@@ -251,21 +262,21 @@ for ep in range(99, 100):
                         TP2 += 1
                         count = 1
                         flag = True
-                        cv2.imwrite('./bbox_result/TP/' + basename, output)
+                        cv2.imwrite("./bbox_result/TP/" + basename, output)
                         break
                 if flag:
                     break
             if count == 0:
                 FN2 += 1
-                cv2.imwrite('./bbox_result/FN/' + basename, output)
+                cv2.imwrite("./bbox_result/FN/" + basename, output)
         if nlabels1 == 1:
             if len(top2_idx2) != 0:
                 FP2 += 1
-                cv2.imwrite('./bbox_result/FP/' + basename, output)
+                cv2.imwrite("./bbox_result/FP/" + basename, output)
 
             else:
                 TN2 += 1
-                cv2.imwrite('./bbox_result/TN/' + basename, output)
+                cv2.imwrite("./bbox_result/TN/" + basename, output)
     #########################################################################
     #############重なっていなくてもTPとする##################################
     ##############new_pra_test########################################

@@ -1,19 +1,21 @@
 # VAT "https://github.com/lyakaap/VAT-pytorch/blob/master/vat.py"
 
 import contextlib
+
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
-from VAE.vae_medical224 import VAE2
 # from VAE.vae_medical352 import VAE2
 from torch.autograd import Variable
+
+from VAE.vae_medical224 import VAE2
 
 
 @contextlib.contextmanager
 def _disable_tracking_bn_stats(model):
     def switch_attr(m):
-        if hasattr(m, 'track_running_stats'):
+        if hasattr(m, "track_running_stats"):
             m.track_running_stats ^= True
 
     model.apply(switch_attr)
@@ -29,14 +31,21 @@ def _l2_normalize(d):
 
 # from train_trans.py
 
+
 def structure_loss(pred, mask):
     delta = 1e-9
-    pred_sig = torch.sigmoid(pred) # P pred_sig
-    mask_sig = torch.sigmoid(mask) # Q mask_sig
-    lds_1 = torch.mean(mask_sig*(torch.log(mask_sig+delta)-torch.log(pred_sig+delta)))
-    lds_0 = torch.mean((1.0-mask_sig)*(torch.log(1.0-mask_sig+delta)-torch.log(1.0-pred_sig+delta)))
+    pred_sig = torch.sigmoid(pred)  # P pred_sig
+    mask_sig = torch.sigmoid(mask)  # Q mask_sig
+    lds_1 = torch.mean(
+        mask_sig * (torch.log(mask_sig + delta) - torch.log(pred_sig + delta))
+    )
+    lds_0 = torch.mean(
+        (1.0 - mask_sig)
+        * (torch.log(1.0 - mask_sig + delta) - torch.log(1.0 - pred_sig + delta))
+    )
 
     return lds_1 + lds_0
+
 
 """
 def structure_loss(mask, pred):
@@ -50,6 +59,7 @@ def structure_loss(mask, pred):
     lds = F.kl_div(pred_dist.log(), mask_dist, None, None, 'batchmean')  # log_target=True)
     return lds
 """
+
 
 class LVATLoss(nn.Module):
 
@@ -65,7 +75,7 @@ class LVATLoss(nn.Module):
         self.ip = ip
 
     def forward(self, model, x):
-        #print(x.max(), x.min())
+        # print(x.max(), x.min())
         with torch.no_grad():
             # normal vat
             # pred = F.softmax(model(x), dim=1)
@@ -75,49 +85,59 @@ class LVATLoss(nn.Module):
             pred_lateral_map_4, pred_lateral_map_3, pred_lateral_map_2 = model(x)
 
         # prepare random unit tensor
-        #d = torch.rand(x.shape).sub(0.5).to(x.device)
+        # d = torch.rand(x.shape).sub(0.5).to(x.device)
         # print(x.shape)
-        vae = VAE2(128).to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
-        
-        vae.load_state_dict(torch.load('VAE/weight/weight_VAE650unified_last.pth'))  ######学習によって重みを変更#######
+        vae = VAE2(128).to(
+            torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        )
+
+        vae.load_state_dict(
+            torch.load("VAE/weight/weight_VAE650unified_last.pth")
+        )  ######学習によって重みを変更#######
         for param in vae.parameters():
             param.requires_grad = False
-        
+
         z = vae.Encoder(x)
         # za = z.to('cpu').detach().numpy().copy()
         # print(za)
-        d = torch.rand(z.shape).sub(0.5)#.cuda()
+        d = torch.rand(z.shape).sub(0.5)  # .cuda()
         d = Variable(_l2_normalize(d)).cuda()
-       
 
         with _disable_tracking_bn_stats(model):
             # calc adversarial direction
             for _ in range(self.ip):
                 d.requires_grad_()
-                lateral_map_4_hat, lateral_map_3_hat, lateral_map_2_hat = model(vae.Decoder(z+self.xi*d))
+                lateral_map_4_hat, lateral_map_3_hat, lateral_map_2_hat = model(
+                    vae.Decoder(z + self.xi * d)
+                )
                 # logp_hat = F.log_softmax(pred_hat, dim=1)
                 # adv_distance = F.kl_div(logp_hat, pred, reduction='batchmean')
                 # adv_distance.backward()
                 # ---- loss function ----
-                #adv_loss4 = structure_loss(lateral_map_4_hat, pred_lateral_map_4)  # BiFusion map
-                #adv_loss3 = structure_loss(lateral_map_3_hat, pred_lateral_map_3)  # Transformer map
-                adv_loss2 = structure_loss(lateral_map_2_hat, pred_lateral_map_2)  # Joint map
-                #adv_loss = 0.5 * adv_loss2 + 0.2 * adv_loss3 + 0.3 * adv_loss4
+                # adv_loss4 = structure_loss(lateral_map_4_hat, pred_lateral_map_4)  # BiFusion map
+                # adv_loss3 = structure_loss(lateral_map_3_hat, pred_lateral_map_3)  # Transformer map
+                adv_loss2 = structure_loss(
+                    lateral_map_2_hat, pred_lateral_map_2
+                )  # Joint map
+                # adv_loss = 0.5 * adv_loss2 + 0.2 * adv_loss3 + 0.3 * adv_loss4
                 adv_loss = adv_loss2
                 adv_loss.backward(retain_graph=True)
                 d = _l2_normalize(d.grad)
                 model.zero_grad()
-                
-         
+
             # calc LDS
             # r_adv = d * self.eps * (torch.sum(x ** 2, dim=[1, 2, 3], keepdim=True) ** 0.5)
-            r_adv = d * self.eps 
-            lateral_map_4_hat, lateral_map_3_hat, lateral_map_2_hat = model(vae.Decoder(z+r_adv))
+            r_adv = d * self.eps
+            lateral_map_4_hat, lateral_map_3_hat, lateral_map_2_hat = model(
+                vae.Decoder(z + r_adv)
+            )
             # logp_hat = F.log_softmax(pred_hat, dim=1)
-            #adv_loss4 = structure_loss(lateral_map_4_hat, pred_lateral_map_4)  # BiFusion map
-            #adv_loss3 = structure_loss(lateral_map_3_hat, pred_lateral_map_3)  # Transformer map
-            adv_loss2 = structure_loss(lateral_map_2_hat, pred_lateral_map_2)  # Joint map
-            #adv_loss = 0.5 * adv_loss2 + 0.2 * adv_loss3 + 0.3 * adv_loss4
+            # adv_loss4 = structure_loss(lateral_map_4_hat, pred_lateral_map_4)  # BiFusion map
+            # adv_loss3 = structure_loss(lateral_map_3_hat, pred_lateral_map_3)  # Transformer map
+            adv_loss2 = structure_loss(
+                lateral_map_2_hat, pred_lateral_map_2
+            )  # Joint map
+            # adv_loss = 0.5 * adv_loss2 + 0.2 * adv_loss3 + 0.3 * adv_loss4
             lds = adv_loss2
             # lds = F.kl_div(logp_hat, pred, reduction='batchmean')
 
@@ -138,48 +158,72 @@ class MAVATLoss(nn.Module):
         self.ip = ip
 
     def forward(self, model, x, gt):
-        #print(x.max(), x.min())
-        #mask = gt.cuda() # sekkai nomi setsudou
-        mask = (-1.0 * (gt - 1.0)).cuda(); #haikei nomi setsudou
+        # print(x.max(), x.min())
+        # mask = gt.cuda() # sekkai nomi setsudou
+        mask = (-1.0 * (gt - 1.0)).cuda()
+        # haikei nomi setsudou
         with torch.no_grad():
             # normal vat
             # pred = F.softmax(model(x), dim=1)
 
             # changed vat for this
             # ---- forward ----
-            pred_lateral_map_5, pred_lateral_map_4, pred_lateral_map_3, pred_lateral_map_2 = model(x)
+            (
+                pred_lateral_map_5,
+                pred_lateral_map_4,
+                pred_lateral_map_3,
+                pred_lateral_map_2,
+            ) = model(x)
 
         # prepare random unit tensor
-        #d = torch.rand(x.shape).sub(0.5).to(x.device)
-        d = torch.rand(x.shape).sub(0.5).cuda() * mask#.cuda()
+        # d = torch.rand(x.shape).sub(0.5).to(x.device)
+        d = torch.rand(x.shape).sub(0.5).cuda() * mask  # .cuda()
         d = Variable(_l2_normalize(d)).cuda() * mask
 
         with _disable_tracking_bn_stats(model):
             # calc adversarial direction
             for _ in range(self.ip):
                 d.requires_grad_()
-                lateral_map_5_hat, lateral_map_4_hat, lateral_map_3_hat,lateral_map_2_hat = model(x + self.xi * d * mask)
+                (
+                    lateral_map_5_hat,
+                    lateral_map_4_hat,
+                    lateral_map_3_hat,
+                    lateral_map_2_hat,
+                ) = model(x + self.xi * d * mask)
                 # logp_hat = F.log_softmax(pred_hat, dim=1)
                 # adv_distance = F.kl_div(logp_hat, pred, reduction='batchmean')
                 # adv_distance.backward()
                 # ---- loss function ----
-                #adv_loss4 = structure_loss(lateral_map_4_hat, pred_lateral_map_4)  # BiFusion map
-                #adv_loss3 = structure_loss(lateral_map_3_hat, pred_lateral_map_3)  # Transformer map
-                adv_loss2 = structure_loss(lateral_map_2_hat, pred_lateral_map_2)  # Joint map
-                #adv_loss = 0.5 * adv_loss2 + 0.2 * adv_loss3 + 0.3 * adv_loss4
+                # adv_loss4 = structure_loss(lateral_map_4_hat, pred_lateral_map_4)  # BiFusion map
+                # adv_loss3 = structure_loss(lateral_map_3_hat, pred_lateral_map_3)  # Transformer map
+                adv_loss2 = structure_loss(
+                    lateral_map_2_hat, pred_lateral_map_2
+                )  # Joint map
+                # adv_loss = 0.5 * adv_loss2 + 0.2 * adv_loss3 + 0.3 * adv_loss4
                 adv_loss = adv_loss2
                 adv_loss.backward()
                 d = _l2_normalize(d.grad) * mask
                 model.zero_grad()
 
             # calc LDS
-            r_adv = (d * mask) * self.eps * (torch.sum(x ** 2, dim=[1, 2, 3], keepdim=True) ** 0.5)
-            lateral_map_5_hat, lateral_map_4_hat, lateral_map_3_hat, lateral_map_2_hat = model(x + r_adv)
+            r_adv = (
+                (d * mask)
+                * self.eps
+                * (torch.sum(x**2, dim=[1, 2, 3], keepdim=True) ** 0.5)
+            )
+            (
+                lateral_map_5_hat,
+                lateral_map_4_hat,
+                lateral_map_3_hat,
+                lateral_map_2_hat,
+            ) = model(x + r_adv)
             # logp_hat = F.log_softmax(pred_hat, dim=1)
-            #adv_loss4 = structure_loss(lateral_map_4_hat, pred_lateral_map_4)  # BiFusion map
-            #adv_loss3 = structure_loss(lateral_map_3_hat, pred_lateral_map_3)  # Transformer map
-            adv_loss2 = structure_loss(lateral_map_2_hat, pred_lateral_map_2)  # Joint map
-            #adv_loss = 0.5 * adv_loss2 + 0.2 * adv_loss3 + 0.3 * adv_loss4
+            # adv_loss4 = structure_loss(lateral_map_4_hat, pred_lateral_map_4)  # BiFusion map
+            # adv_loss3 = structure_loss(lateral_map_3_hat, pred_lateral_map_3)  # Transformer map
+            adv_loss2 = structure_loss(
+                lateral_map_2_hat, pred_lateral_map_2
+            )  # Joint map
+            # adv_loss = 0.5 * adv_loss2 + 0.2 * adv_loss3 + 0.3 * adv_loss4
             lds = adv_loss2
             # lds = F.kl_div(logp_hat, pred, reduction='batchmean')ateral_map_5_hat,
 
