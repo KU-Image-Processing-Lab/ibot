@@ -1,17 +1,20 @@
 import os
-from PIL import Image
+import random
+
+import albumentations as albu
+import cv2
+import numpy as np
+import torch
 import torch.utils.data as data
 import torchvision.transforms as transforms
-import albumentations as albu
-from data_augumentation import Compose, Scale, RandomRotation, RandomMirror, Resize, Normalize_Tensor
-import numpy as np
-import cv2
-import random
-import torch
+from data_augumentation import (Compose, Normalize_Tensor, RandomMirror,
+                                RandomRotation, Resize, Scale)
+from PIL import Image
+
 
 def seed_everything(seed=42):
     random.seed(seed)
-    os.environ['PYTHONHASHSEED'] = str(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
@@ -19,24 +22,30 @@ def seed_everything(seed=42):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
+
 def worker_init_fn(worker_id):
     worker_seed = torch.initial_seed() % 2**32
     np.random.seed(worker_seed)
     random.seed(worker_seed)
 
+
 seed = 42
 seed_everything(seed)
 
 
-class ImageTransform():
+class ImageTransform:
     def __init__(self):
-        self.data_transform = {'train': Compose([
-            # Scale(scale=[0.5, 1.5]),
-            # RandomRotation(angle=[-10, 10]),
-        ]),
-            'val': Compose([])}
+        self.data_transform = {
+            "train": Compose(
+                [
+                    # Scale(scale=[0.5, 1.5]),
+                    # RandomRotation(angle=[-10, 10]),
+                ]
+            ),
+            "val": Compose([]),
+        }
 
-    def __call__(self, img, mask, phase='train'):
+    def __call__(self, img, mask, phase="train"):
         return self.data_transform[phase](img, mask)
 
 
@@ -64,16 +73,26 @@ class PolypDataset(data.Dataset):
     dataloader for polyp segmentation tasks
     """
 
-    def __init__(self, image_root, gt_root, trainsize, phase='train'):
+    def __init__(self, image_root, gt_root, trainsize, phase="train"):
         self.trainsize = trainsize
-        self.images = [image_root + f for f in os.listdir(image_root) if
-                       f.endswith('.jpg') or f.endswith('.png') or f.endswith('.tif') or f.endswith('.pt')]#
-        self.gts = [gt_root + f for f in os.listdir(gt_root) if f.endswith('.tif') or f.endswith('.png') or f.endswith('.jpg')]
+        self.images = [
+            image_root + f
+            for f in os.listdir(image_root)
+            if f.endswith(".jpg")
+            or f.endswith(".png")
+            or f.endswith(".tif")
+            or f.endswith(".pt")
+        ]  #
+        self.gts = [
+            gt_root + f
+            for f in os.listdir(gt_root)
+            if f.endswith(".tif") or f.endswith(".png") or f.endswith(".jpg")
+        ]
         self.images = sorted(self.images)
         self.gts = sorted(self.gts)
 
         self.filter_files()
-        
+
         self.size = len(self.images)
 
         self._alpha = 0.2
@@ -112,10 +131,10 @@ class PolypDataset(data.Dataset):
         #     transforms.ToTensor(),
         #     transforms.Normalize([0.485, 0.456, 0.406],
         #                          [0.229, 0.224, 0.225])])
-        self.gt_transform = transforms.Compose([
-            transforms.Resize((self.trainsize, self.trainsize)),
-            transforms.ToTensor()])
-        
+        self.gt_transform = transforms.Compose(
+            [transforms.Resize((self.trainsize, self.trainsize)), transforms.ToTensor()]
+        )
+
         # print("Number of images:", len(self.images))
         # print("Number of gts:", len(self.gts))
         # print(f"Image root: {image_root}")
@@ -134,7 +153,7 @@ class PolypDataset(data.Dataset):
         image = self.ten_loader(self.images[index])
         # print(image.shape)
         gt = self.binary_loader(self.gts[index])
-        if self.phase == 'train':
+        if self.phase == "train":
             # if random.random() < 1.0:
             #     image, gt = self._apply_mixup(image, gt, index)
 
@@ -150,16 +169,15 @@ class PolypDataset(data.Dataset):
             # augmented = self.transform3(image=image, mask=gt)
 
             # image, gt = augmented['image'], augmented['mask']
-            
+
             image = image.squeeze(0)  # バッチサイズの次元を削除
-       
-         
+
             # print(image.shape)
-   
+
             # image = Image.fromarray(image)
             gt = Image.fromarray(gt)
             # image = image.convert('RGB')
-            gt = gt.convert('L')
+            gt = gt.convert("L")
 
         # image, gt = self.transform(image, gt, phase=self.phase)
         # image = self.img_transform(image)
@@ -180,17 +198,17 @@ class PolypDataset(data.Dataset):
     #     gt2 = np.array(gt2)
     #     # 混ぜる割合を決めて
     #     # r = np.random.beta(self._alpha, self._alpha, 1)[0]
-# 
-        # r = np.random.normal(loc=0, scale=3, size=1)
-        # r = 1 / (1 + np.exp(-r))
-        # # 画像、ラベルを混ぜる（クリップしないと範囲外になることがある）
-        # mixed_image = np.clip(r * image1 + (1 - r) * image2, 0, 255)
-        # mixed_gt = np.clip(r * gt1 + (1 - r) * gt2, 0, 255)
-        # mixed_image = Image.fromarray(mixed_image.astype(np.uint8))
-        # mixed_gt = Image.fromarray(mixed_gt.astype(np.uint8))
-        # mixed_image = mixed_image.convert('RGB')
-        # mixed_gt = mixed_gt.convert('L')
-        # return mixed_image, mixed_gt
+    #
+    # r = np.random.normal(loc=0, scale=3, size=1)
+    # r = 1 / (1 + np.exp(-r))
+    # # 画像、ラベルを混ぜる（クリップしないと範囲外になることがある）
+    # mixed_image = np.clip(r * image1 + (1 - r) * image2, 0, 255)
+    # mixed_gt = np.clip(r * gt1 + (1 - r) * gt2, 0, 255)
+    # mixed_image = Image.fromarray(mixed_image.astype(np.uint8))
+    # mixed_gt = Image.fromarray(mixed_gt.astype(np.uint8))
+    # mixed_image = mixed_image.convert('RGB')
+    # mixed_gt = mixed_gt.convert('L')
+    # return mixed_image, mixed_gt
 
     # Datasetの__get_item__のidx以外のindexを取得する
     def _get_pair_index(self, idx):
@@ -280,7 +298,9 @@ class PolypDataset(data.Dataset):
         images = []
         gts = []
         for img_path, gt_path in zip(self.images, self.gts):
-            img = torch.load(img_path)  # これは、img_pathがテンソルデータであることを前提としています
+            img = torch.load(
+                img_path
+            )  # これは、img_pathがテンソルデータであることを前提としています
             gt_img = Image.open(gt_path)
             # img_shape = img.shape
             # if len(img_shape) == 2:  # もしグレースケール画像であれば
@@ -302,22 +322,21 @@ class PolypDataset(data.Dataset):
         # print(f"Number of images after filtering: {len(self.images)}")
         # print(f"Number of gts after filtering: {len(self.gts)}")
 
-
     def ten_loader(self, path):
-        with open(path, 'rb') as f:
+        with open(path, "rb") as f:
             img = torch.load(f)
             return img
-        
+
     def rgb_loader(self, path):
-        with open(path, 'rb') as f:
+        with open(path, "rb") as f:
             img = Image.open(f)
-            return img.convert('RGB')
+            return img.convert("RGB")
 
     def binary_loader(self, path):
-        with open(path, 'rb') as f:
+        with open(path, "rb") as f:
             img = Image.open(f)
             # return img.convert('1')
-            return img.convert('L')
+            return img.convert("L")
 
     def resize(self, img, gt):
         assert img.size == gt.size
@@ -333,25 +352,46 @@ class PolypDataset(data.Dataset):
         return self.size
 
 
-def get_loader(image_root, gt_root, batchsize, trainsize, shuffle=True, num_workers=0, pin_memory=False, phase='train',
-               droplast=False):
+def get_loader(
+    image_root,
+    gt_root,
+    batchsize,
+    trainsize,
+    shuffle=True,
+    num_workers=0,
+    pin_memory=False,
+    phase="train",
+    droplast=False,
+):
     dataset = PolypDataset(image_root, gt_root, trainsize, phase=phase)
-    data_loader = data.DataLoader(dataset=dataset,
-                                  batch_size=batchsize,
-                                  shuffle=shuffle,
-                                  num_workers=num_workers,
-                                  pin_memory=pin_memory,
-                                  worker_init_fn=worker_init_fn, 
-                                  drop_last=droplast)
+    data_loader = data.DataLoader(
+        dataset=dataset,
+        batch_size=batchsize,
+        shuffle=shuffle,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        worker_init_fn=worker_init_fn,
+        drop_last=droplast,
+    )
     return data_loader
 
 
 class test_dataset:
     def __init__(self, image_root, gt_root, testsize):
         self.testsize = testsize
-        self.images = [image_root + f for f in os.listdir(image_root) if
-                       f.endswith('.jpg') or f.endswith('.png') or f.endswith('.tif') or f.endswith('.pt')]
-        self.gts = [gt_root + f for f in os.listdir(gt_root) if f.endswith('.tif') or f.endswith('.png') or f.endswith('.jpg')]
+        self.images = [
+            image_root + f
+            for f in os.listdir(image_root)
+            if f.endswith(".jpg")
+            or f.endswith(".png")
+            or f.endswith(".tif")
+            or f.endswith(".pt")
+        ]
+        self.gts = [
+            gt_root + f
+            for f in os.listdir(gt_root)
+            if f.endswith(".tif") or f.endswith(".png") or f.endswith(".jpg")
+        ]
         self.images = sorted(self.images)
         self.gts = sorted(self.gts)
         # self.transform = transforms.Compose([
@@ -367,11 +407,11 @@ class test_dataset:
     def load_data(self):
 
         image = self.rgb_loader(self.images[self.index])
-        #image = self.transform(image).unsqueeze(0)
+        # image = self.transform(image).unsqueeze(0)
         gt = self.binary_loader(self.gts[self.index])
-        name = self.images[self.index].split('/')[-1]
-        if name.endswith('.jpg'):
-            name = name.split('.jpg')[0] + '.png'
+        name = self.images[self.index].split("/")[-1]
+        if name.endswith(".jpg"):
+            name = name.split(".jpg")[0] + ".png"
         self.index += 1
         return image, gt, name
 
@@ -386,9 +426,9 @@ class test_dataset:
         image2 = self.transform(image2).unsqueeze(0)
         gt2 = self.binary_loader(self.gts[idx2])
 
-        name = self.images[self.index].split('/')[-1]
-        if name.endswith('.jpg'):
-            name = name.split('.jpg')[0] + '.png'
+        name = self.images[self.index].split("/")[-1]
+        if name.endswith(".jpg"):
+            name = name.split(".jpg")[0] + ".png"
         self.index += 1
         return image, gt, image2, gt2, name
 
@@ -397,11 +437,11 @@ class test_dataset:
         return random.choice(r)
 
     def rgb_loader(self, path):
-        with open(path, 'rb') as f:
+        with open(path, "rb") as f:
             img = torch.load(f)
             return img
 
     def binary_loader(self, path):
-        with open(path, 'rb') as f:
+        with open(path, "rb") as f:
             img = Image.open(f)
-            return img.convert('L')
+            return img.convert("L")
