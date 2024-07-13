@@ -3,6 +3,7 @@
 .env
 Pipfile
 Pipfile.lock
+requirements.txt
 
 # directories
 __pycache__/
