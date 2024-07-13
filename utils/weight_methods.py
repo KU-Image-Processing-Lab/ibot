@@ -212,10 +212,7 @@ class NashMTL(WeightMethod):
             for i, loss in enumerate(losses):
                 g = list(
                     torch.autograd.grad(
-                        loss,
-                        shared_parameters,
-                        retain_graph=True,
-                        allow_unused=True
+                        loss, shared_parameters, retain_graph=True, allow_unused=True
                     )
                 )
 
@@ -226,7 +223,9 @@ class NashMTL(WeightMethod):
                 #     i+=1
                 #     print(type(grad))#214~263
 
-                grad = torch.cat([torch.flatten(grad) for grad in g if grad is not None])
+                grad = torch.cat(
+                    [torch.flatten(grad) for grad in g if grad is not None]
+                )
 
                 grads[i] = grad
 
@@ -381,7 +380,6 @@ class MGDA(WeightMethod):
                     loss,
                     params,
                     retain_graph=True,
-
                 )
             )
             # Normalize all gradients, this is optional and not included in the paper.
@@ -605,7 +603,7 @@ class CAGrad(WeightMethod):
         if rescale == 0:
             return g
         elif rescale == 1:
-            return g / (1 + alpha ** 2)
+            return g / (1 + alpha**2)
         else:
             return g / (1 + alpha)
 
@@ -700,28 +698,12 @@ class IMTLG(WeightMethod):
             norm_grads[i] = grad / norm_term
 
         G = torch.stack(tuple(v for v in grads.values()))
-        D = (
-            G[
-                0,
-            ]
-            - G[
-                1:,
-            ]
-        )
+        D = G[0,] - G[1:,]
 
         U = torch.stack(tuple(v for v in norm_grads.values()))
-        U = (
-            U[
-                0,
-            ]
-            - U[
-                1:,
-            ]
-        )
+        U = U[0,] - U[1:,]
         first_element = torch.matmul(
-            G[
-                0,
-            ],
+            G[0,],
             U.t(),
         )
         try:
