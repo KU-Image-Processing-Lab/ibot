@@ -10,9 +10,6 @@ import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
-sys.path.append(project_root)
-
 from lib.TransFuse_l import TransFuse_L
 from utils.dataloader import get_loader
 from utils.mtl import extract_weight_method_parameters_from_args
