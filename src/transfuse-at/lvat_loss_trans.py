@@ -91,7 +91,7 @@ class LVATLoss(nn.Module):
         )
 
         vae.load_state_dict(
-            torch.load("VAE/weight/weight_VAE650unified_last.pth")
+            torch.load("./weight/VAE/weight/weight_VAE650unified_last.pth")
         )  ######学習によって重みを変更#######
         for param in vae.parameters():
             param.requires_grad = False

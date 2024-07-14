@@ -150,7 +150,7 @@ class Vit_oka_RA(nn.Module):
         # self.resnet = res2net50_v1b_26w_4s(pretrained=True)#10/24
         # self.resnet = res2net101_v1b_26w_4s(pretrained=True)
         # self.Resnet = Resnet()
-        # self.Resnet.load_state_dict(torch.load('resnet50_a1_0-14fe96d1.pth'))
+        # self.Resnet.load_state_dict(torch.load('./weight/resnet50_a1_0-14fe96d1.pth'))
 
         # ---- Receptive Field Block like module ----
         # self.rfb2_1 = RFB_modified(256, channel)#11/01

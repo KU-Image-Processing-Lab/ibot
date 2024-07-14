@@ -299,7 +299,7 @@ class Encoder1(nn.Module):
     def __init__(self):
         super(Encoder1, self).__init__()
         self.vgg = models.vgg19(pretrained=False)
-        self.vgg.load_state_dict(torch.load("vgg19-dcbb9e9d.pth"))
+        self.vgg.load_state_dict(torch.load("./weight/vgg19-dcbb9e9d.pth"))
 
     def forward(self, x):
         skip_connections = []

@@ -4,10 +4,10 @@
 Pipfile
 Pipfile.lock
 requirements.txt
+*.pth
 
 # directories
 __pycache__/
-weights/
 snapshots/
 dataset/
 docker/**/docker-compose.yml

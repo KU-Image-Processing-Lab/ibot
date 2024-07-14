@@ -145,10 +145,10 @@ class Trans_CaraNet_CNN_ARA_oka(nn.Module):
         # self.resnet = res2net50_v1b_26w_4s(pretrained=True)#11/06
         # self.resnet = res2net101_v1b_26w_4s(pretrained=True)
         # self.Resnet = Resnet()
-        # self.Resnet.load_state_dict(torch.load('resnet50_a1_0-14fe96d1.pth'))
+        # self.Resnet.load_state_dict(torch.load('./weight/resnet50_a1_0-14fe96d1.pth'))
         self.resnet = resnet()  # 11/06
         if pretrained:  # 11/06
-            self.resnet.load_state_dict(torch.load("resnet34-43635321.pth"))  # 11/06
+            self.resnet.load_state_dict(torch.load("./weight/resnet34-43635321.pth"))  # 11/06
         self.resnet.fc = nn.Identity()  # 11/06
         self.resnet.layer4 = nn.Identity()  # 11/13 #12/11
 
