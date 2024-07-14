@@ -80,7 +80,9 @@ class SE_TransFuse_S(nn.Module):
         #####修正部分######
         self.seresnet = seresnet()
         if pretrained:
-            self.seresnet.load_state_dict(torch.load("./weight/seresnet34-a4004e63.pth"))
+            self.seresnet.load_state_dict(
+                torch.load("./weight/seresnet34-a4004e63.pth")
+            )
         self.seresnet.fc = nn.Identity()
         self.seresnet.layer4 = nn.Identity()
         ###################

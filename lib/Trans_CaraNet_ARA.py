@@ -154,7 +154,9 @@ class Trans_CaraNet_ARA(nn.Module):
         # self.Resnet.load_state_dict(torch.load('./weight/resnet50_a1_0-14fe96d1.pth'))
         self.resnet = resnet()  # 11/06
         if pretrained:  # 11/06
-            self.resnet.load_state_dict(torch.load("./weight/resnet34-43635321.pth"))  # 11/06
+            self.resnet.load_state_dict(
+                torch.load("./weight/resnet34-43635321.pth")
+            )  # 11/06
         self.resnet.fc = nn.Identity()  # 11/06
         self.resnet.layer5 = nn.Identity()  # 11/13
 
