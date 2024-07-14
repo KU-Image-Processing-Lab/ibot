@@ -58,7 +58,6 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
         for i, pack in enumerate(dataloaders_dict[phase], start=1):
             for rate in size_rates:
                 optimizer.zero_grad()
-                # d_optimizer.zero_grad()
                 images, gts = pack
                 labels = torch.einsum("ijkl->i", gts) > 0
 
