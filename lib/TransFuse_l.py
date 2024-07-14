@@ -86,7 +86,9 @@ class TransFuse_L(nn.Module):
 
         self.Resnet = Resnet()
         if pretrained:
-            self.Resnet.load_state_dict(torch.load("resnet50_a1_0-14fe96d1.pth"))
+            self.Resnet.load_state_dict(
+                torch.load("./weights/resnet50_a1_0-14fe96d1.pth")
+            )
         self.Resnet.fc = nn.Identity()
         self.Resnet.layer4 = nn.Identity()
 
