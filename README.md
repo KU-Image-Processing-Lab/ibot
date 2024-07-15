@@ -20,7 +20,7 @@ $ export PYTHONPATH=<リポジトリのルートディレクトリ>:$PYTHONPATH
 いちいち設定が面倒な場合は、Bashを使用ている場合は`~/.bashrc`に、Zshを使用している場合は`~/.zshrc`に以下の行を追加してください。
 
 ```bash
-$ export PYTHONPATH=<リポジトリのルートディレクトリ>:$PYTHONPATH
+$ export PYTHONPATH=<リポジトリのルートディレクトリ>:$PYTHONPATH >> ~/.zshrc
 
 $ source ~/.bashrc
 or
