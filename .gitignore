@@ -1,10 +1,12 @@
 # files
 .DS_Store
 .env
+*.pth
+
+# pipenv
 Pipfile
 Pipfile.lock
 requirements.txt
-*.pth
 
 # directories
 __pycache__/
