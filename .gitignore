@@ -11,5 +11,6 @@ requirements.txt
 # directories
 **/__pycache__/**
 snapshots/
+results/
 dataset/
 docker/**/docker-compose.yml
