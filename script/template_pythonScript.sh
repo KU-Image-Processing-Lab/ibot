@@ -1,5 +1,5 @@
 # 環境変数
-PYTHONPATH=path_to_project_root_directory:$PYTHONPATH
+export PYTHONPATH=path_to_project_root_directory:$PYTHONPATH
 
 # --------------------------------------------------------------
 
