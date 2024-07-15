@@ -10,4 +10,5 @@ requirements.txt
 __pycache__/
 snapshots/
 dataset/
+docs/
 docker/**/docker-compose.yml
