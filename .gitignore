@@ -9,7 +9,7 @@ Pipfile.lock
 requirements.txt
 
 # directories
-__pycache__/
+**/__pycache__/**
 snapshots/
 dataset/
 docker/**/docker-compose.yml
