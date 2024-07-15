@@ -3,4 +3,7 @@ PYTHONPATH=path_to_project_root_directory:$PYTHONPATH
 
 # --------------------------------------------------------------
 
-python3 path_to_python_script 1> >(tee ./logs/train_trans_caranet_nash_stdout.log >&1 ) 2> >(tee ./logs/train_trans_caranet_nash_stderr.log >&2)
+SCRIPT_DIR='path_to_script_directory'
+SCRIPT_NAME='path_to_save_directory'
+
+python3 ./src/${SCRIPT_DIR}/${SCRIPT_NAME} 1> >(tee ./logs/${SCRIPT_NAME}_stdout.log >&1 ) 2> >(tee ./logs/${SCRIPT_NAME}_stderr.log >&2)
