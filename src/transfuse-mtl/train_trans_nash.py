@@ -17,6 +17,7 @@ from utils.set_seed import seed_everything
 from utils.smooth_cross_entropy import SmoothCrossEntropy
 from utils.utils import AvgMeter, adjust_lr, clip_gradient
 from utils.weight_methods import WeightMethods
+from utils.save_parameter import save_parameter
 
 matplotlib.use("Agg")
 seed_everything(42)
@@ -262,15 +263,7 @@ if __name__ == "__main__":
 
     opt = parser.parse_args()
 
-    # ---- print all hyperparameters ----
-    for k, v in sorted(vars(opt).items()):
-        print("{0}: {1}".format(k, v))
-
-    # ---- save hyperparameters ----
-    os.makedirs(f"snapshots/{opt.train_save}", exist_ok=True)
-    with open(f"snapshots/{opt.train_save}/hyperparameters.txt", "w") as f:
-        for k, v in sorted(vars(opt).items()):
-            f.write("{0}: {1}\n".format(k, v))
+    save_parameter(opt)
 
     # ---- build models ----
     if opt.discriminator == "resnet10":
