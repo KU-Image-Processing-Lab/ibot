@@ -61,7 +61,7 @@ dataset | データセット
 
 ## データセット
 
-Dropboxにて、[クロスバリデーション用のデータセット](https://www.dropbox.com/scl/fo/yju10bfpm49iqe7cxhnxs/AIPBAL7VqyirIbHUdoGTBio?rlkey=estw1f81uug3ddwoes4q0w2ph&dl=0)を配布しています。
+Dropboxにて、[クロスバリデーション用のデータセット](https://www.dropbox.com/scl/fi/hyrpr0oe2icdpozczu6pk/CrossValidation.zip?rlkey=jz7kwk25fz1xc3i1utshas6uk&dl=0)を配布しています。
 
 パスワードは休憩室の番号の2乗です。
 
