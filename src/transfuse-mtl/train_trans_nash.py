@@ -13,11 +13,11 @@ from torch.autograd import Variable
 from lib.TransFuse_l import TransFuse_L
 from utils.dataloader import get_loader
 from utils.mtl import extract_weight_method_parameters_from_args
+from utils.save_parameter import save_parameter
 from utils.set_seed import seed_everything
 from utils.smooth_cross_entropy import SmoothCrossEntropy
 from utils.utils import AvgMeter, adjust_lr, clip_gradient
 from utils.weight_methods import WeightMethods
-from utils.save_parameter import save_parameter
 
 matplotlib.use("Agg")
 seed_everything(42)
