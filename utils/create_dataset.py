@@ -159,6 +159,6 @@ class CrossValidationDataset:
 
 
 if __name__ == "__main__":
-    for i in [31, 42, 71, 91, 101]:
+    for i in [31, 42, 71, 91]:
         cv = CrossValidationDataset(verbose=True)
         cv(i)
