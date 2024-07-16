@@ -108,11 +108,11 @@ parser.add_argument(
 )
 
 parser.add_argument(
-        "--discriminator",
-        type=str,
-        default="resnet10",
-        help="Discriminatorに使うモデル",
-    )
+    "--discriminator",
+    type=str,
+    default="resnet10",
+    help="Discriminatorに使うモデル",
+)
 # parser.add_argument('--pth_path2', type=str, default='./snapshots/Transfuse_S/Discriminator-19.pth')
 # parser.add_argument('--pth_path2', type=str, default='./snapshots/Transfuse_S/Discriminator-best.pth')
 # parser.add_argument('--pth_path2', type=str, default='./snapshots/Transfuse_S/Discriminator-best2.pth')

@@ -7,9 +7,10 @@ import numpy as np
 import torch
 import torch.utils.data as data
 import torchvision.transforms as transforms
-from .data_augumentation import (Compose, Normalize_Tensor, RandomMirror,
-                                RandomRotation, Resize, Scale)
 from PIL import Image
+
+from .data_augumentation import (Compose, Normalize_Tensor, RandomMirror,
+                                 RandomRotation, Resize, Scale)
 
 
 def seed_everything(seed=42):
