@@ -19,7 +19,7 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")
 sys.path.append(project_root)
 
 from lib.Discriminator_ResNet import Discriminator
-from lib.models_vit_discriminator import vit_large_patch16 as vit_large
+# from lib.models_vit_discriminator import vit_large_patch16 as vit_large
 from lib.TransFuse_l import TransFuse_L
 from utils.dataloader import test_dataset
 
