@@ -11,7 +11,7 @@ from torch.nn import (Conv2d, CrossEntropyLoss, Dropout, LayerNorm, Linear,
                       Softmax)
 from torchvision.models import resnet50 as Resnet
 
-from lib.DeiT import deit_base_patch16_384 as deit_base
+# from lib.DeiT import deit_base_patch16_384 as deit_base
 
 assert timm.__version__ == "0.3.2"  # version check
 
