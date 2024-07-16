@@ -211,6 +211,24 @@ if __name__ == "__main__":
         default="./dataset/ValDataset",
         help="path to val dataset",
     )
+    parser.add_argument(
+        "--loss_dir",
+        type=str,
+        default="./fig",
+        help="img dir",
+    )
+    parser.add_argument(
+        "--seg_loss_path",
+        type=str,
+        default="./fig/seg_loss_img.png",
+        help="path to segmentation loss img",
+    )
+    parser.add_argument(
+        "--dis_loss_path",
+        type=str,
+        default="./fig/dis_loss_img.png",
+        help="path to Discriminator loss img",
+    )
     parser.add_argument("--train_save", type=str, default="Transfuse_S")
     parser.add_argument(
         "--beta1", type=float, default=0.5, help="beta1 of adam optimizer"
@@ -395,6 +413,7 @@ if __name__ == "__main__":
     plt.ylabel("loss")
     plt.xlim(left=0)
     plt.legend(loc="upper right")
-
-    fig.savefig("fig/img.png")
-    fig2.savefig("fig/img2.png")
+    # 保存先ディレクトリを作成
+    os.makedirs(opt.loss_dir, exist_ok=True)
+    fig.savefig(opt.seg_loss_path)
+    fig2.savefig(opt.dis_loss_path)
