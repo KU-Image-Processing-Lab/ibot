@@ -12,6 +12,9 @@ PraNetとU-PraNetとCaraNetのdocker file
 ### docker_yolo
 ultralyticsライブラリを使ったyoloのdocker file
 
+### docker_trans
+MTL以外のセグメンテーションタスク（VAT、VAEなど）のdocker file
+
 ## docker-compose.yml
 
 example.docker-comppose.ymlをコピーして、TODOとなっている部分を書き換えてください。
