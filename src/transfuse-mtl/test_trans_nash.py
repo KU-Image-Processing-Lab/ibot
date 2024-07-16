@@ -5,6 +5,7 @@ import sys
 
 import cv2
 import imageio
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -22,6 +23,10 @@ from lib.Discriminator_ResNet import Discriminator
 # from lib.models_vit_discriminator import vit_large_patch16 as vit_large
 from lib.TransFuse_l import TransFuse_L
 from utils.dataloader import test_dataset
+from utils.set_seed import seed_everything
+
+matplotlib.use("Agg")
+seed_everything(42)
 
 #################################################
 # epoch1~20の重みを全部テストする。
@@ -101,6 +106,13 @@ parser.add_argument(
 parser.add_argument(
     "--pth_path2", type=str, default="./snapshots/Transfuse_S/Discriminator-99.pth"
 )
+
+parser.add_argument(
+        "--discriminator",
+        type=str,
+        default="resnet10",
+        help="Discriminatorに使うモデル",
+    )
 # parser.add_argument('--pth_path2', type=str, default='./snapshots/Transfuse_S/Discriminator-19.pth')
 # parser.add_argument('--pth_path2', type=str, default='./snapshots/Transfuse_S/Discriminator-best.pth')
 # parser.add_argument('--pth_path2', type=str, default='./snapshots/Transfuse_S/Discriminator-best2.pth')
@@ -127,7 +139,16 @@ model.eval()
 # model2 = torch_model.vgg16(pretrained=True)
 # model2.classifier[6] = nn.Linear(in_features=4096, out_features=2)
 
-model2 = Discriminator()
+# ---- build models ----
+if opt.discriminator == "resnet10":
+    from lib.ResNet_10 import ResNet10
+
+    model2 = ResNet10()
+
+if opt.discriminator == "res2net":
+    from lib.Discriminator_ResNet import Discriminator
+
+    model2 = Discriminator()
 
 model2.load_state_dict(torch.load(opt.pth_path2))
 
