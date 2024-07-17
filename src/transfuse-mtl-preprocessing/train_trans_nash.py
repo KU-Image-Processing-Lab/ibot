@@ -4,6 +4,7 @@ import sys
 import time
 from datetime import datetime
 
+import cv2
 import matplotlib
 import matplotlib.pyplot as plt
 import torch
@@ -37,7 +38,7 @@ def structure_loss(pred, mask):
     return (wbce + wiou).mean()
 
 
-def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best2_loss):
+def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best2_loss, device):
     val_loss = 0
     for phase in ["train", "val"]:
         if phase == "train":
@@ -56,6 +57,7 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
             AvgMeter(),
         )
 
+        os.makedirs(f"./snapshots/{opt.train_save}/crop_images", exist_ok=True)
         for i, pack in enumerate(dataloaders_dict[phase], start=1):
             for rate in size_rates:
                 optimizer.zero_grad()
@@ -64,9 +66,9 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
 
                 labels = torch.where(labels > 0, torch.tensor(1), torch.tensor(0))
 
-                images = Variable(images).cuda()
-                gts = Variable(gts).cuda()
-                labels = Variable(labels).cuda()
+                images = Variable(images).to(device)
+                gts = Variable(gts).to(device)
+                labels = Variable(labels).to(device)
                 # ---- rescale ----
                 trainsize = int(round(opt.trainsize * rate / 32) * 32)
                 if rate != 1:
@@ -83,9 +85,22 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
                         align_corners=True,
                     )
                 with torch.set_grad_enabled(phase == "train"):
+                    pram_d = models["Preprocess"](images)
+                    cropped_images = images[:, :, :, pram_d]
+
+                    # ---- save image ----
+                    if i == 0:
+                        img = cropped_images[0].cpu().numpy().transpose(1, 2, 0)
+                        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+                        cv2.imwrite(
+                            f"./snapshots/{opt.train_save}/crop_images/{epoch}_{i}.png",
+                            img,
+                        )
+                    continue 
+
                     # ---- forward ----
                     lateral_map_4, lateral_map_3, lateral_map_2 = models["Transfuse"](
-                        images
+                        cropped_images
                     )
 
                     # ---- loss function ----
@@ -285,7 +300,7 @@ if __name__ == "__main__":
 
     # ---- build preprocess model ----
     if opt.discriminator == "resnet10":
-        from lib.ResNet_10 import ResNet10
+        from lib.ResNet_10_preprocess import ResNet10
 
         model0 = ResNet10()
     elif opt.discriminator == "res2net":
@@ -303,15 +318,16 @@ if __name__ == "__main__":
         for param in model1.parameters():
             param.requires_grad = False
 
-    model0.cuda()
-    model1.cuda()
-    model2 = model2.cuda()
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model0.to(device)
+    model1.to(device)
+    model2 = model2.to(device)
 
     models = {"Preprocess": model0, "Transfuse": model1, "Discriminator": model2}
 
     weight_methods_parameters = extract_weight_method_parameters_from_args()
     weight_method = WeightMethods(
-        opt.mtl, n_tasks=2, device="cuda:0", **weight_methods_parameters[opt.mtl]
+        opt.mtl, n_tasks=2, device=device, **weight_methods_parameters[opt.mtl]
     )
 
     params = [p for v in models.values() for p in list(v.parameters())]
@@ -328,7 +344,9 @@ if __name__ == "__main__":
     ]
     for n, p in model2.named_parameters():
         task_specific_parameters.append(p)
-    # TODO: preprocessのパラメータもtask_specific_parametersに追加する？
+
+    for n, p in model0.named_parameters():
+        task_specific_parameters.append(p)
 
     optimizer = torch.optim.Adam(
         [
@@ -378,7 +396,7 @@ if __name__ == "__main__":
     for epoch in range(1, opt.epoch):
         adjust_lr(
             optimizer, opt.lr, epoch, opt.decay_rate, opt.decay_epoch
-        )  ###################################
+        )
         (
             epoch,
             train_loss,
@@ -395,6 +413,7 @@ if __name__ == "__main__":
             epoch,
             best_loss,
             best2_loss,
+            device
         )
         epoch_list.append(epoch)
         train_loss = train_loss.cpu().data.numpy()
