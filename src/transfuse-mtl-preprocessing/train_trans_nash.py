@@ -260,21 +260,40 @@ if __name__ == "__main__":
         default="./weights/修論/segmentation/TransFuse-L+MAE/vit-l_352/石灰化ありのみ/Transfuse-best.pth",
         help="MAEの重み(TransFuse)",
     )
+    parser.add_argument(
+        "--preprocess",
+        type=str,
+        default="resnet10",
+        help="前処理に使用するモデル",
+    )
 
     opt = parser.parse_args()
 
     save_parameter(opt)
 
-    # ---- build models ----
+    # ---- build discriminator ----
     if opt.discriminator == "resnet10":
         from lib.ResNet_10 import ResNet10
 
         model2 = ResNet10()
-
-    if opt.discriminator == "res2net":
+    elif opt.discriminator == "res2net":
         from lib.Discriminator_ResNet import Discriminator
 
         model2 = Discriminator()
+    else:
+        sys.exit("Invalid discriminator model")
+
+    # ---- build preprocess model ----
+    if opt.discriminator == "resnet10":
+        from lib.ResNet_10 import ResNet10
+
+        model0 = ResNet10()
+    elif opt.discriminator == "res2net":
+        from lib.Discriminator_ResNet import Discriminator
+
+        model0 = Discriminator()
+    else:
+        sys.exit("Invalid preprocess model")
 
     model1 = TransFuse_L(pretrained=True)
     if opt.tuning:
@@ -284,10 +303,11 @@ if __name__ == "__main__":
         for param in model1.parameters():
             param.requires_grad = False
 
+    model0.cuda()
     model1.cuda()
     model2 = model2.cuda()
 
-    models = {"Transfuse": model1, "Discriminator": model2}
+    models = {"Preprocess": model0, "Transfuse": model1, "Discriminator": model2}
 
     weight_methods_parameters = extract_weight_method_parameters_from_args()
     weight_method = WeightMethods(
@@ -308,6 +328,7 @@ if __name__ == "__main__":
     ]
     for n, p in model2.named_parameters():
         task_specific_parameters.append(p)
+    # TODO: preprocessのパラメータもtask_specific_parametersに追加する？
 
     optimizer = torch.optim.Adam(
         [
@@ -409,4 +430,4 @@ if __name__ == "__main__":
     # 保存先ディレクトリを作成
     os.makedirs(opt.loss_dir, exist_ok=True)
     fig.savefig(opt.seg_loss_path)
-    fig2.savefig(opt.dis_loss_path)
+    fig2savefig(opt.dis_loss_path)
