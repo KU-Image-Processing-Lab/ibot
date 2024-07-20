@@ -56,19 +56,23 @@ class PolypDataset(data.Dataset):
 
         self.phase = phase
 
+        self.transform_right = albu.Compose(
+            [
+                albu.HorizontalFlip(p=1.0),
+            ]
+        )
+
         self.transform3 = albu.Compose(
             [
-                albu.ShiftScaleRotate(
-                    shift_limit=0.15,
-                    scale_limit=0.15,
-                    rotate_limit=25,
-                    p=0.5,
-                    border_mode=0,
-                ),
+                # albu.ShiftScaleRotate(
+                #     shift_limit=0.15,
+                #     scale_limit=0.15,
+                #     rotate_limit=25,
+                #     p=0.5,
+                #     border_mode=0,
+                # ),
                 # albu.RandomSizedCrop(),
                 albu.ColorJitter(),
-                albu.HorizontalFlip(),
-                # albu.VerticalFlip()
             ]
         )
 
@@ -86,6 +90,16 @@ class PolypDataset(data.Dataset):
     def __getitem__(self, index):
         image = self.rgb_loader(self.images[index])
         gt = self.binary_loader(self.gts[index])
+
+        if 'right' in self.images[index]:
+            image = np.array(image)
+            gt = np.array(gt)
+            augmented = self.transform_right(image=image, mask=gt)
+            image = Image.fromarray(image)
+            gt = Image.fromarray(gt)
+            image = image.convert("RGB")
+            gt = gt.convert("L")
+
         if self.phase == "train":
 
             image = np.array(image)

@@ -106,12 +106,20 @@ parser.add_argument(
 parser.add_argument(
     "--pth_path2", type=str, default="./snapshots/Transfuse_S/Discriminator-99.pth"
 )
-
+parser.add_argument(
+    "--pth_path0", type=str, default="./snapshots/Transfuse_S/Preprocess-99.pth"
+)
 parser.add_argument(
     "--discriminator",
     type=str,
     default="resnet10",
     help="Discriminatorに使うモデル",
+)
+parser.add_argument(
+    "--preprocess",
+    type=str,
+    default="resnet10",
+    help="前処理に使用するモデル",
 )
 # parser.add_argument('--pth_path2', type=str, default='./snapshots/Transfuse_S/Discriminator-19.pth')
 # parser.add_argument('--pth_path2', type=str, default='./snapshots/Transfuse_S/Discriminator-best.pth')
@@ -128,6 +136,22 @@ data_path2 = "./dataset/sekkai_TestDataset/"
 save_path = "./results/Transfuse_S/"
 opt = parser.parse_args()
 # for ep in range(opt.epoch):
+
+# ---- build preprocess model ----
+if opt.discriminator == "resnet10":
+    from lib.ResNet_10_preprocess import ResNet10
+
+    model0 = ResNet10()
+elif opt.discriminator == "res2net":
+    from lib.Discriminator_ResNet import Discriminator
+
+    model0 = Discriminator()
+else:
+    sys.exit("Invalid preprocess model")
+
+model0.load_state_dict(torch.load(opt.pth_path0))
+model0.cuda()
+model0.eval()
 
 model = TransFuse_L()
 model.load_state_dict(torch.load(opt.pth_path))
@@ -151,9 +175,9 @@ if opt.discriminator == "res2net":
     model2 = Discriminator()
 
 model2.load_state_dict(torch.load(opt.pth_path2))
-
 model2.cuda()
 model2.eval()
+
 
 os.makedirs(save_path, exist_ok=True)
 for file in glob.glob("./results/Transfuse_S/*.png"):
@@ -198,6 +222,16 @@ for i in range(test_loader1.size):
     image = image.cuda()
 
     with torch.no_grad():
+        pram_d = model0(image) * opt.testsize
+        # Use param_d to trim width by param_d
+        # ---- crop image ----
+        cropped_images = torch.Tensor().cuda()
+        for i in range(image.size(0)):
+            crop = image[i, :, : int(pram_d[i]), :]
+            crop = F.interpolate(
+                crop.unsqueeze(0), size=(opt.testsize, opt.testsize), mode="bilinear", align_corners=True)
+            cropped_images = torch.cat((cropped_images, crop), dim=0)
+
         _, _, res = model(image)
 
         res1 = F.upsample(res, size=gt.shape, mode="bilinear", align_corners=False)

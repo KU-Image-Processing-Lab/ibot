@@ -85,27 +85,27 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
                         align_corners=True,
                     )
                 with torch.set_grad_enabled(phase == "train"):
-                    pram_d = models["Preprocess"](images) # torch.size([4, 1])
-                    print(pram_d.shape)
+                    pram_d = models["Preprocess"](images) * opt.trainsize
 
                     # Use param_d to trim width by param_d
                     # ---- crop images ----
-                    cropped_images = []
+                    cropped_images = torch.Tensor().to(device)
                     for i in range(images.size(0)):
-                        crop = images[i, :, : pram_d[i], :]
-                        cropped_images.append(crop)
-                    cropped_images = torch.stack(cropped_images)
-                    print(cropped_images.shape)
+                        crop = images[i, :, : int(pram_d[i]), :]
+                        crop = F.interpolate(
+                            crop.unsqueeze(0), size=(opt.trainsize, opt.trainsize), mode="bilinear", align_corners=True)
+                        cropped_images = torch.cat((cropped_images, crop), dim=0)
 
-
-                    # ---- save image ----
-                    img = cropped_images[0].cpu().numpy().transpose(1, 2, 0)
-                    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-                    cv2.imwrite(
-                        f"./snapshots/{opt.train_save}/crop_images/{epoch}_{i}.png",
-                        img,
-                    )
-                    exit() 
+                    # # ---- save image ----
+                    # for i in range(cropped_images.size(0)):
+                    #     img = cropped_images[i].mul(255).byte()
+                    #     img = img.permute(1, 2, 0).cpu().numpy()
+                    #     cv2.imwrite(
+                    #         "./snapshots/{}/crop_images/{}_{}.png".format(
+                    #             opt.train_save, epoch, i
+                    #         ),
+                    #         img,
+                    #     )
 
                     # ---- forward ----
                     lateral_map_4, lateral_map_3, lateral_map_2 = models["Transfuse"](
@@ -168,6 +168,9 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
                 best_loss = val_loss
                 save_path = "snapshots/{}/".format(opt.train_save)
                 torch.save(
+                    models["Preprocess"].state_dict(), save_path + "Preprocess-best.pth"
+                )
+                torch.save(
                     models["Transfuse"].state_dict(), save_path + "Transfuse-best.pth"
                 )
                 torch.save(
@@ -179,6 +182,9 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
                 best2_loss = val_d_loss
                 save_path = "snapshots/{}/".format(opt.train_save)
                 torch.save(
+                    models["Preprocess"].state_dict(), save_path + "Preprocess-best2.pth"
+                )
+                torch.save(
                     models["Transfuse"].state_dict(), save_path + "Transfuse-best2.pth"
                 )
                 torch.save(
@@ -189,6 +195,9 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
 
     save_path = "snapshots/{}/".format(opt.train_save)
     if (epoch + 1) % opt.save_epoch == 0:
+        torch.save(
+            models["Preprocess"].state_dict(), save_path + "Preprocess-%d.pth" % epoch
+        )
         torch.save(
             models["Transfuse"].state_dict(), save_path + "Transfuse-%d.pth" % epoch
         )
@@ -330,7 +339,7 @@ if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model0.to(device)
     model1.to(device)
-    model2 = model2.to(device)
+    model2.to(device)
 
     models = {"Preprocess": model0, "Transfuse": model1, "Discriminator": model2}
 
@@ -351,10 +360,10 @@ if __name__ == "__main__":
         for n, p in model1.named_parameters()
         if "final_x" in n or "final_1" in n or "cls" in n
     ]
-    for n, p in model2.named_parameters():
-        task_specific_parameters.append(p)
 
     for n, p in model0.named_parameters():
+        task_specific_parameters.append(p)
+    for n, p in model2.named_parameters():
         task_specific_parameters.append(p)
 
     optimizer = torch.optim.Adam(
