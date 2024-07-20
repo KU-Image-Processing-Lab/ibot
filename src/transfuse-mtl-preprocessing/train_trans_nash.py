@@ -85,17 +85,26 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
                         align_corners=True,
                     )
                 with torch.set_grad_enabled(phase == "train"):
-                    pram_d = models["Preprocess"](images)
-                    cropped_images = images[:, :, :, pram_d]
+                    pram_d = models["Preprocess"](images) # torch.size([4, 1])
+                    print(pram_d.shape)
+
+                    # Use param_d to trim width by param_d
+                    # ---- crop images ----
+                    cropped_images = []
+                    for i in range(images.size(0)):
+                        crop = images[i, :, : pram_d[i], :]
+                        cropped_images.append(crop)
+                    cropped_images = torch.stack(cropped_images)
+                    print(cropped_images.shape)
+
 
                     # ---- save image ----
-                    if i == 0:
-                        img = cropped_images[0].cpu().numpy().transpose(1, 2, 0)
-                        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-                        cv2.imwrite(
-                            f"./snapshots/{opt.train_save}/crop_images/{epoch}_{i}.png",
-                            img,
-                        )
+                    img = cropped_images[0].cpu().numpy().transpose(1, 2, 0)
+                    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+                    cv2.imwrite(
+                        f"./snapshots/{opt.train_save}/crop_images/{epoch}_{i}.png",
+                        img,
+                    )
                     exit() 
 
                     # ---- forward ----
