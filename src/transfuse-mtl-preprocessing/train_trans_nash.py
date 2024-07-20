@@ -467,4 +467,4 @@ if __name__ == "__main__":
     # 保存先ディレクトリを作成
     os.makedirs(opt.loss_dir, exist_ok=True)
     fig.savefig(opt.seg_loss_path)
-    fig2savefig(opt.dis_loss_path)
+    fig2.savefig(opt.dis_loss_path)
