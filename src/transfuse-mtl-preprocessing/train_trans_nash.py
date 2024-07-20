@@ -96,7 +96,7 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
                             f"./snapshots/{opt.train_save}/crop_images/{epoch}_{i}.png",
                             img,
                         )
-                    continue 
+                    exit() 
 
                     # ---- forward ----
                     lateral_map_4, lateral_map_3, lateral_map_2 = models["Transfuse"](
