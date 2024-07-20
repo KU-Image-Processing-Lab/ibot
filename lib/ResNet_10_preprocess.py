@@ -145,5 +145,11 @@ class ResNet10(nn.Module):
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
         x = self.fc(x)
+        # ---- sigmoid ----
+        x = torch.sigmoid(x)
+
+        # ---- tanh ----
+        # x = torch.tanh(x)
+        # x = (x + 1) / 2
 
         return x
