@@ -34,8 +34,8 @@ python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --pth_path2 ./snapshots/${TRAIN_SAVE}/Discriminator-best.pth \
     1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1 ) \
     2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
-python3 ./utils/slack_bot.py --text `cat ./logs/${TEST_SCRIPT_NAME}_stdout.log`
-python3 ./utils/slack_bot.py --text `cat ./logs/${TEST_SCRIPT_NAME}_stderr.log`
+python3 ./utils/slack_bot.py --text "`cat ./logs/${TEST_SCRIPT_NAME}_stdout.log`"
+python3 ./utils/slack_bot.py --text "`cat ./logs/${TEST_SCRIPT_NAME}_stderr.log`"
 
 python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --testsize 352 \
@@ -45,8 +45,8 @@ python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --pth_path2 ./snapshots/${TRAIN_SAVE}/Discriminator-99.pth \
     1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1 ) \
     2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
-python3 ./utils/slack_bot.py --text `cat ./logs/${TEST_SCRIPT_NAME}_stdout.log`
-python3 ./utils/slack_bot.py --text `cat ./logs/${TEST_SCRIPT_NAME}_stderr.log`
+python3 ./utils/slack_bot.py --text "`cat ./logs/${TEST_SCRIPT_NAME}_stdout.log`"
+python3 ./utils/slack_bot.py --text "`cat ./logs/${TEST_SCRIPT_NAME}_stderr.log`"
 
 python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --testsize 352 \
@@ -56,5 +56,5 @@ python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --pth_path2 ./snapshots/${TRAIN_SAVE}/Discriminator-199.pth \
     1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1 ) \
     2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
-python3 ./utils/slack_bot.py --text `cat ./logs/${TEST_SCRIPT_NAME}_stdout.log`
-python3 ./utils/slack_bot.py --text `cat ./logs/${TEST_SCRIPT_NAME}_stderr.log`
+python3 ./utils/slack_bot.py --text "`cat ./logs/${TEST_SCRIPT_NAME}_stdout.log`"
+python3 ./utils/slack_bot.py --text "`cat ./logs/${TEST_SCRIPT_NAME}_stderr.log`"
