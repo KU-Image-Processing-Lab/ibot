@@ -102,6 +102,8 @@ python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --discriminator resnet10 \
     --pth_path ./snapshots/${TRAIN_SAVE}/2/0/Transfuse-best.pth \
     --pth_path2 ./snapshots/${TRAIN_SAVE}/2/0/Discriminator-best.pth \
+    --test_data_path1 ./dataset/CrossValidation/cv0_TestDataset\
+    --test_data_path2 ./dataset/CrossValidation/cv0_sekkai_TestDataset\
     1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1 ) \
     2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
 
@@ -110,6 +112,8 @@ python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --discriminator resnet10 \
     --pth_path ./snapshots/${TRAIN_SAVE}/2/1/Transfuse-best.pth \
     --pth_path2 ./snapshots/${TRAIN_SAVE}/2/1/Discriminator-best.pth \
+    --test_data_path1 ./dataset/CrossValidation/cv1_TestDataset\
+    --test_data_path2 ./dataset/CrossValidation/cv1_sekkai_TestDataset\
     1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1 ) \
     2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
 
@@ -118,6 +122,8 @@ python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --discriminator resnet10 \
     --pth_path ./snapshots/${TRAIN_SAVE}/2/2/Transfuse-best.pth \
     --pth_path2 ./snapshots/${TRAIN_SAVE}/2/2/Discriminator-best.pth \
+    --test_data_path1 ./dataset/CrossValidation/cv2_TestDataset\
+    --test_data_path2 ./dataset/CrossValidation/cv2_sekkai_TestDataset\
     1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1 ) \
     2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
 
@@ -126,6 +132,8 @@ python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --discriminator resnet10 \
     --pth_path ./snapshots/${TRAIN_SAVE}/2/3/Transfuse-best.pth \
     --pth_path2 ./snapshots/${TRAIN_SAVE}/2/3/Discriminator-best.pth \
+    --test_data_path1 ./dataset/CrossValidation/cv3_TestDataset\
+    --test_data_path2 ./dataset/CrossValidation/cv3_sekkai_TestDataset\
     1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1 ) \
     2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
 
@@ -134,6 +142,8 @@ python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --discriminator resnet10 \
     --pth_path ./snapshots/${TRAIN_SAVE}/2/4/Transfuse-best.pth \
     --pth_path2 ./snapshots/${TRAIN_SAVE}/2/4/Discriminator-best.pth \
+    --test_data_path1 ./dataset/CrossValidation/cv4_TestDataset\
+    --test_data_path2 ./dataset/CrossValidation/cv4_sekkai_TestDataset\
     1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1 ) \
     2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
 
@@ -142,6 +152,8 @@ python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --discriminator resnet10 \
     --pth_path ./snapshots/${TRAIN_SAVE}/2/0/Transfuse-best2.pth \
     --pth_path2 ./snapshots/${TRAIN_SAVE}/2/0/Discriminator-best2.pth \
+    --test_data_path1 ./dataset/CrossValidation/cv0_TestDataset\
+    --test_data_path2 ./dataset/CrossValidation/cv0_sekkai_TestDataset\
     1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1 ) \
     2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
 
@@ -150,6 +162,8 @@ python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --discriminator resnet10 \
     --pth_path ./snapshots/${TRAIN_SAVE}/2/1/Transfuse-best2.pth \
     --pth_path2 ./snapshots/${TRAIN_SAVE}/2/1/Discriminator-best2.pth \
+    --test_data_path1 ./dataset/CrossValidation/cv1_TestDataset\
+    --test_data_path2 ./dataset/CrossValidation/cv1_sekkai_TestDataset\
     1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1 ) \
     2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
 
@@ -158,6 +172,8 @@ python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --discriminator resnet10 \
     --pth_path ./snapshots/${TRAIN_SAVE}/2/2/Transfuse-best2.pth \
     --pth_path2 ./snapshots/${TRAIN_SAVE}/2/2/Discriminator-best2.pth \
+    --test_data_path1 ./dataset/CrossValidation/cv2_TestDataset\
+    --test_data_path2 ./dataset/CrossValidation/cv2_sekkai_TestDataset\
     1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1 ) \
     2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
 
@@ -166,6 +182,8 @@ python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --discriminator resnet10 \
     --pth_path ./snapshots/${TRAIN_SAVE}/2/3/Transfuse-best2.pth \
     --pth_path2 ./snapshots/${TRAIN_SAVE}/2/3/Discriminator-best2.pth \
+    --test_data_path1 ./dataset/CrossValidation/cv3_TestDataset\
+    --test_data_path2 ./dataset/CrossValidation/cv3_sekkai_TestDataset\
     1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1 ) \
     2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
 
@@ -174,6 +192,8 @@ python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --discriminator resnet10 \
     --pth_path ./snapshots/${TRAIN_SAVE}/2/4/Transfuse-best2.pth \
     --pth_path2 ./snapshots/${TRAIN_SAVE}/2/4/Discriminator-best2.pth \
+    --test_data_path1 ./dataset/CrossValidation/cv4_TestDataset\
+    --test_data_path2 ./dataset/CrossValidation/cv4_sekkai_TestDataset\
     1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1 ) \
     2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
 
@@ -182,6 +202,8 @@ python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --discriminator resnet10 \
     --pth_path ./snapshots/${TRAIN_SAVE}/2/0/Transfuse-99.pth \
     --pth_path2 ./snapshots/${TRAIN_SAVE}/2/0/Discriminator-99.pth \
+    --test_data_path1 ./dataset/CrossValidation/cv0_TestDataset\
+    --test_data_path2 ./dataset/CrossValidation/cv0_sekkai_TestDataset\
     1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1 ) \
     2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
 
@@ -190,6 +212,8 @@ python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --discriminator resnet10 \
     --pth_path ./snapshots/${TRAIN_SAVE}/2/1/Transfuse-99.pth \
     --pth_path2 ./snapshots/${TRAIN_SAVE}/2/1/Discriminator-99.pth \
+    --test_data_path1 ./dataset/CrossValidation/cv1_TestDataset\
+    --test_data_path2 ./dataset/CrossValidation/cv1_sekkai_TestDataset\
     1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1 ) \
     2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
 
@@ -198,6 +222,8 @@ python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --discriminator resnet10 \
     --pth_path ./snapshots/${TRAIN_SAVE}/2/2/Transfuse-99.pth \
     --pth_path2 ./snapshots/${TRAIN_SAVE}/2/2/Discriminator-99.pth \
+    --test_data_path1 ./dataset/CrossValidation/cv2_TestDataset\
+    --test_data_path2 ./dataset/CrossValidation/cv2_sekkai_TestDataset\
     1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1 ) \
     2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
 
@@ -206,6 +232,8 @@ python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --discriminator resnet10 \
     --pth_path ./snapshots/${TRAIN_SAVE}/2/3/Transfuse-99.pth \
     --pth_path2 ./snapshots/${TRAIN_SAVE}/2/3/Discriminator-99.pth \
+    --test_data_path1 ./dataset/CrossValidation/cv3_TestDataset\
+    --test_data_path2 ./dataset/CrossValidation/cv3_sekkai_TestDataset\
     1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1 ) \
     2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
 
@@ -214,6 +242,8 @@ python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --discriminator resnet10 \
     --pth_path ./snapshots/${TRAIN_SAVE}/2/4/Transfuse-99.pth \
     --pth_path2 ./snapshots/${TRAIN_SAVE}/2/4/Discriminator-99.pth \
+    --test_data_path1 ./dataset/CrossValidation/cv4_TestDataset\
+    --test_data_path2 ./dataset/CrossValidation/cv4_sekkai_TestDataset\
     1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1 ) \
     2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
 
@@ -222,6 +252,8 @@ python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --discriminator resnet10 \
     --pth_path ./snapshots/${TRAIN_SAVE}/2/0/Transfuse-199.pth \
     --pth_path2 ./snapshots/${TRAIN_SAVE}/2/0/Discriminator-199.pth \
+    --test_data_path1 ./dataset/CrossValidation/cv0_TestDataset\
+    --test_data_path2 ./dataset/CrossValidation/cv0_sekkai_TestDataset\
     1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1 ) \
     2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
 
@@ -230,6 +262,8 @@ python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --discriminator resnet10 \
     --pth_path ./snapshots/${TRAIN_SAVE}/2/1/Transfuse-199.pth \
     --pth_path2 ./snapshots/${TRAIN_SAVE}/2/1/Discriminator-199.pth \
+    --test_data_path1 ./dataset/CrossValidation/cv1_TestDataset\
+    --test_data_path2 ./dataset/CrossValidation/cv1_sekkai_TestDataset\
     1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1 ) \
     2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
 
@@ -238,6 +272,8 @@ python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --discriminator resnet10 \
     --pth_path ./snapshots/${TRAIN_SAVE}/2/2/Transfuse-199.pth \
     --pth_path2 ./snapshots/${TRAIN_SAVE}/2/2/Discriminator-199.pth \
+    --test_data_path1 ./dataset/CrossValidation/cv2_TestDataset\
+    --test_data_path2 ./dataset/CrossValidation/cv2_sekkai_TestDataset\
     1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1 ) \
     2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
 
@@ -246,6 +282,9 @@ python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --discriminator resnet10 \
     --pth_path ./snapshots/${TRAIN_SAVE}/2/3/Transfuse-199.pth \
     --pth_path2 ./snapshots/${TRAIN_SAVE}/2/3/Discriminator-199.pth \
+    --test_data_path1 ./dataset/CrossValidation/cv3_TestDataset\
+    --test_data_path2 ./dataset/CrossValidation/cv3_sekkai_TestDataset\
+    # --test_save_path ./results/Transfuse_10/199/3\
     1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1 ) \
     2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
 
@@ -254,5 +293,8 @@ python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --discriminator resnet10 \
     --pth_path ./snapshots/${TRAIN_SAVE}/2/4/Transfuse-199.pth \
     --pth_path2 ./snapshots/${TRAIN_SAVE}/2/4/Discriminator-199.pth \
+    --test_data_path1 ./dataset/CrossValidation/cv4_TestDataset\
+    --test_data_path2 ./dataset/CrossValidation/cv4_sekkai_TestDataset\
+    # --test_save_path ./results/Transfuse_10/199/4\
     1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1 ) \
     2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
