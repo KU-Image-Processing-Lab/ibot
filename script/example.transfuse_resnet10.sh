@@ -13,7 +13,7 @@ mkdir -p ./logs
 # --------------------------------------------------------------
 
 python3 ./src/${SCRIPT_DIR}/${TRAIN_SCRIPT_NAME} \
-    --epoch 1 \
+    --epoch 200 \
     --batchsize 4 \
     --trainsize 352 \
     --discriminator resnet10 \

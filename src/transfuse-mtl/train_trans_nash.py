@@ -13,6 +13,7 @@ from torch.autograd import Variable
 from lib.TransFuse_l import TransFuse_L
 from utils.dataloader import get_loader
 from utils.mtl import extract_weight_method_parameters_from_args
+from utils.save_parameter import save_parameter
 from utils.set_seed import seed_everything
 from utils.smooth_cross_entropy import SmoothCrossEntropy
 from utils.utils import AvgMeter, adjust_lr, clip_gradient
@@ -118,7 +119,7 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
                     loss_record2.update(loss2.data, opt.batchsize)
                     loss_record3.update(loss3.data, opt.batchsize)
                     loss_record4.update(loss4.data, opt.batchsize)
-            if (i % opt.log_epoch == 0 or i == total_step) and phase == "train":
+            if (i % opt.log_iter == 0 or i == total_step) and phase == "train":
                 print(
                     "{} Epoch [{:03d}/{:03d}], Step [{:04d}/{:04d}], "
                     "[lateral-2: {:.4f}, lateral-3: {:0.4f}, lateral-4: {:0.4f}, d_loss: {:0.4f}".format(
@@ -248,7 +249,7 @@ if __name__ == "__main__":
         help="Discriminatorに使うモデル",
     )
     parser.add_argument(
-        "--log_epoch", type=int, default=20, help="ログ出力するエポックの単位"
+        "--log_iter", type=int, default=20, help="ログ出力するエポックの単位"
     )
     parser.add_argument(
         "--save_epoch", type=int, default=5, help="重み保存するエポックの単位"
@@ -262,15 +263,7 @@ if __name__ == "__main__":
 
     opt = parser.parse_args()
 
-    # ---- print all hyperparameters ----
-    for k, v in sorted(vars(opt).items()):
-        print("{0}: {1}".format(k, v))
-
-    # ---- save hyperparameters ----
-    os.makedirs(f"snapshots/{opt.train_save}", exist_ok=True)
-    with open(f"snapshots/{opt.train_save}/hyperparameters.txt", "w") as f:
-        for k, v in sorted(vars(opt).items()):
-            f.write("{0}: {1}\n".format(k, v))
+    save_parameter(opt)
 
     # ---- build models ----
     if opt.discriminator == "resnet10":
