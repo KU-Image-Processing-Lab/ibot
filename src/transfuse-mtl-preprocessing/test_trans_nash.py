@@ -227,8 +227,8 @@ for i in range(test_loader1.size):
         # Use param_d to trim width by param_d
         # ---- crop image ----
         cropped_images = torch.Tensor().cuda()
-        for i in range(image.size(0)):
-            crop = image[i, :, : int(pram_d[i]), :]
+        for j in range(image.size(0)):
+            crop = image[j, :, :, :int(pram_d[j])]
             crop = F.interpolate(
                 crop.unsqueeze(0), size=(opt.testsize, opt.testsize), mode="bilinear", align_corners=True)
             cropped_images = torch.cat((cropped_images, crop), dim=0)
@@ -236,9 +236,9 @@ for i in range(test_loader1.size):
         # ---- save image ----
         for j in range(cropped_images.size(0)):
             print(i, j)
-            img = cropped_images[i].mul(255).byte()
+            img = cropped_images[j].mul(255).byte()
             img = img.permute(1, 2, 0).cpu().numpy()
-            cv2.imwrite(f"./fig/{i}_{j}.png", img,)
+            cv2.imwrite(f"./fig/{name}", img)
 
         _, _, res = model(image)
 
