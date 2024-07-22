@@ -1,6 +1,7 @@
 import argparse
 import glob
 import os
+import pdb
 import sys
 
 import cv2
@@ -231,6 +232,13 @@ for i in range(test_loader1.size):
             crop = F.interpolate(
                 crop.unsqueeze(0), size=(opt.testsize, opt.testsize), mode="bilinear", align_corners=True)
             cropped_images = torch.cat((cropped_images, crop), dim=0)
+
+        # ---- save image ----
+        for j in range(cropped_images.size(0)):
+            print(i, j)
+            img = cropped_images[i].mul(255).byte()
+            img = img.permute(1, 2, 0).cpu().numpy()
+            cv2.imwrite(f"./fig/{i}_{j}.png", img,)
 
         _, _, res = model(image)
 
