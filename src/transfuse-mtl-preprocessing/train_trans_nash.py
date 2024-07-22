@@ -90,19 +90,19 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
                     # Use param_d to trim width by param_d
                     # ---- crop images ----
                     cropped_images = torch.Tensor().to(device)
-                    for i in range(images.size(0)):
-                        crop = images[i, :, : int(pram_d[i]), :]
+                    for j in range(images.size(0)):
+                        crop = images[j, :, :, :int(pram_d[j])]
                         crop = F.interpolate(
                             crop.unsqueeze(0), size=(opt.trainsize, opt.trainsize), mode="bilinear", align_corners=True)
                         cropped_images = torch.cat((cropped_images, crop), dim=0)
 
                     # # ---- save image ----
-                    # for i in range(cropped_images.size(0)):
-                    #     img = cropped_images[i].mul(255).byte()
+                    # for j in range(cropped_images.size(0)):
+                    #     img = cropped_images[j].mul(255).byte()
                     #     img = img.permute(1, 2, 0).cpu().numpy()
                     #     cv2.imwrite(
                     #         "./snapshots/{}/crop_images/{}_{}.png".format(
-                    #             opt.train_save, epoch, i
+                    #             opt.train_save, epoch, j
                     #         ),
                     #         img,
                     #     )
