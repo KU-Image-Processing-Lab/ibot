@@ -384,7 +384,7 @@ if __name__ == "__main__":
     gt_root_val = "{}/masks/".format(opt.val_path)
 
     train_loader = get_loader(
-        image_root, gt_root, batchsize=opt.batchsize, trainsize=opt.trainsize
+        image_root, gt_root, batchsize=opt.batchsize, trainsize=opt.trainsize, force_left=True
     )
     total_step = len(train_loader)
 

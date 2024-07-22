@@ -9,6 +9,8 @@ import torch.utils.data as data
 import torchvision.transforms as transforms
 from PIL import Image
 
+from utils import format_conversion
+
 from .data_augumentation import (Compose, Normalize_Tensor, RandomMirror,
                                  RandomRotation, Resize, Scale)
 
@@ -39,7 +41,7 @@ class PolypDataset(data.Dataset):
     dataloader for polyp segmentation tasks
     """
 
-    def __init__(self, image_root, gt_root, trainsize, phase="train"):
+    def __init__(self, image_root, gt_root, trainsize, phase="train", force_left=False):
         self.trainsize = trainsize
         self.images = [
             image_root + f
@@ -87,11 +89,13 @@ class PolypDataset(data.Dataset):
             [transforms.Resize((self.trainsize, self.trainsize)), transforms.ToTensor()]
         )
 
+        self.force_left = force_left
+
     def __getitem__(self, index):
         image = self.rgb_loader(self.images[index])
         gt = self.binary_loader(self.gts[index])
 
-        if 'right' in self.images[index]:
+        if self.force_left and 'right' in self.images[index]:
             image = np.array(image)
             gt = np.array(gt)
             augmented = self.transform_right(image=image, mask=gt)
@@ -167,8 +171,9 @@ def get_loader(
     pin_memory=True,
     phase="train",
     droplast=False,
+    force_left=False,
 ):
-    dataset = PolypDataset(image_root, gt_root, trainsize, phase=phase)
+    dataset = PolypDataset(image_root, gt_root, trainsize, phase=phase, force_left=force_left)
     data_loader = data.DataLoader(
         dataset=dataset,
         batch_size=batchsize,
