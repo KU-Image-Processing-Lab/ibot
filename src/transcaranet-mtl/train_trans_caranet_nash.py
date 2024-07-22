@@ -49,7 +49,7 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
 
         # ---- multi-scale training ----
         size_rates = [1]
-        loss_record2, loss_record3, loss_record4,loss_record5, d_loss_record = (
+        loss_record2, loss_record3, loss_record4, loss_record5, d_loss_record = (
             AvgMeter(),
             AvgMeter(),
             AvgMeter(),
@@ -85,9 +85,9 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
                     )
                 with torch.set_grad_enabled(phase == "train"):
                     # ---- forward ----
-                    lateral_map_5,lateral_map_4, lateral_map_3, lateral_map_2 = models["Transfuse"](
-                        images
-                    )
+                    lateral_map_5, lateral_map_4, lateral_map_3, lateral_map_2 = models[
+                        "Transfuse"
+                    ](images)
 
                     # ---- loss function ----
                     loss5 = structure_loss(lateral_map_5, gts)
@@ -139,10 +139,20 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
                     )
                 )
         if phase == "train":
-            train_loss = loss_record2.show() + loss_record3.show() + loss_record4.show() + loss_record5.show()
+            train_loss = (
+                loss_record2.show()
+                + loss_record3.show()
+                + loss_record4.show()
+                + loss_record5.show()
+            )
             train_d_loss = d_loss_record.show()
         elif phase == "val":
-            val_loss = loss_record2.show() + loss_record3.show() + loss_record4.show() + loss_record5.show()
+            val_loss = (
+                loss_record2.show()
+                + loss_record3.show()
+                + loss_record4.show()
+                + loss_record5.show()
+            )
             val_d_loss = d_loss_record.show()
             if val_loss < best_loss:
                 best_loss = val_loss
@@ -242,7 +252,11 @@ if __name__ == "__main__":
         "--beta2", type=float, default=0.999, help="beta2 of adam optimizer"
     )
 
-    parser.add_argument("--tuning", action="store_true", help="セグメンテーションチューニングを適用するかどうか")
+    parser.add_argument(
+        "--tuning",
+        action="store_true",
+        help="セグメンテーションチューニングを適用するかどうか",
+    )
 
     parser.add_argument("--mtl", type=str, default="nashmtl")
 

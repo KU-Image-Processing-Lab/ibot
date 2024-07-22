@@ -192,7 +192,7 @@ for i in range(test_loader1.size):
     image = image.cuda()
 
     with torch.no_grad():
-        _,_, _, res = model(image)
+        _, _, _, res = model(image)
 
         res1 = F.upsample(res, size=gt.shape, mode="bilinear", align_corners=False)
         res1 = res1.sigmoid().data.cpu().numpy().squeeze()
@@ -246,7 +246,7 @@ for i in range(test_loader2.size):
     image = image.cuda()
 
     with torch.no_grad():
-        _,_, _, res = model(image)
+        _, _, _, res = model(image)
 
     res = F.upsample(res, size=gt.shape, mode="bilinear", align_corners=False)
     res = res.sigmoid().data.cpu().numpy().squeeze()
