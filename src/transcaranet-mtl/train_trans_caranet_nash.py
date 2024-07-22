@@ -39,6 +39,8 @@ def structure_loss(pred, mask):
 
 def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best2_loss):
     val_loss = 0
+    save_path = f"snapshots/{opt.train_save}/"
+    os.makedirs(save_path, exist_ok=True)
     for phase in ["train", "val"]:
         if phase == "train":
             for model in models.values():
@@ -56,7 +58,6 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
             AvgMeter(),
             AvgMeter(),
         )
-
         for i, pack in enumerate(dataloaders_dict[phase], start=1):
             for rate in size_rates:
                 optimizer.zero_grad()
@@ -156,7 +157,6 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
             val_d_loss = d_loss_record.show()
             if val_loss < best_loss:
                 best_loss = val_loss
-                save_path = "snapshots/{}/".format(opt.train_save)
                 torch.save(
                     models["Transfuse"].state_dict(), save_path + "Transfuse-best.pth"
                 )
@@ -177,7 +177,6 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
                 )
                 print("[Saving best Snapshot:]", save_path + "Discriminator-best2.pth")
 
-    save_path = "snapshots/{}/".format(opt.train_save)
     if (epoch + 1) % opt.save_epoch == 0:
         torch.save(
             models["Transfuse"].state_dict(), save_path + "Transfuse-%d.pth" % epoch
