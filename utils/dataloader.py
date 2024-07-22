@@ -84,6 +84,7 @@ class PolypDataset(data.Dataset):
         )
 
     def __getitem__(self, index):
+
         image = self.rgb_loader(self.images[index])
         gt = self.binary_loader(self.gts[index])
         if self.phase == "train":
