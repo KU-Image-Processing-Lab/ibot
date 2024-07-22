@@ -9,8 +9,6 @@ import torch.utils.data as data
 import torchvision.transforms as transforms
 from PIL import Image
 
-from utils import format_conversion
-
 from .data_augumentation import (Compose, Normalize_Tensor, RandomMirror,
                                  RandomRotation, Resize, Scale)
 
