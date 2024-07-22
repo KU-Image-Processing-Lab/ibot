@@ -20,7 +20,7 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")
 sys.path.append(project_root)
 
 from lib.Discriminator_ResNet import Discriminator
-# from lib.models_vit_discriminator import vit_large_patch16 as vit_large
+# # from lib.models_vit_discriminator import vit_large_patch16 as vit_large
 from lib.TransFuse_l import TransFuse_L
 from utils.dataloader import test_dataset
 from utils.set_seed import seed_everything
@@ -97,11 +97,7 @@ parser.add_argument("--testsize", type=int, default=352, help="testing size")
 parser.add_argument(
     "--pth_path", type=str, default="./snapshots/Transfuse_S/Transfuse-99.pth"
 )
-# parser.add_argument('--pth_path', type=str, default='./snapshots/Transfuse_S/Transfuse-89.pth')
-# parser.add_argument('--pth_path', type=str, default='./snapshots/Transfuse_S/Transfuse-best.pth')
-# parser.add_argument('--pth_path', type=str, default='./snapshots/Transfuse_S/Transfuse-best2.pth')
-# parser.add_argument('--pth_path', type=str, default='./weights/修論/mtl/nash/NoTuning/TransFuse_discriminator/Transfuse-best.pth')
-# parser.add_argument('--pth_path', type=str, default='./weights/修論/segmentation/TransFuse-L+MAE/vit-l_352/石灰化ありのみ/Transfuse-best.pth')
+
 
 parser.add_argument(
     "--pth_path2", type=str, default="./snapshots/Transfuse_S/Discriminator-99.pth"
@@ -113,21 +109,19 @@ parser.add_argument(
     default="resnet10",
     help="Discriminatorに使うモデル",
 )
-# parser.add_argument('--pth_path2', type=str, default='./snapshots/Transfuse_S/Discriminator-19.pth')
-# parser.add_argument('--pth_path2', type=str, default='./snapshots/Transfuse_S/Discriminator-best.pth')
-# parser.add_argument('--pth_path2', type=str, default='./snapshots/Transfuse_S/Discriminator-best2.pth')
-# parser.add_argument('--pth_path2', type=str, default='./weights/修論/mtl/nash/NoTuning/TransFuse_discriminator/Discriminator-best.pth')
-# parser.add_argument('--pth_path2', type=str, default='./weights/修論/discriminator_nash/TransFuse_discriminator/ResNet/Discriminator-59.pth')
-
-data_path1 = "./dataset/TestDataset/"
-# data_path = './dataset/ValDataset/'
-data_path2 = "./dataset/sekkai_TestDataset/"
-# data_path = './dataset/sekkai_ValDataset/'
+parser.add_argument("--test_data_path1", type=str, default="./dataset/TestDataset/")
+parser.add_argument(
+    "--test_data_path2", type=str, default="./dataset/sekkai_TestDataset/"
+)
+parser.add_argument("--test_save_path", type=str, default="./results/Transfuse_S/")
 
 
-save_path = "./results/Transfuse_S/"
 opt = parser.parse_args()
 # for ep in range(opt.epoch):
+
+data_path1 = opt.test_data_path1
+data_path2 = opt.test_data_path2
+save_path = opt.test_save_path
 
 model = TransFuse_L()
 model.load_state_dict(torch.load(opt.pth_path))
@@ -156,19 +150,19 @@ model2.cuda()
 model2.eval()
 
 os.makedirs(save_path, exist_ok=True)
-for file in glob.glob("./results/Transfuse_S/*.png"):
+for file in glob.glob(save_path + "/*.png"):
     os.remove(file)
-os.makedirs("./results/Transfuse_S/TP", exist_ok=True)
-for file in glob.glob("./results/Transfuse_S/TP/*.png"):
+os.makedirs(save_path + "/TP", exist_ok=True)
+for file in glob.glob(save_path + "/TP/*.png"):
     os.remove(file)
-os.makedirs("./results/Transfuse_S/FN", exist_ok=True)
-for file in glob.glob("./results/Transfuse_S/FN/*.png"):
+os.makedirs(save_path + "/FN", exist_ok=True)
+for file in glob.glob(save_path + "/FN/*.png"):
     os.remove(file)
-os.makedirs("./results/Transfuse_S/FP", exist_ok=True)
-for file in glob.glob("./results/Transfuse_S/FP/*.png"):
+os.makedirs(save_path + "/FP", exist_ok=True)
+for file in glob.glob(save_path + "/FP/*.png"):
     os.remove(file)
-os.makedirs("./results/Transfuse_S/TN", exist_ok=True)
-for file in glob.glob("./results/Transfuse_S/TN/*.png"):
+os.makedirs(save_path + "/TN", exist_ok=True)
+for file in glob.glob(save_path + "/TN/*.png"):
     os.remove(file)
 image_root1 = "{}/images/".format(data_path1)
 gt_root1 = "{}/masks/".format(data_path1)
@@ -231,17 +225,17 @@ for i in range(test_loader1.size):
 
     if label == 1:
         if predicted == 1:
-            imageio.imsave(save_path + "TP/" + name, img_as_ubyte(res1))
+            imageio.imsave(save_path + "/TP/" + name, img_as_ubyte(res1))
 
         else:
-            imageio.imsave(save_path + "FN/" + name, img_as_ubyte(res1))
+            imageio.imsave(save_path + "/FN/" + name, img_as_ubyte(res1))
 
     else:
         if predicted == 1:
-            imageio.imsave(save_path + "FP/" + name, img_as_ubyte(res1))
+            imageio.imsave(save_path + "/FP/" + name, img_as_ubyte(res1))
 
         else:
-            imageio.imsave(save_path + "TN/" + name, img_as_ubyte(res1))
+            imageio.imsave(save_path + "/TN/" + name, img_as_ubyte(res1))
 
 for i in range(test_loader2.size):
     image, gt, name = test_loader2.load_data()
@@ -277,6 +271,11 @@ cm = confusion_matrix(y_true, y_pred)
 TN, FP, FN, TP = cm.flatten()
 TPR = TP / (TP + FN)
 FPR = FP / (FP + TN)
+print("----------------------------------")
+print("segmentation:trandfuse-l")
+print("discriminator:" + opt.discriminator)
+print("seg_path:" + opt.pth_path)
+print("dis_path:" + opt.pth_path2)
 print("----------discriminator-----------")
 print("TPR-FPR:", TPR - FPR)
 print("TP:", TP)
