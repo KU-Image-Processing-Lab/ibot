@@ -17,5 +17,6 @@ $ cp ./example.transfuse_resnet10.sh ./transfuse_resnet10.sh
 | ファイル名 | 説明 |
 |:-----------:|:----:|
 | example.transfuse_resnet10.sh | TransfuseとResNet10を使用してMTLを行なうシェルスクリプト |
+| transfuse_ikeda.sh | TransfuseやTransfuse+敵対的Trainingを実行してDiceとIoUの最大値と平均値と分散を出力するシェルスプリクト |
 
 
