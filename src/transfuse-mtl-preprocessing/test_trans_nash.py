@@ -122,21 +122,13 @@ parser.add_argument(
     default="resnet10",
     help="前処理に使用するモデル",
 )
-# parser.add_argument('--pth_path2', type=str, default='./snapshots/Transfuse_S/Discriminator-19.pth')
-# parser.add_argument('--pth_path2', type=str, default='./snapshots/Transfuse_S/Discriminator-best.pth')
-# parser.add_argument('--pth_path2', type=str, default='./snapshots/Transfuse_S/Discriminator-best2.pth')
-# parser.add_argument('--pth_path2', type=str, default='./weights/修論/mtl/nash/NoTuning/TransFuse_discriminator/Discriminator-best.pth')
-# parser.add_argument('--pth_path2', type=str, default='./weights/修論/discriminator_nash/TransFuse_discriminator/ResNet/Discriminator-59.pth')
 
-data_path1 = "./dataset/TestDataset/"
-# data_path = './dataset/ValDataset/'
-data_path2 = "./dataset/sekkai_TestDataset/"
-# data_path = './dataset/sekkai_ValDataset/'
+data_path1 = "./dataset/original_dataset/TestDataset/"
+data_path2 = "./dataset/original_dataset/sekkai_TestDataset/"
 
 
 save_path = "./results/Transfuse_S/"
 opt = parser.parse_args()
-# for ep in range(opt.epoch):
 
 # ---- build preprocess model ----
 if opt.discriminator == "resnet10":
