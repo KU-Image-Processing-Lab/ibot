@@ -210,13 +210,11 @@ for i in range(test_loader1.size):
     label = torch.where(label > 0, torch.tensor(1), torch.tensor(0))
     gt = np.asarray(gt, np.float32)
 
-    # gt /= (gt.max() + 1e-8)  ##########################
-
     image = image.cuda()
 
     with torch.no_grad():
         pram_d = model0(image) * opt.testsize
-        # Use param_d to trim width by param_d
+
         # ---- crop image ----
         cropped_images = torch.Tensor().cuda()
         for j in range(image.size(0)):

@@ -61,7 +61,7 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
         for i, pack in enumerate(dataloaders_dict[phase], start=1):
             for rate in size_rates:
                 optimizer.zero_grad()
-                images, gts = pack
+                images, gts, name = pack
                 labels = torch.einsum("ijkl->i", gts) > 0
 
                 labels = torch.where(labels > 0, torch.tensor(1), torch.tensor(0))
@@ -101,9 +101,7 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
                     #     img = cropped_images[j].mul(255).byte()
                     #     img = img.permute(1, 2, 0).cpu().numpy()
                     #     cv2.imwrite(
-                    #         "./snapshots/{}/crop_images/{}_{}.png".format(
-                    #             opt.train_save, epoch, j
-                    #         ),
+                    #         f"./snapshots/{opt.train_save}/crop_images/{epoch}_{name}.png",
                     #         img,
                     #     )
 

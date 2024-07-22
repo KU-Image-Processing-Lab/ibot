@@ -15,7 +15,7 @@ mkdir -p ./logs
 python3 ./utils/slack_bot.py --text "SCRIPT_DIR=${SCRIPT_DIR}${LF}TRAIN_SCRIPT_NAME=${TRAIN_SCRIPT_NAME}${LF}TEST_SCRIPT_NAME=${TEST_SCRIPT_NAME}${LF}TRAIN_SAVE=${TRAIN_SAVE}"
 
 python3 ./src/${SCRIPT_DIR}/${TRAIN_SCRIPT_NAME} \
-    --epoch 200 \
+    --epoch 100 \
     --batchsize 4 \
     --trainsize 352 \
     --discriminator resnet10 \

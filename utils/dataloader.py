@@ -92,6 +92,7 @@ class PolypDataset(data.Dataset):
     def __getitem__(self, index):
         image = self.rgb_loader(self.images[index])
         gt = self.binary_loader(self.gts[index])
+        name = self.images[index].split("/")[-1]
 
         if self.force_left and 'right' in self.images[index]:
             image = np.array(image)
@@ -119,7 +120,7 @@ class PolypDataset(data.Dataset):
         image = self.img_transform(image)
 
         gt = self.gt_transform(gt)
-        return image, gt
+        return image, gt, name
 
     def filter_files(self):
         assert len(self.images) == len(self.gts)
