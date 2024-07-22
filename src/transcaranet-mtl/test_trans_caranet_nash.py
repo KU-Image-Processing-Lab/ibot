@@ -5,6 +5,7 @@ import sys
 
 import cv2
 import imageio
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -19,8 +20,13 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")
 sys.path.append(project_root)
 
 from lib.Discriminator_ResNet import Discriminator
+# # from lib.models_vit_discriminator import vit_large_patch16 as vit_large
 from lib.Trans_CaraNet import Trans_CaraNet_L
 from utils.dataloader import test_dataset
+from utils.set_seed import seed_everything
+
+matplotlib.use("Agg")
+seed_everything(42)
 
 #################################################
 # epoch1~20の重みを全部テストする。
@@ -88,47 +94,55 @@ def imwrite(filename, img, params=None):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--testsize", type=int, default=352, help="testing size")
-# parser.add_argument('--pth_path', type=str, default='./snapshots/Transfuse_S/Transfuse-99.pth')
-# parser.add_argument('--pth_path', type=str, default='./snapshots/Transfuse_S/Transfuse-59.pth')
 parser.add_argument(
-    "--pth_path", type=str, default="./snapshots/Transfuse_S/Transfuse-24.pth"
+    "--pth_path", type=str, default="./snapshots/Transfuse_S/Transfuse-99.pth"
 )
-# parser.add_argument('--pth_path', type=str, default='./snapshots/Transfuse_S/Transfuse-best.pth')
-# parser.add_argument('--pth_path', type=str, default='./snapshots/Transfuse_S/Transfuse-best2.pth')
-# parser.add_argument('--pth_path', type=str, default='./weights/修論/segmentation/TransCaraNet+MAE_calsification/石灰化ありのみ/Transfuse-best.pth')
 
-# parser.add_argument('--pth_path2', type=str, default='./snapshots/Transfuse_S/Discriminator-99.pth')
-# parser.add_argument('--pth_path2', type=str, default='./snapshots/Transfuse_S/Discriminator-59.pth')
+
 parser.add_argument(
-    "--pth_path2", type=str, default="./snapshots/Transfuse_S/Discriminator-24.pth"
+    "--pth_path2", type=str, default="./snapshots/Transfuse_S/Discriminator-99.pth"
 )
-# parser.add_argument('--pth_path2', type=str, default='./snapshots/Transfuse_S/Discriminator-best.pth')
-# parser.add_argument('--pth_path2', type=str, default='./snapshots/Transfuse_S/Discriminator-best2.pth')
-# parser.add_argument('--pth_path2', type=str, default='./weights/修論/discriminator_nash/TransCaraNet_discriminator/Discriminator-best.pth')
+
+parser.add_argument(
+    "--discriminator",
+    type=str,
+    default="resnet10",
+    help="Discriminatorに使うモデル",
+)
+parser.add_argument("--test_data_path1", type=str, default="./dataset/TestDataset/")
+parser.add_argument(
+    "--test_data_path2", type=str, default="./dataset/sekkai_TestDataset/"
+)
+parser.add_argument("--test_save_path", type=str, default="./results/Transfuse_S/")
 
 
-data_path1 = "./dataset/TestDataset/"
-# data_path = './dataset/ValDataset/'
-data_path2 = "./dataset/sekkai_TestDataset/"
-# data_path = './dataset/sekkai_ValDataset/'
-
-
-save_path = "./results/Transfuse_S/"
 opt = parser.parse_args()
+# for ep in range(opt.epoch):
 
+data_path1 = opt.test_data_path1
+data_path2 = opt.test_data_path2
+save_path = opt.test_save_path
 
 model = Trans_CaraNet_L()
 model.load_state_dict(torch.load(opt.pth_path))
 model.cuda()
 model.eval()
 
-
 # model2 = vit_large(pretrained=pretrained)
 
 # model2 = torch_model.vgg16(pretrained=True)
 # model2.classifier[6] = nn.Linear(in_features=4096, out_features=2)
 
-model2 = Discriminator()
+# ---- build models ----
+if opt.discriminator == "resnet10":
+    from lib.ResNet_10 import ResNet10
+
+    model2 = ResNet10()
+
+if opt.discriminator == "res2net":
+    from lib.Discriminator_ResNet import Discriminator
+
+    model2 = Discriminator()
 
 model2.load_state_dict(torch.load(opt.pth_path2))
 
@@ -136,19 +150,19 @@ model2.cuda()
 model2.eval()
 
 os.makedirs(save_path, exist_ok=True)
-for file in glob.glob("./results/Transfuse_S/*.png"):
+for file in glob.glob(save_path + "/*.png"):
     os.remove(file)
-os.makedirs("./results/Transfuse_S/TP", exist_ok=True)
-for file in glob.glob("./results/Transfuse_S/TP/*.png"):
+os.makedirs(save_path + "/TP", exist_ok=True)
+for file in glob.glob(save_path + "/TP/*.png"):
     os.remove(file)
-os.makedirs("./results/Transfuse_S/FN", exist_ok=True)
-for file in glob.glob("./results/Transfuse_S/FN/*.png"):
+os.makedirs(save_path + "/FN", exist_ok=True)
+for file in glob.glob(save_path + "/FN/*.png"):
     os.remove(file)
-os.makedirs("./results/Transfuse_S/FP", exist_ok=True)
-for file in glob.glob("./results/Transfuse_S/FP/*.png"):
+os.makedirs(save_path + "/FP", exist_ok=True)
+for file in glob.glob(save_path + "/FP/*.png"):
     os.remove(file)
-os.makedirs("./results/Transfuse_S/TN", exist_ok=True)
-for file in glob.glob("./results/Transfuse_S/TN/*.png"):
+os.makedirs(save_path + "/TN", exist_ok=True)
+for file in glob.glob(save_path + "/TN/*.png"):
     os.remove(file)
 image_root1 = "{}/images/".format(data_path1)
 gt_root1 = "{}/masks/".format(data_path1)
@@ -178,7 +192,7 @@ for i in range(test_loader1.size):
     image = image.cuda()
 
     with torch.no_grad():
-        _, _, _, res = model(image)
+        _,_, _, res = model(image)
 
         res1 = F.upsample(res, size=gt.shape, mode="bilinear", align_corners=False)
         res1 = res1.sigmoid().data.cpu().numpy().squeeze()
@@ -201,7 +215,6 @@ for i in range(test_loader1.size):
 
         # predicted = torch.round(out)
         _, predicted = torch.max(out, dim=1)
-
         predicted = torch.Tensor.cpu(predicted).detach().numpy()
 
         label = torch.Tensor.cpu(label).detach().numpy()
@@ -212,18 +225,17 @@ for i in range(test_loader1.size):
 
     if label == 1:
         if predicted == 1:
-            imageio.imsave(save_path + "TP/" + name, img_as_ubyte(res1))
+            imageio.imsave(save_path + "/TP/" + name, img_as_ubyte(res1))
 
         else:
-            imageio.imsave(save_path + "FN/" + name, img_as_ubyte(res1))
+            imageio.imsave(save_path + "/FN/" + name, img_as_ubyte(res1))
 
     else:
         if predicted == 1:
-            imageio.imsave(save_path + "FP/" + name, img_as_ubyte(res1))
+            imageio.imsave(save_path + "/FP/" + name, img_as_ubyte(res1))
 
         else:
-            imageio.imsave(save_path + "TN/" + name, img_as_ubyte(res1))
-
+            imageio.imsave(save_path + "/TN/" + name, img_as_ubyte(res1))
 
 for i in range(test_loader2.size):
     image, gt, name = test_loader2.load_data()
@@ -234,7 +246,7 @@ for i in range(test_loader2.size):
     image = image.cuda()
 
     with torch.no_grad():
-        _, _, _, res = model(image)
+        _,_, _, res = model(image)
 
     res = F.upsample(res, size=gt.shape, mode="bilinear", align_corners=False)
     res = res.sigmoid().data.cpu().numpy().squeeze()
@@ -249,7 +261,6 @@ for i in range(test_loader2.size):
     dice_bank.append(dice)
     iou_bank.append(iou)
 
-
 print(
     "Dice: {:.4f}, IoU: {:.4f}, Acc: {:.4f}".format(
         np.mean(dice_bank), np.mean(iou_bank), np.mean(acc_bank)
@@ -260,6 +271,11 @@ cm = confusion_matrix(y_true, y_pred)
 TN, FP, FN, TP = cm.flatten()
 TPR = TP / (TP + FN)
 FPR = FP / (FP + TN)
+print("----------------------------------")
+print("segmentation:trandfuse-l")
+print("discriminator:" + opt.discriminator)
+print("seg_path:" + opt.pth_path)
+print("dis_path:" + opt.pth_path2)
 print("----------discriminator-----------")
 print("TPR-FPR:", TPR - FPR)
 print("TP:", TP)

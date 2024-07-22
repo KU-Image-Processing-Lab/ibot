@@ -14,11 +14,11 @@ from lib.Cara.axial_atten import AA_kernel
 from lib.Cara.context_module import CFPModule
 from lib.Cara.conv_layer import BNPReLU
 from lib.Cara.conv_layer import Conv as Conv2
-from lib.DeiT import deit_base_patch16_384 as deit_base
+# from lib.DeiT import deit_base_patch16_384 as deit_base
 from lib.models_vit import vit_large_patch16 as vit_large
 # from .Res2Net_v1b import res2net50_v1b_26w_4s
 from lib.Res2Net_v1b import res2net50_v1b_26w_4s, res2net101_v1b_26w_4s
-from lib.TransFuse_s import TransFuse_S
+# from lib.TransFuse_s import TransFuse_S
 
 
 class BasicConv2d(nn.Module):
@@ -146,6 +146,7 @@ class Trans_CaraNet_L(nn.Module):
     def __init__(self, channel=32, pretrained=False):
         super(Trans_CaraNet_L, self).__init__()
         # ---- ResNet Backbone ----
+        
         self.resnet = res2net50_v1b_26w_4s(pretrained=True)
         # self.resnet = res2net101_v1b_26w_4s(pretrained=True)
         # self.Resnet = Resnet()
@@ -606,8 +607,8 @@ class Conv(nn.Module):
         return x
 
 
-if __name__ == "__main__":
-    ras = TransFuse_S().cuda()
-    input_tensor = torch.randn(1, 3, 384, 384).cuda()
-    out = ras(input_tensor)
-    print(out.shape())
+# if __name__ == "__main__":
+#     ras = TransFuse_S().cuda()
+#     input_tensor = torch.randn(1, 3, 384, 384).cuda()
+#     out = ras(input_tensor)
+#     print(out.shape())
