@@ -104,21 +104,16 @@ parser.add_argument(
 )
 
 parser.add_argument(
-        "--discriminator",
-        type=str,
-        default="resnet10",
-        help="Discriminatorに使うモデル",
-    )
-parser.add_argument(
-    "--test_data_path1", type=str, default="./dataset/TestDataset/"
+    "--discriminator",
+    type=str,
+    default="resnet10",
+    help="Discriminatorに使うモデル",
 )
+parser.add_argument("--test_data_path1", type=str, default="./dataset/TestDataset/")
 parser.add_argument(
     "--test_data_path2", type=str, default="./dataset/sekkai_TestDataset/"
 )
-parser.add_argument(
-    "--test_save_path", type=str, default="./results/Transfuse_S/"
-)
-
+parser.add_argument("--test_save_path", type=str, default="./results/Transfuse_S/")
 
 
 opt = parser.parse_args()
@@ -158,13 +153,13 @@ os.makedirs(save_path, exist_ok=True)
 for file in glob.glob(save_path + "/*.png"):
     os.remove(file)
 os.makedirs(save_path + "/TP", exist_ok=True)
-for file in glob.glob(save_path +"/TP/*.png"):
+for file in glob.glob(save_path + "/TP/*.png"):
     os.remove(file)
 os.makedirs(save_path + "/FN", exist_ok=True)
 for file in glob.glob(save_path + "/FN/*.png"):
     os.remove(file)
 os.makedirs(save_path + "/FP", exist_ok=True)
-for file in glob.glob(save_path +"/FP/*.png"):
+for file in glob.glob(save_path + "/FP/*.png"):
     os.remove(file)
 os.makedirs(save_path + "/TN", exist_ok=True)
 for file in glob.glob(save_path + "/TN/*.png"):
@@ -278,9 +273,9 @@ TPR = TP / (TP + FN)
 FPR = FP / (FP + TN)
 print("----------------------------------")
 print("segmentation:trandfuse-l")
-print("discriminator:"+opt.discriminator)
-print("seg_path:"+opt.pth_path)
-print("dis_path:"+opt.pth_path2)
+print("discriminator:" + opt.discriminator)
+print("seg_path:" + opt.pth_path)
+print("dis_path:" + opt.pth_path2)
 print("----------discriminator-----------")
 print("TPR-FPR:", TPR - FPR)
 print("TP:", TP)
