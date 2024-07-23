@@ -97,7 +97,10 @@ class PolypDataset(data.Dataset):
         if self.force_left and 'right' in self.images[index]:
             image = np.array(image)
             gt = np.array(gt)
+
             augmented = self.transform_right(image=image, mask=gt)
+            image, gt = augmented["image"], augmented["mask"]
+
             image = Image.fromarray(image)
             gt = Image.fromarray(gt)
             image = image.convert("RGB")
@@ -118,8 +121,8 @@ class PolypDataset(data.Dataset):
 
         # image, gt = self.transform(image, gt, phase=self.phase)
         image = self.img_transform(image)
-
         gt = self.gt_transform(gt)
+
         return image, gt, name
 
     def filter_files(self):
@@ -186,7 +189,7 @@ def get_loader(
 
 
 class test_dataset:
-    def __init__(self, image_root, gt_root, testsize):
+    def __init__(self, image_root, gt_root, testsize, force_left=False):
         self.testsize = testsize
         self.images = [
             image_root + f
@@ -200,26 +203,55 @@ class test_dataset:
         ]
         self.images = sorted(self.images)
         self.gts = sorted(self.gts)
-        self.transform = transforms.Compose(
+        self.img_transform = transforms.Compose(
             [
                 transforms.Resize((self.testsize, self.testsize)),
                 transforms.ToTensor(),
                 transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
             ]
         )
-        self.gt_transform = transforms.ToTensor()
+        self.gt_transform = transforms.Compose(
+            [
+                transforms.Resize((self.testsize, self.testsize)),
+                transforms.ToTensor(),
+                # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+            ]
+        )
         self.size = len(self.images)
         self.index = 0
+        self.force_left = force_left
+        self.transform_right = albu.Compose(
+            [
+                albu.HorizontalFlip(p=1.0),
+            ]
+        )
 
     def load_data(self):
 
         image = self.rgb_loader(self.images[self.index])
-        image = self.transform(image).unsqueeze(0)
         gt = self.binary_loader(self.gts[self.index])
         name = self.images[self.index].split("/")[-1]
+
         if name.endswith(".jpg"):
             name = name.split(".jpg")[0] + ".png"
+
+        if self.force_left and 'right' in self.images[self.index]:
+            image = np.array(image)
+            gt = np.array(gt)
+
+            augmented = self.transform_right(image=image, mask=gt)
+            image, gt = augmented["image"], augmented["mask"]
+
+            image = Image.fromarray(image)
+            gt = Image.fromarray(gt)
+            image = image.convert("RGB")
+            gt = gt.convert("L")
+
+        image = self.img_transform(image)
+        gt = self.gt_transform(gt)
+
         self.index += 1
+
         return image, gt, name
 
     def rgb_loader(self, path):

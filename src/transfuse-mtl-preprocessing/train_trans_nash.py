@@ -19,6 +19,7 @@ from utils.set_seed import seed_everything
 from utils.smooth_cross_entropy import SmoothCrossEntropy
 from utils.utils import AvgMeter, adjust_lr, clip_gradient
 from utils.weight_methods import WeightMethods
+from utils.preprocess import CropImage
 
 matplotlib.use("Agg")
 seed_everything(42)
@@ -40,6 +41,9 @@ def structure_loss(pred, mask):
 
 def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best2_loss, device):
     val_loss = 0
+    # crop_image_func = CropImage(image_type="image", image_size=opt.trainsize)
+    # crop_gt_func = CropImage(image_type="gt", image_size=opt.trainsize)
+
     for phase in ["train", "val"]:
         if phase == "train":
             for model in models.values():
@@ -58,6 +62,7 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
         )
 
         os.makedirs(f"./snapshots/{opt.train_save}/crop_images", exist_ok=True)
+        os.makedirs(f"./snapshots/{opt.train_save}/crop_gts", exist_ok=True)
         for i, pack in enumerate(dataloaders_dict[phase], start=1):
             for rate in size_rates:
                 optimizer.zero_grad()
@@ -85,25 +90,37 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
                         align_corners=True,
                     )
                 with torch.set_grad_enabled(phase == "train"):
-                    pram_d = models["Preprocess"](images) * opt.trainsize
+                    param_d = models["Preprocess"](images) * opt.trainsize
 
-                    # Use param_d to trim width by param_d
+                    # cropped_images = crop_image_func(param_d, images, name)
+                    # crop_image_func.save()
+
+                    # cropped_gts = crop_gt_func(param_d, gts, name)
+                    # crop_gt_func.save()
+
                     # ---- crop images ----
-                    cropped_images = torch.Tensor().to(device)
+                    cropped_images = torch.Tensor().cuda()
                     for j in range(images.size(0)):
-                        crop = images[j, :, :, :int(pram_d[j])]
+                        crop = images[j, :, :, :int(param_d[j])]
                         crop = F.interpolate(
                             crop.unsqueeze(0), size=(opt.trainsize, opt.trainsize), mode="bilinear", align_corners=True)
                         cropped_images = torch.cat((cropped_images, crop), dim=0)
 
-                    # # ---- save image ----
+                    # # ---- save images ----
                     # for j in range(cropped_images.size(0)):
                     #     img = cropped_images[j].mul(255).byte()
                     #     img = img.permute(1, 2, 0).cpu().numpy()
-                    #     cv2.imwrite(
-                    #         f"./snapshots/{opt.train_save}/crop_images/{epoch}_{name}.png",
-                    #         img,
-                    #     )
+                    #     cv2.imwrite(f"./fig/{name}", img)
+
+                    # ---- crop gts ----
+                    cropped_gts = torch.Tensor().cuda()
+                    # gts = torch.Tensor(gts).cuda()
+                    for j in range(gts.size(0)):
+                        crop = gts[j, :, :, :int(param_d[j])]
+                        crop = F.interpolate(
+                            crop.unsqueeze(0), size=(opt.trainsize, opt.trainsize), mode="bilinear", align_corners=True
+                        )
+                        cropped_gts = torch.cat((cropped_gts, crop), dim=0)
 
                     # ---- forward ----
                     lateral_map_4, lateral_map_3, lateral_map_2 = models["Transfuse"](
@@ -111,9 +128,9 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
                     )
 
                     # ---- loss function ----
-                    loss4 = structure_loss(lateral_map_4, gts)
-                    loss3 = structure_loss(lateral_map_3, gts)
-                    loss2 = structure_loss(lateral_map_2, gts)
+                    loss4 = structure_loss(lateral_map_4, cropped_gts)
+                    loss3 = structure_loss(lateral_map_3, cropped_gts)
+                    loss2 = structure_loss(lateral_map_2, cropped_gts)
                     loss = (
                         0.5 * loss2 + 0.3 * loss3 + 0.2 * loss4
                     )  # TODO: try different weights for loss

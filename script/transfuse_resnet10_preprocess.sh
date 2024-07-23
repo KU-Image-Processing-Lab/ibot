@@ -26,7 +26,7 @@ python3 ./src/${SCRIPT_DIR}/${TRAIN_SCRIPT_NAME} \
     --train_save ${TRAIN_SAVE} \
     1> >(tee ./logs/${TRAIN_SCRIPT_NAME}_stdout.log >&1 ) \
     2> >(tee ./logs/${TRAIN_SCRIPT_NAME}_stderr.log >&2)
-python3 ./utils/slack_bot.py --text `cat ./logs/${TRAIN_SCRIPT_NAME}_stderr.log`
+python3 ./utils/slack_bot.py --text "`cat ./logs/${TRAIN_SCRIPT_NAME}_stderr.log`"
 
 python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --testsize 352 \
