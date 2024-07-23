@@ -14,12 +14,12 @@ from torch.autograd import Variable
 from lib.TransFuse_l import TransFuse_L
 from utils.dataloader import get_loader
 from utils.mtl import extract_weight_method_parameters_from_args
+from utils.preprocess import CropImage
 from utils.save_parameter import save_parameter
 from utils.set_seed import seed_everything
 from utils.smooth_cross_entropy import SmoothCrossEntropy
 from utils.utils import AvgMeter, adjust_lr, clip_gradient
 from utils.weight_methods import WeightMethods
-from utils.preprocess import CropImage
 
 matplotlib.use("Agg")
 seed_everything(42)
@@ -39,7 +39,9 @@ def structure_loss(pred, mask):
     return (wbce + wiou).mean()
 
 
-def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best2_loss, device):
+def train(
+    dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best2_loss, device
+):
     val_loss = 0
     # crop_image_func = CropImage(image_type="image", image_size=opt.trainsize)
     # crop_gt_func = CropImage(image_type="gt", image_size=opt.trainsize)
@@ -101,9 +103,13 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
                     # ---- crop images ----
                     cropped_images = torch.Tensor().cuda()
                     for j in range(images.size(0)):
-                        crop = images[j, :, :, :int(param_d[j])]
+                        crop = images[j, :, :, : int(param_d[j])]
                         crop = F.interpolate(
-                            crop.unsqueeze(0), size=(opt.trainsize, opt.trainsize), mode="bilinear", align_corners=True)
+                            crop.unsqueeze(0),
+                            size=(opt.trainsize, opt.trainsize),
+                            mode="bilinear",
+                            align_corners=True,
+                        )
                         cropped_images = torch.cat((cropped_images, crop), dim=0)
 
                     # # ---- save images ----
@@ -116,9 +122,12 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
                     cropped_gts = torch.Tensor().cuda()
                     # gts = torch.Tensor(gts).cuda()
                     for j in range(gts.size(0)):
-                        crop = gts[j, :, :, :int(param_d[j])]
+                        crop = gts[j, :, :, : int(param_d[j])]
                         crop = F.interpolate(
-                            crop.unsqueeze(0), size=(opt.trainsize, opt.trainsize), mode="bilinear", align_corners=True
+                            crop.unsqueeze(0),
+                            size=(opt.trainsize, opt.trainsize),
+                            mode="bilinear",
+                            align_corners=True,
                         )
                         cropped_gts = torch.cat((cropped_gts, crop), dim=0)
 
@@ -197,7 +206,8 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
                 best2_loss = val_d_loss
                 save_path = "snapshots/{}/".format(opt.train_save)
                 torch.save(
-                    models["Preprocess"].state_dict(), save_path + "Preprocess-best2.pth"
+                    models["Preprocess"].state_dict(),
+                    save_path + "Preprocess-best2.pth",
                 )
                 torch.save(
                     models["Transfuse"].state_dict(), save_path + "Transfuse-best2.pth"
@@ -399,7 +409,11 @@ if __name__ == "__main__":
     gt_root_val = "{}/masks/".format(opt.val_path)
 
     train_loader = get_loader(
-        image_root, gt_root, batchsize=opt.batchsize, trainsize=opt.trainsize, force_left=True
+        image_root,
+        gt_root,
+        batchsize=opt.batchsize,
+        trainsize=opt.trainsize,
+        force_left=True,
     )
     total_step = len(train_loader)
 
@@ -427,9 +441,7 @@ if __name__ == "__main__":
     start_time = time.time()
 
     for epoch in range(1, opt.epoch):
-        adjust_lr(
-            optimizer, opt.lr, epoch, opt.decay_rate, opt.decay_epoch
-        )
+        adjust_lr(optimizer, opt.lr, epoch, opt.decay_rate, opt.decay_epoch)
         (
             epoch,
             train_loss,
@@ -446,7 +458,7 @@ if __name__ == "__main__":
             epoch,
             best_loss,
             best2_loss,
-            device
+            device,
         )
         epoch_list.append(epoch)
         train_loss = train_loss.cpu().data.numpy()

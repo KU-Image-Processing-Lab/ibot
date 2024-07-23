@@ -94,7 +94,7 @@ class PolypDataset(data.Dataset):
         gt = self.binary_loader(self.gts[index])
         name = self.images[index].split("/")[-1]
 
-        if self.force_left and 'right' in self.images[index]:
+        if self.force_left and "right" in self.images[index]:
             image = np.array(image)
             gt = np.array(gt)
 
@@ -175,7 +175,9 @@ def get_loader(
     droplast=False,
     force_left=False,
 ):
-    dataset = PolypDataset(image_root, gt_root, trainsize, phase=phase, force_left=force_left)
+    dataset = PolypDataset(
+        image_root, gt_root, trainsize, phase=phase, force_left=force_left
+    )
     data_loader = data.DataLoader(
         dataset=dataset,
         batch_size=batchsize,
@@ -235,7 +237,7 @@ class test_dataset:
         if name.endswith(".jpg"):
             name = name.split(".jpg")[0] + ".png"
 
-        if self.force_left and 'right' in self.images[self.index]:
+        if self.force_left and "right" in self.images[self.index]:
             image = np.array(image)
             gt = np.array(gt)
 

@@ -3,9 +3,6 @@ import glob
 import os
 import pdb
 import sys
-from tqdm import tqdm
-
-from PIL.Image import isImageType
 
 import cv2
 import imageio
@@ -14,11 +11,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn.functional as F
+from PIL.Image import isImageType
 from skimage import img_as_ubyte
 from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
                              precision_score, recall_score, roc_auc_score,
                              roc_curve)
 from torchvision import transforms
+from tqdm import tqdm
 
 from lib.Discriminator_ResNet import Discriminator
 # from lib.models_vit_discriminator import vit_large_patch16 as vit_large
@@ -26,6 +25,7 @@ from lib.TransFuse_l import TransFuse_L
 from utils import preprocess
 from utils.dataloader import test_dataset
 from utils.set_seed import seed_everything
+
 # from utils.preprocess import CropImage
 
 matplotlib.use("Agg")
@@ -234,9 +234,13 @@ for i in tqdm(range(test_loader1.size)):
         # ---- crop image ----
         cropped_image = torch.Tensor().cuda()
         for j in range(image.size(0)):
-            crop = image[j, :, :, :int(param_d[j])]
+            crop = image[j, :, :, : int(param_d[j])]
             crop = F.interpolate(
-                crop.unsqueeze(0), size=(opt.testsize, opt.testsize), mode="bilinear", align_corners=True)
+                crop.unsqueeze(0),
+                size=(opt.testsize, opt.testsize),
+                mode="bilinear",
+                align_corners=True,
+            )
             cropped_image = torch.cat((cropped_image, crop), dim=0)
 
         # ---- save image ----
@@ -249,9 +253,13 @@ for i in tqdm(range(test_loader1.size)):
         cropped_gt = torch.Tensor()
         gt = torch.Tensor(gt)
         for j in range(gt.size(0)):
-            crop = gt[j, :, :int(param_d[j])]
+            crop = gt[j, :, : int(param_d[j])]
             crop = F.interpolate(
-                crop.unsqueeze(0).unsqueeze(0), size=(opt.testsize, opt.testsize), mode="bilinear", align_corners=True)
+                crop.unsqueeze(0).unsqueeze(0),
+                size=(opt.testsize, opt.testsize),
+                mode="bilinear",
+                align_corners=True,
+            )
             cropped_gt = torch.cat((cropped_gt, crop), dim=0)
 
         # ---- save gt ----
@@ -262,7 +270,9 @@ for i in tqdm(range(test_loader1.size)):
 
         _, _, res = model(cropped_image)
 
-        res1 = F.upsample(res, size=(opt.testsize, opt.testsize), mode="bilinear", align_corners=False)
+        res1 = F.upsample(
+            res, size=(opt.testsize, opt.testsize), mode="bilinear", align_corners=False
+        )
         res1 = res1.sigmoid().data.cpu().numpy().squeeze()
 
         res1 = 1.0 * (res1 > 0.5)  ############################
@@ -319,9 +329,13 @@ for i in tqdm(range(test_loader2.size)):
         # ---- crop image ----
         cropped_image = torch.Tensor().cuda()
         for j in range(image.size(0)):
-            crop = image[j, :, :, :int(param_d[j])]
+            crop = image[j, :, :, : int(param_d[j])]
             crop = F.interpolate(
-                crop.unsqueeze(0), size=(opt.testsize, opt.testsize), mode="bilinear", align_corners=True)
+                crop.unsqueeze(0),
+                size=(opt.testsize, opt.testsize),
+                mode="bilinear",
+                align_corners=True,
+            )
             cropped_image = torch.cat((cropped_image, crop), dim=0)
 
         # ---- save image ----
@@ -334,9 +348,13 @@ for i in tqdm(range(test_loader2.size)):
         cropped_gt = torch.Tensor()
         gt = torch.Tensor(gt)
         for j in range(gt.size(0)):
-            crop = gt[j, :, :int(param_d[j])]
+            crop = gt[j, :, : int(param_d[j])]
             crop = F.interpolate(
-                crop.unsqueeze(0).unsqueeze(0), size=(opt.testsize, opt.testsize), mode="bilinear", align_corners=True)
+                crop.unsqueeze(0).unsqueeze(0),
+                size=(opt.testsize, opt.testsize),
+                mode="bilinear",
+                align_corners=True,
+            )
             cropped_gt = torch.cat((cropped_gt, crop), dim=0)
 
         # ---- save gt ----
@@ -349,7 +367,9 @@ for i in tqdm(range(test_loader2.size)):
 
         _, _, res = model(cropped_image)
 
-    res = F.upsample(res, size=(opt.testsize, opt.testsize), mode="bilinear", align_corners=False)
+    res = F.upsample(
+        res, size=(opt.testsize, opt.testsize), mode="bilinear", align_corners=False
+    )
     res = res.sigmoid().data.cpu().numpy().squeeze()
     # res = (res - res.min()) / (res.max() - res.min() + 1e-8)  ############################
     res = 1.0 * (res > 0.5)  ############################
