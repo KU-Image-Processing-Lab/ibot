@@ -1,6 +1,7 @@
 import argparse
 import glob
 import os
+import pdb
 import sys
 
 import cv2
@@ -10,20 +11,22 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn.functional as F
+from PIL.Image import isImageType
 from skimage import img_as_ubyte
 from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
                              precision_score, recall_score, roc_auc_score,
                              roc_curve)
 from torchvision import transforms
-
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
-sys.path.append(project_root)
+from tqdm import tqdm
 
 from lib.Discriminator_ResNet import Discriminator
-# # from lib.models_vit_discriminator import vit_large_patch16 as vit_large
+# from lib.models_vit_discriminator import vit_large_patch16 as vit_large
 from lib.TransFuse_l import TransFuse_L
+from utils import preprocess
 from utils.dataloader import test_dataset
 from utils.set_seed import seed_everything
+
+# from utils.preprocess import CropImage
 
 matplotlib.use("Agg")
 seed_everything(42)
@@ -95,33 +98,49 @@ def imwrite(filename, img, params=None):
 parser = argparse.ArgumentParser()
 parser.add_argument("--testsize", type=int, default=352, help="testing size")
 parser.add_argument(
+    "--pth_path0", type=str, default="./snapshots/Transfuse_S/Preprocess-99.pth"
+)
+parser.add_argument(
     "--pth_path", type=str, default="./snapshots/Transfuse_S/Transfuse-99.pth"
 )
-
-
 parser.add_argument(
     "--pth_path2", type=str, default="./snapshots/Transfuse_S/Discriminator-99.pth"
 )
-
 parser.add_argument(
     "--discriminator",
     type=str,
     default="resnet10",
     help="Discriminatorに使うモデル",
 )
-parser.add_argument("--test_data_path1", type=str, default="./dataset/TestDataset/")
 parser.add_argument(
-    "--test_data_path2", type=str, default="./dataset/sekkai_TestDataset/"
+    "--preprocess",
+    type=str,
+    default="resnet10",
+    help="前処理に使用するモデル",
 )
-parser.add_argument("--test_save_path", type=str, default="./results/Transfuse_S/")
+
+data_path1 = "./dataset/original_dataset/TestDataset/"
+data_path2 = "./dataset/original_dataset/sekkai_TestDataset/"
 
 
+save_path = "./results/Transfuse_S/"
 opt = parser.parse_args()
-# for ep in range(opt.epoch):
 
-data_path1 = opt.test_data_path1
-data_path2 = opt.test_data_path2
-save_path = opt.test_save_path
+# ---- build preprocess model ----
+if opt.discriminator == "resnet10":
+    from lib.ResNet_10_preprocess import ResNet10
+
+    model0 = ResNet10()
+elif opt.discriminator == "res2net":
+    from lib.Discriminator_ResNet import Discriminator
+
+    model0 = Discriminator()
+else:
+    sys.exit("Invalid preprocess model")
+
+model0.load_state_dict(torch.load(opt.pth_path0))
+model0.cuda()
+model0.eval()
 
 model = TransFuse_L()
 model.load_state_dict(torch.load(opt.pth_path))
@@ -145,24 +164,24 @@ if opt.discriminator == "res2net":
     model2 = Discriminator()
 
 model2.load_state_dict(torch.load(opt.pth_path2))
-
 model2.cuda()
 model2.eval()
 
+
 os.makedirs(save_path, exist_ok=True)
-for file in glob.glob(save_path + "/*.png"):
+for file in glob.glob("./results/Transfuse_S/*.png"):
     os.remove(file)
-os.makedirs(save_path + "/TP", exist_ok=True)
-for file in glob.glob(save_path + "/TP/*.png"):
+os.makedirs("./results/Transfuse_S/TP", exist_ok=True)
+for file in glob.glob("./results/Transfuse_S/TP/*.png"):
     os.remove(file)
-os.makedirs(save_path + "/FN", exist_ok=True)
-for file in glob.glob(save_path + "/FN/*.png"):
+os.makedirs("./results/Transfuse_S/FN", exist_ok=True)
+for file in glob.glob("./results/Transfuse_S/FN/*.png"):
     os.remove(file)
-os.makedirs(save_path + "/FP", exist_ok=True)
-for file in glob.glob(save_path + "/FP/*.png"):
+os.makedirs("./results/Transfuse_S/FP", exist_ok=True)
+for file in glob.glob("./results/Transfuse_S/FP/*.png"):
     os.remove(file)
-os.makedirs(save_path + "/TN", exist_ok=True)
-for file in glob.glob(save_path + "/TN/*.png"):
+os.makedirs("./results/Transfuse_S/TN", exist_ok=True)
+for file in glob.glob("./results/Transfuse_S/TN/*.png"):
     os.remove(file)
 image_root1 = "{}/images/".format(data_path1)
 gt_root1 = "{}/masks/".format(data_path1)
@@ -180,40 +199,84 @@ y_true = np.array([])
 y_score = np.array([])
 y_pred = np.array([])
 
+# crop_image_func = CropImage(image_type="image", image_size=opt.testsize)
+# crop_gt_func = CropImage(image_type="gt", image_size=opt.testsize)
+
+# for i in tqdm(range(test_loader1.size)):
 for i in range(test_loader1.size):
     image, gt, name = test_loader1.load_data()
-    label = transforms.functional.to_tensor(gt)
-    label = torch.einsum("ijk->i", label) > 0
+    # label = transforms.functional.to_tensor(gt)
+    # label = torch.einsum("ijk->i", label) > 0
+    label = torch.einsum("ijk->i", gt) > 0
     label = torch.where(label > 0, torch.tensor(1), torch.tensor(0))
     gt = np.asarray(gt, np.float32)
 
-    # gt /= (gt.max() + 1e-8)  ##########################
-
     image = image.cuda()
 
+    if image.dim() == 3:
+        image = image.unsqueeze(0)
+
     with torch.no_grad():
-        _, _, res = model(image)
+        param_d = model0(image) * opt.testsize
+        print(f"{int(param_d) = }")
 
-        res1 = F.upsample(res, size=gt.shape, mode="bilinear", align_corners=False)
+        # cropped_image = crop_image_func(param_d, image, name)
+        # crop_image_func.save()
+
+        # cropped_gt = crop_gt_func(param_d, gt, name)
+        # crop_gt_func.save()
+
+        # ---- crop image ----
+        cropped_image = torch.Tensor().cuda()
+        for j in range(image.size(0)):
+            crop = image[j, :, :, : int(param_d[j])]
+            crop = F.interpolate(
+                crop.unsqueeze(0),
+                size=(opt.testsize, opt.testsize),
+                mode="bilinear",
+                align_corners=True,
+            )
+            cropped_image = torch.cat((cropped_image, crop), dim=0)
+
+        # ---- save image ----
+        for j in range(cropped_image.size(0)):
+            img = cropped_image[j].mul(255).byte()
+            img = img.permute(1, 2, 0).cpu().numpy()
+            cv2.imwrite(f"./fig/image_{name}", img)
+
+        # ---- crop gt ----
+        cropped_gt = torch.Tensor()
+        gt = torch.Tensor(gt)
+        for j in range(gt.size(0)):
+            crop = gt[j, :, : int(param_d[j])]
+            crop = F.interpolate(
+                crop.unsqueeze(0).unsqueeze(0),
+                size=(opt.testsize, opt.testsize),
+                mode="bilinear",
+                align_corners=True,
+            )
+            cropped_gt = torch.cat((cropped_gt, crop), dim=0)
+
+        # ---- save gt ----
+        for j in range(cropped_gt.size(0)):
+            img = cropped_gt[j].mul(255).byte()
+            img = img.permute(1, 2, 0).cpu().numpy()
+            cv2.imwrite(f"./fig/mask_{name}", img)
+
+        _, _, res = model(cropped_image)
+
+        res1 = F.upsample(
+            res, size=(opt.testsize, opt.testsize), mode="bilinear", align_corners=False
+        )
         res1 = res1.sigmoid().data.cpu().numpy().squeeze()
-        # print(torch.max(res),torch.min(res),torch.mean(res))
-        # print(res1.max(),res1.min(),res1.mean())
 
-        # res1 = (res1 - res1.min()) / (res1.max() - res1.min() + 1e-8)  ############################
         res1 = 1.0 * (res1 > 0.5)  ############################
-        # print(res1.max(),res1.min(),res1.mean())
 
         imageio.imsave(save_path + name, img_as_ubyte(res1))
         res = res.repeat(1, 3, 1, 1)
 
-        # res = res.sigmoid()  #########################
-        # res = 1. * (res > 0.5)  ############################
-        # res = res * image
-
         out = model2(res)
-        # out = model2(res, image)
 
-        # predicted = torch.round(out)
         _, predicted = torch.max(out, dim=1)
         predicted = torch.Tensor.cpu(predicted).detach().numpy()
 
@@ -225,19 +288,19 @@ for i in range(test_loader1.size):
 
     if label == 1:
         if predicted == 1:
-            imageio.imsave(save_path + "/TP/" + name, img_as_ubyte(res1))
+            imageio.imsave(save_path + "TP/" + name, img_as_ubyte(res1))
 
         else:
-            imageio.imsave(save_path + "/FN/" + name, img_as_ubyte(res1))
+            imageio.imsave(save_path + "FN/" + name, img_as_ubyte(res1))
 
     else:
         if predicted == 1:
-            imageio.imsave(save_path + "/FP/" + name, img_as_ubyte(res1))
+            imageio.imsave(save_path + "FP/" + name, img_as_ubyte(res1))
 
         else:
-            imageio.imsave(save_path + "/TN/" + name, img_as_ubyte(res1))
+            imageio.imsave(save_path + "TN/" + name, img_as_ubyte(res1))
 
-for i in range(test_loader2.size):
+for i in tqdm(range(test_loader2.size)):
     image, gt, name = test_loader2.load_data()
     gt = np.asarray(gt, np.float32)
 
@@ -245,17 +308,58 @@ for i in range(test_loader2.size):
 
     image = image.cuda()
 
-    with torch.no_grad():
-        _, _, res = model(image)
+    if image.dim() == 3:
+        image = image.unsqueeze(0)
 
-    res = F.upsample(res, size=gt.shape, mode="bilinear", align_corners=False)
+    with torch.no_grad():
+        param_d = model0(image) * opt.testsize
+        # print(f"{int(param_d) = }")
+
+        # cropped_image = crop_image_func.crop(param_d, image, name)
+        # crop_image_func.save()
+
+        # cropped_gt = crop_gt_func.crop(param_d, gt, name)
+        # crop_gt_func.save()
+
+        # ---- crop image ----
+        cropped_image = torch.Tensor().cuda()
+        for j in range(image.size(0)):
+            crop = image[j, :, :, : int(param_d[j])]
+            crop = F.interpolate(
+                crop.unsqueeze(0),
+                size=(opt.testsize, opt.testsize),
+                mode="bilinear",
+                align_corners=True,
+            )
+            cropped_image = torch.cat((cropped_image, crop), dim=0)
+
+        # ---- crop gt ----
+        cropped_gt = torch.Tensor()
+        gt = torch.Tensor(gt)
+        for j in range(gt.size(0)):
+            crop = gt[j, :, : int(param_d[j])]
+            crop = F.interpolate(
+                crop.unsqueeze(0).unsqueeze(0),
+                size=(opt.testsize, opt.testsize),
+                mode="bilinear",
+                align_corners=True,
+            )
+            cropped_gt = torch.cat((cropped_gt, crop), dim=0)
+
+        cropped_gt = cropped_gt.squeeze().cpu().numpy()
+
+        _, _, res = model(cropped_image)
+
+    res = F.upsample(
+        res, size=(opt.testsize, opt.testsize), mode="bilinear", align_corners=False
+    )
     res = res.sigmoid().data.cpu().numpy().squeeze()
     # res = (res - res.min()) / (res.max() - res.min() + 1e-8)  ############################
     res = 1.0 * (res > 0.5)  ############################
 
-    dice = mean_dice_np(gt, res)
-    iou = mean_iou_np(gt, res)
-    acc = np.sum(res == gt) / (res.shape[0] * res.shape[1])
+    dice = mean_dice_np(cropped_gt, res)
+    iou = mean_iou_np(cropped_gt, res)
+    acc = np.sum(res == cropped_gt) / (res.shape[0] * res.shape[1])
 
     acc_bank.append(acc)
     dice_bank.append(dice)
@@ -271,11 +375,6 @@ cm = confusion_matrix(y_true, y_pred)
 TN, FP, FN, TP = cm.flatten()
 TPR = TP / (TP + FN)
 FPR = FP / (FP + TN)
-print("----------------------------------")
-print("segmentation:trandfuse-l")
-print("discriminator:" + opt.discriminator)
-print("seg_path:" + opt.pth_path)
-print("dis_path:" + opt.pth_path2)
 print("----------discriminator-----------")
 print("TPR-FPR:", TPR - FPR)
 print("TP:", TP)

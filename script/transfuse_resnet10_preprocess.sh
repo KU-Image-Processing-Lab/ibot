@@ -4,7 +4,7 @@ export PYTHONPATH=/home/student/git/medical-image-processing:$PYTHONPATH
 # --------------------------------------------------------------
 LF='
 '
-SCRIPT_DIR='transfuse-mtl-preprocessing'
+SCRIPT_DIR='transfuse-mtl'
 TRAIN_SCRIPT_NAME='train_trans_nash.py'
 TEST_SCRIPT_NAME='test_trans_nash.py'
 TRAIN_SAVE="transfuse_resnet10_preprocess"
