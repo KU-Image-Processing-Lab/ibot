@@ -216,7 +216,6 @@ class test_dataset:
             [
                 transforms.Resize((self.testsize, self.testsize)),
                 transforms.ToTensor(),
-                # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
             ]
         )
         self.size = len(self.images)

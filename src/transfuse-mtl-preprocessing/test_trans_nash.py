@@ -98,19 +98,13 @@ def imwrite(filename, img, params=None):
 parser = argparse.ArgumentParser()
 parser.add_argument("--testsize", type=int, default=352, help="testing size")
 parser.add_argument(
+    "--pth_path0", type=str, default="./snapshots/Transfuse_S/Preprocess-99.pth"
+)
+parser.add_argument(
     "--pth_path", type=str, default="./snapshots/Transfuse_S/Transfuse-99.pth"
 )
-# parser.add_argument('--pth_path', type=str, default='./snapshots/Transfuse_S/Transfuse-89.pth')
-# parser.add_argument('--pth_path', type=str, default='./snapshots/Transfuse_S/Transfuse-best.pth')
-# parser.add_argument('--pth_path', type=str, default='./snapshots/Transfuse_S/Transfuse-best2.pth')
-# parser.add_argument('--pth_path', type=str, default='./weights/修論/mtl/nash/NoTuning/TransFuse_discriminator/Transfuse-best.pth')
-# parser.add_argument('--pth_path', type=str, default='./weights/修論/segmentation/TransFuse-L+MAE/vit-l_352/石灰化ありのみ/Transfuse-best.pth')
-
 parser.add_argument(
     "--pth_path2", type=str, default="./snapshots/Transfuse_S/Discriminator-99.pth"
-)
-parser.add_argument(
-    "--pth_path0", type=str, default="./snapshots/Transfuse_S/Preprocess-99.pth"
 )
 parser.add_argument(
     "--discriminator",
@@ -208,7 +202,8 @@ y_pred = np.array([])
 # crop_image_func = CropImage(image_type="image", image_size=opt.testsize)
 # crop_gt_func = CropImage(image_type="gt", image_size=opt.testsize)
 
-for i in tqdm(range(test_loader1.size)):
+# for i in tqdm(range(test_loader1.size)):
+for i in range(test_loader1.size):
     image, gt, name = test_loader1.load_data()
     # label = transforms.functional.to_tensor(gt)
     # label = torch.einsum("ijk->i", label) > 0
@@ -223,7 +218,7 @@ for i in tqdm(range(test_loader1.size)):
 
     with torch.no_grad():
         param_d = model0(image) * opt.testsize
-        # print(f"{int(param_d) = }")
+        print(f"{int(param_d) = }")
 
         # cropped_image = crop_image_func(param_d, image, name)
         # crop_image_func.save()
@@ -247,7 +242,7 @@ for i in tqdm(range(test_loader1.size)):
         for j in range(cropped_image.size(0)):
             img = cropped_image[j].mul(255).byte()
             img = img.permute(1, 2, 0).cpu().numpy()
-            cv2.imwrite(f"./fig/{name}", img)
+            cv2.imwrite(f"./fig/image_{name}", img)
 
         # ---- crop gt ----
         cropped_gt = torch.Tensor()
@@ -266,7 +261,7 @@ for i in tqdm(range(test_loader1.size)):
         for j in range(cropped_gt.size(0)):
             img = cropped_gt[j].mul(255).byte()
             img = img.permute(1, 2, 0).cpu().numpy()
-            cv2.imwrite(f"./fig/{name}", img)
+            cv2.imwrite(f"./fig/mask_{name}", img)
 
         _, _, res = model(cropped_image)
 
@@ -338,12 +333,6 @@ for i in tqdm(range(test_loader2.size)):
             )
             cropped_image = torch.cat((cropped_image, crop), dim=0)
 
-        # ---- save image ----
-        for j in range(cropped_image.size(0)):
-            img = cropped_image[j].mul(255).byte()
-            img = img.permute(1, 2, 0).cpu().numpy()
-            cv2.imwrite(f"./fig/{name}", img)
-
         # ---- crop gt ----
         cropped_gt = torch.Tensor()
         gt = torch.Tensor(gt)
@@ -356,12 +345,6 @@ for i in tqdm(range(test_loader2.size)):
                 align_corners=True,
             )
             cropped_gt = torch.cat((cropped_gt, crop), dim=0)
-
-        # ---- save gt ----
-        for j in range(cropped_gt.size(0)):
-            img = cropped_gt[j].mul(255).byte()
-            img = img.permute(1, 2, 0).cpu().numpy()
-            cv2.imwrite(f"./fig/{name}", img)
 
         cropped_gt = cropped_gt.squeeze().cpu().numpy()
 
