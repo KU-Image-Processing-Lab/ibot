@@ -119,9 +119,8 @@ parser.add_argument(
     help="前処理に使用するモデル",
 )
 
-data_path1 = "./dataset/original_dataset/TestDataset/"
-data_path2 = "./dataset/original_dataset/sekkai_TestDataset/"
-
+data_path1 = "./dataset/original_dataset_only_left/TestDataset/"
+data_path2 = "./dataset/original_dataset_only_left/sekkai_TestDataset/"
 
 save_path = "./results/Transfuse_S/"
 opt = parser.parse_args()
@@ -242,7 +241,7 @@ for i in range(test_loader1.size):
         for j in range(cropped_image.size(0)):
             img = cropped_image[j].mul(255).byte()
             img = img.permute(1, 2, 0).cpu().numpy()
-            cv2.imwrite(f"./fig/image_{name}", img)
+            cv2.imwrite(f"./fig/{name.replace('.png', '')}_image.png", img)
 
         # ---- crop gt ----
         cropped_gt = torch.Tensor()
@@ -261,7 +260,7 @@ for i in range(test_loader1.size):
         for j in range(cropped_gt.size(0)):
             img = cropped_gt[j].mul(255).byte()
             img = img.permute(1, 2, 0).cpu().numpy()
-            cv2.imwrite(f"./fig/mask_{name}", img)
+            cv2.imwrite(f"./fig/{name.replace('.png', '')}_mask.png", img)
 
         _, _, res = model(cropped_image)
 

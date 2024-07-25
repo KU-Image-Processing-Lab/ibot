@@ -56,12 +56,6 @@ class PolypDataset(data.Dataset):
 
         self.phase = phase
 
-        self.transform_right = albu.Compose(
-            [
-                albu.HorizontalFlip(p=1.0),
-            ]
-        )
-
         self.transform3 = albu.Compose(
             [
                 # albu.ShiftScaleRotate(
@@ -94,17 +88,10 @@ class PolypDataset(data.Dataset):
         gt = self.binary_loader(self.gts[index])
         name = self.images[index].split("/")[-1]
 
-        if self.force_left and "right" in self.images[index]:
-            image = np.array(image)
-            gt = np.array(gt)
-
-            augmented = self.transform_right(image=image, mask=gt)
-            image, gt = augmented["image"], augmented["mask"]
-
-            image = Image.fromarray(image)
-            gt = Image.fromarray(gt)
-            image = image.convert("RGB")
-            gt = gt.convert("L")
+        #     image = Image.fromarray(image)pkkkkk
+        #     gt = Image.fromarray(gt)
+        #     image = image.convert("RGB")
+        #     gt = gt.convert("L")
 
         if self.phase == "train":
 
@@ -221,11 +208,6 @@ class test_dataset:
         self.size = len(self.images)
         self.index = 0
         self.force_left = force_left
-        self.transform_right = albu.Compose(
-            [
-                albu.HorizontalFlip(p=1.0),
-            ]
-        )
 
     def load_data(self):
 
@@ -235,18 +217,6 @@ class test_dataset:
 
         if name.endswith(".jpg"):
             name = name.split(".jpg")[0] + ".png"
-
-        if self.force_left and "right" in self.images[self.index]:
-            image = np.array(image)
-            gt = np.array(gt)
-
-            augmented = self.transform_right(image=image, mask=gt)
-            image, gt = augmented["image"], augmented["mask"]
-
-            image = Image.fromarray(image)
-            gt = Image.fromarray(gt)
-            image = image.convert("RGB")
-            gt = gt.convert("L")
 
         image = self.img_transform(image)
         gt = self.gt_transform(gt)

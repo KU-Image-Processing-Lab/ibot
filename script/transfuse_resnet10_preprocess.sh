@@ -21,8 +21,8 @@ python3 ./src/${SCRIPT_DIR}/${TRAIN_SCRIPT_NAME} \
     --discriminator resnet10 \
     --log_epoch 20 \
     --save_epoch 50 \
-    --train_path ./dataset/original_dataset/TrainDataset \
-    --val_path ./dataset/original_dataset/ValDataset \
+    --train_path ./dataset/original_dataset_only_left/TrainDataset \
+    --val_path ./dataset/original_dataset_only_left/ValDataset \
     --train_save ${TRAIN_SAVE} \
     1> >(tee ./logs/${TRAIN_SCRIPT_NAME}_stdout.log >&1 ) \
     2> >(tee ./logs/${TRAIN_SCRIPT_NAME}_stderr.log >&2)
