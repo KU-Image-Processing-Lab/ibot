@@ -78,7 +78,10 @@ class PolypDataset(data.Dataset):
             ]
         )
         self.gt_transform = transforms.Compose(
-            [transforms.Resize((self.trainsize, self.trainsize)), transforms.ToTensor()]
+            [
+                transforms.Resize((self.trainsize, self.trainsize)),
+                transforms.ToTensor()
+            ]
         )
 
         self.force_left = force_left
@@ -88,7 +91,7 @@ class PolypDataset(data.Dataset):
         gt = self.binary_loader(self.gts[index])
         name = self.images[index].split("/")[-1]
 
-        #     image = Image.fromarray(image)pkkkkk
+        #     image = Image.fromarray(image)
         #     gt = Image.fromarray(gt)
         #     image = image.convert("RGB")
         #     gt = gt.convert("L")

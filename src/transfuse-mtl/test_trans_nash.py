@@ -4,6 +4,7 @@ import os
 import pdb
 import sys
 
+from pprint import pprint
 import cv2
 import imageio
 import matplotlib
@@ -217,7 +218,7 @@ for i in range(test_loader1.size):
 
     with torch.no_grad():
         param_d = model0(image) * opt.testsize
-        print(f"{int(param_d) = }")
+        # print(f"{int(param_d) = }")
 
         # cropped_image = crop_image_func(param_d, image, name)
         # crop_image_func.save()
@@ -246,6 +247,8 @@ for i in range(test_loader1.size):
         # ---- crop gt ----
         cropped_gt = torch.Tensor()
         gt = torch.Tensor(gt)
+        lower = np.array([0, 0, 0], dtype="uint8")
+        upper = np.array([255, 50, 255], dtype="uint8")
         for j in range(gt.size(0)):
             crop = gt[j, :, : int(param_d[j])]
             crop = F.interpolate(
@@ -260,7 +263,12 @@ for i in range(test_loader1.size):
         for j in range(cropped_gt.size(0)):
             img = cropped_gt[j].mul(255).byte()
             img = img.permute(1, 2, 0).cpu().numpy()
+            img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+            img = cv2.inRange(img, lower, upper)
+            img = cv2.bitwise_not(img)
             cv2.imwrite(f"./fig/{name.replace('.png', '')}_mask.png", img)
+            img_tensor = torch.from_numpy(img).unsqueeze(0).float()
+            cropped_gt[j] = img_tensor
 
         _, _, res = model(cropped_image)
 
