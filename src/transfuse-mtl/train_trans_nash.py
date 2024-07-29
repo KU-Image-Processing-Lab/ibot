@@ -308,7 +308,11 @@ if __name__ == "__main__":
         "--beta2", type=float, default=0.999, help="beta2 of adam optimizer"
     )
 
-    parser.add_argument("--tuning", type=bool, default=True)
+    parser.add_argument(
+        "--tuning",
+        action="store_true",
+        help="セグメンテーションチューニングを適用するかどうか",
+    )
 
     parser.add_argument("--mtl", type=str, default="nashmtl")
 
