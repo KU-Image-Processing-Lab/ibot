@@ -1,7 +1,9 @@
 import argparse
+import csv
 import glob
 import os
 import sys
+from pathlib import Path
 
 import cv2
 import imageio
@@ -179,6 +181,11 @@ y_true = np.array([])
 y_score = np.array([])
 y_pred = np.array([])
 
+output_dict = {}
+output_dict["Discriminator"] = opt.discriminator
+output_dict["pth_path"] = opt.pth_path
+output_dict["pth_path2"] = opt.pth_path2
+
 for i in range(test_loader1.size):
     image, gt, name = test_loader1.load_data()
     label = transforms.functional.to_tensor(gt)
@@ -266,6 +273,10 @@ print(
     )
 )
 
+output_dict["Dice"] = np.mean(dice_bank)
+output_dict["IoU"] = np.mean(iou_bank)
+output_dict["Acc"] = np.mean(acc_bank)
+
 cm = confusion_matrix(y_true, y_pred)
 TN, FP, FN, TP = cm.flatten()
 TPR = TP / (TP + FN)
@@ -282,6 +293,12 @@ print("FN:", FN)
 print("FP:", FP)
 print("TN:", TN)
 
+output_dict["TPR-FPR"] = TPR - FPR
+output_dict["TP"] = TP
+output_dict["FN"] = FN
+output_dict["FP"] = FP
+output_dict["TN"] = TN
+
 if TP != 0:
     accuracy = accuracy_score(y_true, y_pred)
     precision = precision_score(y_true, y_pred)
@@ -294,6 +311,12 @@ if TP != 0:
     print("precision:", precision)
     print("recall:", recall)
     print("specificity:", specificity)
+
+    output_dict["Accuracy"] = accuracy
+    output_dict["F-measure"] = F_measure
+    output_dict["precision"] = precision
+    output_dict["recall"] = recall
+    output_dict["specificity"] = specificity
 
 fpr, tpr, thresholds = roc_curve(y_true, y_score)
 
@@ -322,6 +345,13 @@ print("FN:", FN)
 print("FP:", FP)
 print("TN:", TN)
 
+output_dict["TPR-FPR_cutoff"] = max(Youden_index_candidates)
+output_dict["Threshold"] = cutoff
+output_dict["TP_cutoff"] = TP
+output_dict["FN_cutoff"] = FN
+output_dict["FP_cutoff"] = FP
+output_dict["TN_cutoff"] = TN
+
 if TP != 0:
     accuracy = accuracy_score(y_true, y_pred_cutoff)
     precision = precision_score(y_true, y_pred_cutoff)
@@ -334,3 +364,16 @@ if TP != 0:
     print("precision:", precision)
     print("recall:", recall)
     print("specificity:", specificity)
+
+    output_dict["Accuracy_cutoff"] = accuracy
+    output_dict["F-measure_cutoff"] = F_measure
+    output_dict["precision_cutoff"] = precision
+    output_dict["recall_cutoff"] = recall
+    output_dict["specificity_cutoff"] = specificity
+
+
+with open(Path(save_path).joinpath("result.csv"), "a") as f:
+    writer = csv.DictWriter(f, output_dict.keys())
+    if f.tell() == 0:
+        writer.writeheader()
+    writer.writerow(output_dict)
