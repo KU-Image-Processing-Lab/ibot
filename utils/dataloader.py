@@ -78,10 +78,7 @@ class PolypDataset(data.Dataset):
             ]
         )
         self.gt_transform = transforms.Compose(
-            [
-                transforms.Resize((self.trainsize, self.trainsize)),
-                transforms.ToTensor()
-            ]
+            [transforms.Resize((self.trainsize, self.trainsize)), transforms.ToTensor()]
         )
 
         self.force_left = force_left

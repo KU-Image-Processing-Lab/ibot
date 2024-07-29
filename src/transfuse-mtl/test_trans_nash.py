@@ -3,8 +3,8 @@ import glob
 import os
 import pdb
 import sys
-
 from pprint import pprint
+
 import cv2
 import imageio
 import matplotlib
@@ -20,12 +20,13 @@ from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
 from torchvision import transforms
 from tqdm import tqdm
 
-# from lib.models_vit_discriminator import vit_large_patch16 as vit_large
-
 from lib.TransFuse_l import TransFuse_L
 from utils import preprocess
 from utils.dataloader import test_dataset
 from utils.set_seed import seed_everything
+
+# from lib.models_vit_discriminator import vit_large_patch16 as vit_large
+
 
 # from utils.preprocess import CropImage
 

@@ -5,9 +5,9 @@ import time
 from datetime import datetime
 
 import cv2
-import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
@@ -139,7 +139,10 @@ def train(
                         img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
                         img = cv2.inRange(img, lower, upper)
                         img = cv2.bitwise_not(img)
-                        cv2.imwrite(f"./fig/train_Epoch{epoch}_{name[j].replace('.png', '')}_mask.png", img)
+                        cv2.imwrite(
+                            f"./fig/train_Epoch{epoch}_{name[j].replace('.png', '')}_mask.png",
+                            img,
+                        )
                         img_tensor = torch.from_numpy(img).unsqueeze(0).float()
                         cropped_gts[j] = img_tensor
 
