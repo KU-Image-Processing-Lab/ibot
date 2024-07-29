@@ -369,5 +369,3 @@ if TP != 0:
     output_dict["precision_cutoff"] = precision
     output_dict["recall_cutoff"] = recall
     output_dict["specificity_cutoff"] = specificity
-
-
