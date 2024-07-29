@@ -4,7 +4,7 @@ import sys
 import time
 from datetime import datetime
 
-import cv2
+# import cv2
 import matplotlib
 import matplotlib.pyplot as plt
 import torch
@@ -14,7 +14,7 @@ from torch.autograd import Variable
 from lib.TransFuse_l import TransFuse_L
 from utils.dataloader import get_loader
 from utils.mtl import extract_weight_method_parameters_from_args
-from utils.preprocess import CropImage
+# from utils.preprocess import CropImage
 from utils.save_parameter import save_parameter
 from utils.set_seed import seed_everything
 from utils.smooth_cross_entropy import SmoothCrossEntropy
