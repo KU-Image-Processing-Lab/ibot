@@ -260,16 +260,16 @@ for i in range(test_loader1.size):
             )
             cropped_gt = torch.cat((cropped_gt, crop), dim=0)
 
-        # ---- save gt ----
-        for j in range(cropped_gt.size(0)):
-            img = cropped_gt[j].mul(255).byte()
-            img = img.permute(1, 2, 0).cpu().numpy()
-            img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-            img = cv2.inRange(img, lower, upper)
-            img = cv2.bitwise_not(img)
-            cv2.imwrite(f"./fig/{name.replace('.png', '')}_mask.png", img)
-            img_tensor = torch.from_numpy(img).unsqueeze(0).float()
-            cropped_gt[j] = img_tensor
+        # # ---- save gt ----
+        # for j in range(cropped_gt.size(0)):
+        #     img = cropped_gt[j].mul(255).byte()
+        #     img = img.permute(1, 2, 0).cpu().numpy()
+        #     img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+        #     img = cv2.inRange(img, lower, upper)
+        #     img = cv2.bitwise_not(img)
+        #     cv2.imwrite(f"./fig/{name.replace('.png', '')}_mask.png", img)
+        #     img_tensor = torch.from_numpy(img).unsqueeze(0).float()
+        #     cropped_gt[j] = img_tensor
 
         _, _, res = model(cropped_image)
 

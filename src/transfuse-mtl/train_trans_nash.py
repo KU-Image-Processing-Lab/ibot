@@ -131,20 +131,20 @@ def train(
                         )
                         cropped_gts = torch.cat((cropped_gts, crop), dim=0)
 
-                    lower = np.array([0, 0, 0], dtype="uint8")
-                    upper = np.array([255, 50, 255], dtype="uint8")
-                    for j in range(cropped_gts.size(0)):
-                        img = cropped_gts[j].mul(255).byte()
-                        img = img.permute(1, 2, 0).cpu().numpy()
-                        img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-                        img = cv2.inRange(img, lower, upper)
-                        img = cv2.bitwise_not(img)
-                        cv2.imwrite(
-                            f"./fig/train_Epoch{epoch}_{name[j].replace('.png', '')}_mask.png",
-                            img,
-                        )
-                        img_tensor = torch.from_numpy(img).unsqueeze(0).float()
-                        cropped_gts[j] = img_tensor
+                    # lower = np.array([0, 0, 0], dtype="uint8")
+                    # upper = np.array([255, 50, 255], dtype="uint8")
+                    # for j in range(cropped_gts.size(0)):
+                    #     img = cropped_gts[j].mul(255).byte()
+                    #     img = img.permute(1, 2, 0).cpu().numpy()
+                    #     img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+                    #     img = cv2.inRange(img, lower, upper)
+                    #     img = cv2.bitwise_not(img)
+                    #     # cv2.imwrite(
+                    #     #     f"./fig/train_Epoch{epoch}_{name[j].replace('.png', '')}_mask.png",
+                    #     #     img,
+                    #     # )
+                    #     img_tensor = torch.from_numpy(img).unsqueeze(0).float()
+                    #     cropped_gts[j] = img_tensor
 
                     # ---- forward ----
                     lateral_map_4, lateral_map_3, lateral_map_2 = models["Transfuse"](
