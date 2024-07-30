@@ -28,35 +28,50 @@ python3 ./src/${SCRIPT_DIR}/${TRAIN_SCRIPT_NAME} \
     2> >(tee ./logs/${TRAIN_SCRIPT_NAME}_stderr.log >&2)
 python3 ./utils/slack_bot.py --text "`cat ./logs/${TRAIN_SCRIPT_NAME}_stderr.log`"
 
+WEIGHT='best'
 python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --testsize 352 \
     --discriminator resnet10 \
-    --pth_path0 ./snapshots/${TRAIN_SAVE}/Preprocess-best.pth \
-    --pth_path ./snapshots/${TRAIN_SAVE}/Transfuse-best.pth \
-    --pth_path2 ./snapshots/${TRAIN_SAVE}/Discriminator-best.pth \
-    1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1 ) \
-    2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
-python3 ./utils/slack_bot.py --text "`cat ./logs/${TEST_SCRIPT_NAME}_stdout.log`"
-python3 ./utils/slack_bot.py --text "`cat ./logs/${TEST_SCRIPT_NAME}_stderr.log`"
+    --pth_path0 ./snapshots/${TRAIN_SAVE}/Preprocess-${WEIGHT}.pth \
+    --pth_path ./snapshots/${TRAIN_SAVE}/Transfuse-${WEIGHT}.pth \
+    --pth_path2 ./snapshots/${TRAIN_SAVE}/Discriminator-${WEIGHT}.pth \
+    1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout-${WEIGHT}.log >&1 ) \
+    2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr-${WEIGHT}.log >&2)
+python3 ./utils/slack_bot.py --text "`cat ./logs/${TEST_SCRIPT_NAME}_stdout-${WEIGHT}.log`"
+python3 ./utils/slack_bot.py --text "`cat ./logs/${TEST_SCRIPT_NAME}_stderr-${WEIGHT}.log`"
 
+WEIGHT='best2'
 python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --testsize 352 \
     --discriminator resnet10 \
-    --pth_path0 ./snapshots/${TRAIN_SAVE}/Preprocess-99.pth \
-    --pth_path ./snapshots/${TRAIN_SAVE}/Transfuse-99.pth \
-    --pth_path2 ./snapshots/${TRAIN_SAVE}/Discriminator-99.pth \
-    1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1 ) \
-    2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
-python3 ./utils/slack_bot.py --text "`cat ./logs/${TEST_SCRIPT_NAME}_stdout.log`"
-python3 ./utils/slack_bot.py --text "`cat ./logs/${TEST_SCRIPT_NAME}_stderr.log`"
+    --pth_path0 ./snapshots/${TRAIN_SAVE}/Preprocess-${WEIGHT}.pth \
+    --pth_path ./snapshots/${TRAIN_SAVE}/Transfuse-${WEIGHT}.pth \
+    --pth_path2 ./snapshots/${TRAIN_SAVE}/Discriminator-${WEIGHT}.pth \
+    1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout-${WEIGHT}.log >&1 ) \
+    2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr-${WEIGHT}.log >&2)
+python3 ./utils/slack_bot.py --text "`cat ./logs/${TEST_SCRIPT_NAME}_stdout-${WEIGHT}.log`"
+python3 ./utils/slack_bot.py --text "`cat ./logs/${TEST_SCRIPT_NAME}_stderr-${WEIGHT}.log`"
 
+WEIGHT='99'
 python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
     --testsize 352 \
     --discriminator resnet10 \
-    --pth_path0 ./snapshots/${TRAIN_SAVE}/Preprocess-199.pth \
-    --pth_path ./snapshots/${TRAIN_SAVE}/Transfuse-199.pth \
-    --pth_path2 ./snapshots/${TRAIN_SAVE}/Discriminator-199.pth \
-    1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1 ) \
-    2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
-python3 ./utils/slack_bot.py --text "`cat ./logs/${TEST_SCRIPT_NAME}_stdout.log`"
-python3 ./utils/slack_bot.py --text "`cat ./logs/${TEST_SCRIPT_NAME}_stderr.log`"
+    --pth_path0 ./snapshots/${TRAIN_SAVE}/Preprocess-${WEIGHT}.pth \
+    --pth_path ./snapshots/${TRAIN_SAVE}/Transfuse-${WEIGHT}.pth \
+    --pth_path2 ./snapshots/${TRAIN_SAVE}/Discriminator-${WEIGHT}.pth \
+    1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout-${WEIGHT}.log >&1 ) \
+    2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr-${WEIGHT}.log >&2)
+python3 ./utils/slack_bot.py --text "`cat ./logs/${TEST_SCRIPT_NAME}_stdout-${WEIGHT}.log`"
+python3 ./utils/slack_bot.py --text "`cat ./logs/${TEST_SCRIPT_NAME}_stderr-${WEIGHT}.log`"
+
+WEIGHT='199'
+python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
+    --testsize 352 \
+    --discriminator resnet10 \
+    --pth_path0 ./snapshots/${TRAIN_SAVE}/Preprocess-${WEIGHT}.pth \
+    --pth_path ./snapshots/${TRAIN_SAVE}/Transfuse-${WEIGHT}.pth \
+    --pth_path2 ./snapshots/${TRAIN_SAVE}/Discriminator-${WEIGHT}.pth \
+    1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout-${WEIGHT}.log >&1 ) \
+    2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr-${WEIGHT}.log >&2)
+python3 ./utils/slack_bot.py --text "`cat ./logs/${TEST_SCRIPT_NAME}_stdout-${WEIGHT}.log`"
+python3 ./utils/slack_bot.py --text "`cat ./logs/${TEST_SCRIPT_NAME}_stderr-${WEIGHT}.log`"
