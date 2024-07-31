@@ -1,9 +1,9 @@
 import argparse
+import datetime
 import glob
 import os
-import pdb
 import sys
-from pprint import pprint
+from pathlib import Path
 
 import cv2
 import imageio
@@ -18,7 +18,6 @@ from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
                              precision_score, recall_score, roc_auc_score,
                              roc_curve)
 from torchvision import transforms
-from tqdm import tqdm
 
 from lib.TransFuse_l import TransFuse_L
 from utils import preprocess
@@ -203,7 +202,9 @@ y_pred = np.array([])
 # crop_image_func = CropImage(image_type="image", image_size=opt.testsize)
 # crop_gt_func = CropImage(image_type="gt", image_size=opt.testsize)
 
-# for i in tqdm(range(test_loader1.size)):
+output_dict = {}
+param_list = []
+
 for i in range(test_loader1.size):
     image, gt, name = test_loader1.load_data()
     # label = transforms.functional.to_tensor(gt)
@@ -219,7 +220,8 @@ for i in range(test_loader1.size):
 
     with torch.no_grad():
         param_d = model0(image) * opt.testsize
-        # print(f"{int(param_d) = }")
+        print(f"{int(param_d)}", end=" ")
+        param_list.append(int(param_d))
 
         # cropped_image = crop_image_func(param_d, image, name)
         # crop_image_func.save()
@@ -308,7 +310,12 @@ for i in range(test_loader1.size):
         else:
             imageio.imsave(save_path + "TN/" + name, img_as_ubyte(res1))
 
-for i in tqdm(range(test_loader2.size)):
+output_dict["param_d_min"] = min(param_list)
+output_dict["param_d_max"] = max(param_list)
+output_dict["param_d_mean"] = sum(param_list) / len(param_list)
+output_dict["param_d_median"] = sorted(param_list)[len(param_list) // 2]
+
+for i in range(test_loader2.size):
     image, gt, name = test_loader2.load_data()
     gt = np.asarray(gt, np.float32)
 
@@ -373,22 +380,25 @@ for i in tqdm(range(test_loader2.size)):
     dice_bank.append(dice)
     iou_bank.append(iou)
 
-print(
-    "Dice: {:.4f}, IoU: {:.4f}, Acc: {:.4f}".format(
-        np.mean(dice_bank), np.mean(iou_bank), np.mean(acc_bank)
-    )
-)
-
+# ---- calculate the confusion matrix ----
 cm = confusion_matrix(y_true, y_pred)
 TN, FP, FN, TP = cm.flatten()
 TPR = TP / (TP + FN)
 FPR = FP / (FP + TN)
-print("----------discriminator-----------")
-print("TPR-FPR:", TPR - FPR)
-print("TP:", TP)
-print("FN:", FN)
-print("FP:", FP)
-print("TN:", TN)
+
+output_dict["Discriminator"] = opt.discriminator
+output_dict["pth_path"] = opt.pth_path
+output_dict["pth_path2"] = opt.pth_path2
+
+output_dict["Dice"] = np.mean(dice_bank)
+output_dict["IoU"] = np.mean(iou_bank)
+output_dict["Acc"] = np.mean(acc_bank)
+
+output_dict["TPR-FPR"] = TPR - FPR
+output_dict["TP"] = TP
+output_dict["FN"] = FN
+output_dict["FP"] = FP
+output_dict["TN"] = TN
 
 if TP != 0:
     accuracy = accuracy_score(y_true, y_pred)
@@ -397,25 +407,23 @@ if TP != 0:
     F_measure = f1_score(y_true, y_pred)
     specificity = TN / (TN + FP)
 
-    print("Accuracy:", accuracy)
-    print("F-measure:", F_measure)
-    print("precision:", precision)
-    print("recall:", recall)
-    print("specificity:", specificity)
+    output_dict["Accuracy"] = accuracy
+    output_dict["F-measure"] = F_measure
+    output_dict["precision"] = precision
+    output_dict["recall"] = recall
+    output_dict["specificity"] = specificity
 
 fpr, tpr, thresholds = roc_curve(y_true, y_score)
-
 plt.plot(fpr, tpr)
-
 plt.xlabel("FPR: False positive rate")
 plt.ylabel("TPR: True positive rate")
 plt.grid()
 plt.savefig("./fig/roc_curve.png")
 
 AUC = roc_auc_score(y_true, y_score)
-print("AUC:", AUC)
+output_dict["AUC"] = AUC
 
-print("-------------cutoff--------------")
+# ---- calculate the confusion matrix with cutoff ----
 Youden_index_candidates = tpr - fpr
 index = np.where(Youden_index_candidates == max(Youden_index_candidates))[0][0]
 cutoff = thresholds[index]
@@ -423,12 +431,13 @@ y_pred_cutoff = (y_score >= cutoff).astype(int)
 
 cm = confusion_matrix(y_true, y_pred_cutoff)
 TN, FP, FN, TP = cm.flatten()
-print("TPR-FPR:", max(Youden_index_candidates))
-print("Threshold:", cutoff)
-print("TP:", TP)
-print("FN:", FN)
-print("FP:", FP)
-print("TN:", TN)
+
+output_dict["TPR-FPR_cutoff"] = max(Youden_index_candidates)
+output_dict["Threshold"] = cutoff
+output_dict["TP_cutoff"] = TP
+output_dict["FN_cutoff"] = FN
+output_dict["FP_cutoff"] = FP
+output_dict["TN_cutoff"] = TN
 
 if TP != 0:
     accuracy = accuracy_score(y_true, y_pred_cutoff)
@@ -437,8 +446,21 @@ if TP != 0:
     F_measure = f1_score(y_true, y_pred_cutoff)
     specificity = TN / (TN + FP)
 
-    print("Accuracy:", accuracy)
-    print("F-measure:", F_measure)
-    print("precision:", precision)
-    print("recall:", recall)
-    print("specificity:", specificity)
+    output_dict["Accuracy_cutoff"] = accuracy
+    output_dict["F-measure_cutoff"] = F_measure
+    output_dict["precision_cutoff"] = precision
+    output_dict["recall_cutoff"] = recall
+    output_dict["specificity_cutoff"] = specificity
+
+# ---- print the results ----
+for k, v in output_dict.items():
+    print(k, v)
+
+# ---- save the results ----
+now = datetime.datetime.now()
+now = now.strftime("%Y-%m-%d_%H-%M-%S")
+# columns, valuesの2列にしてcsvに保存
+with open(Path(save_path).joinpath(f"result_{now}.csv"), "a") as f:
+    f.write("columns,values\n")
+    for k, v in output_dict.items():
+        f.write(f"{k},{v}\n")
