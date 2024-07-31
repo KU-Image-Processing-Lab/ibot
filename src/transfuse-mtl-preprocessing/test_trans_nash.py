@@ -1,8 +1,9 @@
 import argparse
+import datetime
 import glob
 import os
-import pdb
 import sys
+from pathlib import Path
 
 import cv2
 import imageio
@@ -17,16 +18,13 @@ from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
                              precision_score, recall_score, roc_auc_score,
                              roc_curve)
 from torchvision import transforms
-from tqdm import tqdm
 
-from lib.Discriminator_ResNet import Discriminator
-# from lib.models_vit_discriminator import vit_large_patch16 as vit_large
 from lib.TransFuse_l import TransFuse_L
 from utils import preprocess
-from utils.dataloader import test_dataset
+from utils.dataloader import test_dataset_preprocess as test_dataset
 from utils.set_seed import seed_everything
 
-# from utils.preprocess import CropImage
+# from lib.models_vit_discriminator import vit_large_patch16 as vit_large
 
 matplotlib.use("Agg")
 seed_everything(42)
@@ -118,13 +116,27 @@ parser.add_argument(
     default="resnet10",
     help="前処理に使用するモデル",
 )
+parser.add_argument(
+    "--test_data_path1",
+    type=str,
+    default="./dataset/original_dataset_only_left/TestDataset/",
+)
+parser.add_argument(
+    "--test_data_path2",
+    type=str,
+    default="./dataset/original_dataset_only_left/sekkai_TestDataset/",
+)
+parser.add_argument("--save_path", type=str, default="./results/Transfuse_S/")
 
-data_path1 = "./dataset/original_dataset/TestDataset/"
-data_path2 = "./dataset/original_dataset/sekkai_TestDataset/"
-
-
-save_path = "./results/Transfuse_S/"
 opt = parser.parse_args()
+
+# data_path1 = "./dataset/original_dataset_only_left/TestDataset/"
+# data_path2 = "./dataset/original_dataset_only_left/sekkai_TestDataset/"
+# save_path = "./results/Transfuse_S/"
+
+data_path1 = opt.test_data_path1
+data_path2 = opt.test_data_path2
+save_path = opt.save_path
 
 # ---- build preprocess model ----
 if opt.discriminator == "resnet10":
@@ -199,10 +211,10 @@ y_true = np.array([])
 y_score = np.array([])
 y_pred = np.array([])
 
-# crop_image_func = CropImage(image_type="image", image_size=opt.testsize)
-# crop_gt_func = CropImage(image_type="gt", image_size=opt.testsize)
+output_dict = {}
+param_list = []
 
-# for i in tqdm(range(test_loader1.size)):
+
 for i in range(test_loader1.size):
     image, gt, name = test_loader1.load_data()
     # label = transforms.functional.to_tensor(gt)
@@ -218,13 +230,8 @@ for i in range(test_loader1.size):
 
     with torch.no_grad():
         param_d = model0(image) * opt.testsize
-        print(f"{int(param_d) = }")
-
-        # cropped_image = crop_image_func(param_d, image, name)
-        # crop_image_func.save()
-
-        # cropped_gt = crop_gt_func(param_d, gt, name)
-        # crop_gt_func.save()
+        print(f"{int(param_d)}", end=" ")
+        param_list.append(int(param_d))
 
         # ---- crop image ----
         cropped_image = torch.Tensor().cuda()
@@ -242,7 +249,7 @@ for i in range(test_loader1.size):
         for j in range(cropped_image.size(0)):
             img = cropped_image[j].mul(255).byte()
             img = img.permute(1, 2, 0).cpu().numpy()
-            cv2.imwrite(f"./fig/image_{name}", img)
+            cv2.imwrite(f"./fig/{name.replace('.png', '')}_image.png", img)
 
         # ---- crop gt ----
         cropped_gt = torch.Tensor()
@@ -257,11 +264,18 @@ for i in range(test_loader1.size):
             )
             cropped_gt = torch.cat((cropped_gt, crop), dim=0)
 
-        # ---- save gt ----
-        for j in range(cropped_gt.size(0)):
-            img = cropped_gt[j].mul(255).byte()
-            img = img.permute(1, 2, 0).cpu().numpy()
-            cv2.imwrite(f"./fig/mask_{name}", img)
+        # # ---- binarization gt ----
+        # lower = np.array([0, 0, 0], dtype="uint8")
+        # upper = np.array([255, 50, 255], dtype="uint8")
+        # for j in range(cropped_gt.size(0)):
+        #     img = cropped_gt[j].mul(255).byte()
+        #     img = img.permute(1, 2, 0).cpu().numpy()
+        #     img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+        #     img = cv2.inRange(img, lower, upper)
+        #     img = cv2.bitwise_not(img)
+        #     cv2.imwrite(f"./fig/{name.replace('.png', '')}_mask.png", img)
+        #     img_tensor = torch.from_numpy(img).unsqueeze(0).float()
+        #     cropped_gt[j] = img_tensor
 
         _, _, res = model(cropped_image)
 
@@ -300,7 +314,12 @@ for i in range(test_loader1.size):
         else:
             imageio.imsave(save_path + "TN/" + name, img_as_ubyte(res1))
 
-for i in tqdm(range(test_loader2.size)):
+output_dict["param_d_min"] = min(param_list)
+output_dict["param_d_max"] = max(param_list)
+output_dict["param_d_mean"] = sum(param_list) / len(param_list)
+output_dict["param_d_median"] = sorted(param_list)[len(param_list) // 2]
+
+for i in range(test_loader2.size):
     image, gt, name = test_loader2.load_data()
     gt = np.asarray(gt, np.float32)
 
@@ -365,22 +384,25 @@ for i in tqdm(range(test_loader2.size)):
     dice_bank.append(dice)
     iou_bank.append(iou)
 
-print(
-    "Dice: {:.4f}, IoU: {:.4f}, Acc: {:.4f}".format(
-        np.mean(dice_bank), np.mean(iou_bank), np.mean(acc_bank)
-    )
-)
-
+# ---- calculate the confusion matrix ----
 cm = confusion_matrix(y_true, y_pred)
 TN, FP, FN, TP = cm.flatten()
 TPR = TP / (TP + FN)
 FPR = FP / (FP + TN)
-print("----------discriminator-----------")
-print("TPR-FPR:", TPR - FPR)
-print("TP:", TP)
-print("FN:", FN)
-print("FP:", FP)
-print("TN:", TN)
+
+output_dict["Discriminator"] = opt.discriminator
+output_dict["pth_path"] = opt.pth_path
+output_dict["pth_path2"] = opt.pth_path2
+
+output_dict["Dice"] = np.mean(dice_bank)
+output_dict["IoU"] = np.mean(iou_bank)
+output_dict["Acc"] = np.mean(acc_bank)
+
+output_dict["TPR-FPR"] = TPR - FPR
+output_dict["TP"] = TP
+output_dict["FN"] = FN
+output_dict["FP"] = FP
+output_dict["TN"] = TN
 
 if TP != 0:
     accuracy = accuracy_score(y_true, y_pred)
@@ -389,25 +411,23 @@ if TP != 0:
     F_measure = f1_score(y_true, y_pred)
     specificity = TN / (TN + FP)
 
-    print("Accuracy:", accuracy)
-    print("F-measure:", F_measure)
-    print("precision:", precision)
-    print("recall:", recall)
-    print("specificity:", specificity)
+    output_dict["Accuracy"] = accuracy
+    output_dict["F-measure"] = F_measure
+    output_dict["precision"] = precision
+    output_dict["recall"] = recall
+    output_dict["specificity"] = specificity
 
 fpr, tpr, thresholds = roc_curve(y_true, y_score)
-
 plt.plot(fpr, tpr)
-
 plt.xlabel("FPR: False positive rate")
 plt.ylabel("TPR: True positive rate")
 plt.grid()
 plt.savefig("./fig/roc_curve.png")
 
 AUC = roc_auc_score(y_true, y_score)
-print("AUC:", AUC)
+output_dict["AUC"] = AUC
 
-print("-------------cutoff--------------")
+# ---- calculate the confusion matrix with cutoff ----
 Youden_index_candidates = tpr - fpr
 index = np.where(Youden_index_candidates == max(Youden_index_candidates))[0][0]
 cutoff = thresholds[index]
@@ -415,12 +435,13 @@ y_pred_cutoff = (y_score >= cutoff).astype(int)
 
 cm = confusion_matrix(y_true, y_pred_cutoff)
 TN, FP, FN, TP = cm.flatten()
-print("TPR-FPR:", max(Youden_index_candidates))
-print("Threshold:", cutoff)
-print("TP:", TP)
-print("FN:", FN)
-print("FP:", FP)
-print("TN:", TN)
+
+output_dict["TPR-FPR_cutoff"] = max(Youden_index_candidates)
+output_dict["Threshold"] = cutoff
+output_dict["TP_cutoff"] = TP
+output_dict["FN_cutoff"] = FN
+output_dict["FP_cutoff"] = FP
+output_dict["TN_cutoff"] = TN
 
 if TP != 0:
     accuracy = accuracy_score(y_true, y_pred_cutoff)
@@ -429,8 +450,21 @@ if TP != 0:
     F_measure = f1_score(y_true, y_pred_cutoff)
     specificity = TN / (TN + FP)
 
-    print("Accuracy:", accuracy)
-    print("F-measure:", F_measure)
-    print("precision:", precision)
-    print("recall:", recall)
-    print("specificity:", specificity)
+    output_dict["Accuracy_cutoff"] = accuracy
+    output_dict["F-measure_cutoff"] = F_measure
+    output_dict["precision_cutoff"] = precision
+    output_dict["recall_cutoff"] = recall
+    output_dict["specificity_cutoff"] = specificity
+
+# ---- print the results ----
+for k, v in output_dict.items():
+    print(k, v)
+
+# ---- save the results ----
+now = datetime.datetime.now()
+now = now.strftime("%Y-%m-%d_%H-%M-%S")
+# columns, valuesの2列にしてcsvに保存
+with open(Path(save_path).joinpath(f"result_{now}.csv"), "a") as f:
+    f.write("columns,values\n")
+    for k, v in output_dict.items():
+        f.write(f"{k},{v}\n")
