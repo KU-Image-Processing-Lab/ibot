@@ -4,10 +4,8 @@ import sys
 import time
 from datetime import datetime
 
-import cv2
 import matplotlib
 import matplotlib.pyplot as plt
-import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
@@ -15,7 +13,6 @@ from torch.autograd import Variable
 from lib.TransFuse_l import TransFuse_L
 from utils.dataloader import get_loader
 from utils.mtl import extract_weight_method_parameters_from_args
-# from utils.preprocess import CropImage
 from utils.save_parameter import save_parameter
 from utils.set_seed import seed_everything
 from utils.smooth_cross_entropy import SmoothCrossEntropy
@@ -40,13 +37,8 @@ def structure_loss(pred, mask):
     return (wbce + wiou).mean()
 
 
-def train(
-    dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best2_loss, device
-):
+def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best2_loss):
     val_loss = 0
-    # crop_image_func = CropImage(image_type="image", image_size=opt.trainsize)
-    # crop_gt_func = CropImage(image_type="gt", image_size=opt.trainsize)
-
     for phase in ["train", "val"]:
         if phase == "train":
             for model in models.values():
@@ -64,19 +56,17 @@ def train(
             AvgMeter(),
         )
 
-        os.makedirs(f"./snapshots/{opt.train_save}/crop_images", exist_ok=True)
-        os.makedirs(f"./snapshots/{opt.train_save}/crop_gts", exist_ok=True)
         for i, pack in enumerate(dataloaders_dict[phase], start=1):
             for rate in size_rates:
                 optimizer.zero_grad()
-                images, gts, name = pack
+                images, gts = pack
                 labels = torch.einsum("ijkl->i", gts) > 0
 
                 labels = torch.where(labels > 0, torch.tensor(1), torch.tensor(0))
 
-                images = Variable(images).to(device)
-                gts = Variable(gts).to(device)
-                labels = Variable(labels).to(device)
+                images = Variable(images).cuda()
+                gts = Variable(gts).cuda()
+                labels = Variable(labels).cuda()
                 # ---- rescale ----
                 trainsize = int(round(opt.trainsize * rate / 32) * 32)
                 if rate != 1:
@@ -93,68 +83,15 @@ def train(
                         align_corners=True,
                     )
                 with torch.set_grad_enabled(phase == "train"):
-                    param_d = models["Preprocess"](images) * opt.trainsize
-
-                    # cropped_images = crop_image_func(param_d, images, name)
-                    # crop_image_func.save()
-
-                    # cropped_gts = crop_gt_func(param_d, gts, name)
-                    # crop_gt_func.save()
-
-                    # ---- crop images ----
-                    cropped_images = torch.Tensor().cuda()
-                    for j in range(images.size(0)):
-                        crop = images[j, :, :, : int(param_d[j])]
-                        crop = F.interpolate(
-                            crop.unsqueeze(0),
-                            size=(opt.trainsize, opt.trainsize),
-                            mode="bilinear",
-                            align_corners=True,
-                        )
-                        cropped_images = torch.cat((cropped_images, crop), dim=0)
-
-                    # # ---- save images ----
-                    # for j in range(cropped_images.size(0)):
-                    #     img = cropped_images[j].mul(255).byte()
-                    #     img = img.permute(1, 2, 0).cpu().numpy()
-                    #     cv2.imwrite(f"./fig/train_Epoch{epoch}_{name[j].replace('.png', '')}_image.png", img)
-
-                    # ---- crop gts ----
-                    cropped_gts = torch.Tensor().cuda()
-                    for j in range(gts.size(0)):
-                        crop = gts[j, :, :, : int(param_d[j])]
-                        crop = F.interpolate(
-                            crop.unsqueeze(0),
-                            size=(opt.trainsize, opt.trainsize),
-                            mode="bilinear",
-                            align_corners=True,
-                        )
-                        cropped_gts = torch.cat((cropped_gts, crop), dim=0)
-
-                    # lower = np.array([0, 0, 0], dtype="uint8")
-                    # upper = np.array([255, 50, 255], dtype="uint8")
-                    # for j in range(cropped_gts.size(0)):
-                    #     img = cropped_gts[j].mul(255).byte()
-                    #     img = img.permute(1, 2, 0).cpu().numpy()
-                    #     img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-                    #     img = cv2.inRange(img, lower, upper)
-                    #     img = cv2.bitwise_not(img)
-                    #     # cv2.imwrite(
-                    #     #     f"./fig/train_Epoch{epoch}_{name[j].replace('.png', '')}_mask.png",
-                    #     #     img,
-                    #     # )
-                    #     img_tensor = torch.from_numpy(img).unsqueeze(0).float()
-                    #     cropped_gts[j] = img_tensor
-
                     # ---- forward ----
                     lateral_map_4, lateral_map_3, lateral_map_2 = models["Transfuse"](
-                        cropped_images
+                        images
                     )
 
                     # ---- loss function ----
-                    loss4 = structure_loss(lateral_map_4, cropped_gts)
-                    loss3 = structure_loss(lateral_map_3, cropped_gts)
-                    loss2 = structure_loss(lateral_map_2, cropped_gts)
+                    loss4 = structure_loss(lateral_map_4, gts)
+                    loss3 = structure_loss(lateral_map_3, gts)
+                    loss2 = structure_loss(lateral_map_2, gts)
                     loss = (
                         0.5 * loss2 + 0.3 * loss3 + 0.2 * loss4
                     )  # TODO: try different weights for loss
@@ -182,7 +119,7 @@ def train(
                     loss_record2.update(loss2.data, opt.batchsize)
                     loss_record3.update(loss3.data, opt.batchsize)
                     loss_record4.update(loss4.data, opt.batchsize)
-            if (i % opt.log_epoch == 0 or i == total_step) and phase == "train":
+            if (i % opt.log_iter == 0 or i == total_step) and phase == "train":
                 print(
                     "{} Epoch [{:03d}/{:03d}], Step [{:04d}/{:04d}], "
                     "[lateral-2: {:.4f}, lateral-3: {:0.4f}, lateral-4: {:0.4f}, d_loss: {:0.4f}".format(
@@ -207,9 +144,6 @@ def train(
                 best_loss = val_loss
                 save_path = "snapshots/{}/".format(opt.train_save)
                 torch.save(
-                    models["Preprocess"].state_dict(), save_path + "Preprocess-best.pth"
-                )
-                torch.save(
                     models["Transfuse"].state_dict(), save_path + "Transfuse-best.pth"
                 )
                 torch.save(
@@ -221,10 +155,6 @@ def train(
                 best2_loss = val_d_loss
                 save_path = "snapshots/{}/".format(opt.train_save)
                 torch.save(
-                    models["Preprocess"].state_dict(),
-                    save_path + "Preprocess-best2.pth",
-                )
-                torch.save(
                     models["Transfuse"].state_dict(), save_path + "Transfuse-best2.pth"
                 )
                 torch.save(
@@ -235,9 +165,6 @@ def train(
 
     save_path = "snapshots/{}/".format(opt.train_save)
     if (epoch + 1) % opt.save_epoch == 0:
-        torch.save(
-            models["Preprocess"].state_dict(), save_path + "Preprocess-%d.pth" % epoch
-        )
         torch.save(
             models["Transfuse"].state_dict(), save_path + "Transfuse-%d.pth" % epoch
         )
@@ -326,7 +253,7 @@ if __name__ == "__main__":
         help="Discriminatorに使うモデル",
     )
     parser.add_argument(
-        "--log_epoch", type=int, default=20, help="ログ出力するエポックの単位"
+        "--log_iter", type=int, default=20, help="ログ出力するエポックの単位"
     )
     parser.add_argument(
         "--save_epoch", type=int, default=5, help="重み保存するエポックの単位"
@@ -337,40 +264,21 @@ if __name__ == "__main__":
         default="./weights/修論/segmentation/TransFuse-L+MAE/vit-l_352/石灰化ありのみ/Transfuse-best.pth",
         help="MAEの重み(TransFuse)",
     )
-    parser.add_argument(
-        "--preprocess",
-        type=str,
-        default="resnet10",
-        help="前処理に使用するモデル",
-    )
 
     opt = parser.parse_args()
 
     save_parameter(opt)
 
-    # ---- build discriminator ----
+    # ---- build models ----
     if opt.discriminator == "resnet10":
         from lib.ResNet_10 import ResNet10
 
         model2 = ResNet10()
-    elif opt.discriminator == "res2net":
+
+    if opt.discriminator == "res2net":
         from lib.Discriminator_ResNet import Discriminator
 
         model2 = Discriminator()
-    else:
-        sys.exit("Invalid discriminator model")
-
-    # ---- build preprocess model ----
-    if opt.discriminator == "resnet10":
-        from lib.ResNet_10_preprocess import ResNet10
-
-        model0 = ResNet10()
-    elif opt.discriminator == "res2net":
-        from lib.Discriminator_ResNet import Discriminator
-
-        model0 = Discriminator()
-    else:
-        sys.exit("Invalid preprocess model")
 
     model1 = TransFuse_L(pretrained=True)
     if opt.tuning:
@@ -380,16 +288,14 @@ if __name__ == "__main__":
         for param in model1.parameters():
             param.requires_grad = False
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model0.to(device)
-    model1.to(device)
-    model2.to(device)
+    model1.cuda()
+    model2 = model2.cuda()
 
-    models = {"Preprocess": model0, "Transfuse": model1, "Discriminator": model2}
+    models = {"Transfuse": model1, "Discriminator": model2}
 
     weight_methods_parameters = extract_weight_method_parameters_from_args()
     weight_method = WeightMethods(
-        opt.mtl, n_tasks=2, device=device, **weight_methods_parameters[opt.mtl]
+        opt.mtl, n_tasks=2, device="cuda:0", **weight_methods_parameters[opt.mtl]
     )
 
     params = [p for v in models.values() for p in list(v.parameters())]
@@ -404,9 +310,6 @@ if __name__ == "__main__":
         for n, p in model1.named_parameters()
         if "final_x" in n or "final_1" in n or "cls" in n
     ]
-
-    for n, p in model0.named_parameters():
-        task_specific_parameters.append(p)
     for n, p in model2.named_parameters():
         task_specific_parameters.append(p)
 
@@ -428,11 +331,7 @@ if __name__ == "__main__":
     gt_root_val = "{}/masks/".format(opt.val_path)
 
     train_loader = get_loader(
-        image_root,
-        gt_root,
-        batchsize=opt.batchsize,
-        trainsize=opt.trainsize,
-        dataset="preprocess",
+        image_root, gt_root, batchsize=opt.batchsize, trainsize=opt.trainsize
     )
     total_step = len(train_loader)
 
@@ -442,7 +341,6 @@ if __name__ == "__main__":
         batchsize=opt.batchsize,
         trainsize=opt.trainsize,
         phase="val",
-        dataset="preprocess",
     )
 
     dataloaders_dict = {"train": train_loader, "val": val_loader}
@@ -461,7 +359,9 @@ if __name__ == "__main__":
     start_time = time.time()
 
     for epoch in range(1, opt.epoch):
-        adjust_lr(optimizer, opt.lr, epoch, opt.decay_rate, opt.decay_epoch)
+        adjust_lr(
+            optimizer, opt.lr, epoch, opt.decay_rate, opt.decay_epoch
+        )  ###################################
         (
             epoch,
             train_loss,
@@ -478,7 +378,6 @@ if __name__ == "__main__":
             epoch,
             best_loss,
             best2_loss,
-            device,
         )
         epoch_list.append(epoch)
         train_loss = train_loss.cpu().data.numpy()
