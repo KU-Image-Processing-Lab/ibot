@@ -21,7 +21,7 @@ from torchvision import transforms
 
 from lib.TransFuse_l import TransFuse_L
 from utils import preprocess
-from utils.dataloader import test_dataset
+from utils.dataloader import test_dataset_preprocess as test_dataset
 from utils.set_seed import seed_everything
 
 # from lib.models_vit_discriminator import vit_large_patch16 as vit_large
