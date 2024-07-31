@@ -195,13 +195,9 @@ def get_loader(
     dataset="default",
 ):
     if dataset == "default":
-        dataset = PolypDataset(
-            image_root, gt_root, trainsize, phase=phase
-        )
+        dataset = PolypDataset(image_root, gt_root, trainsize, phase=phase)
     elif dataset == "preprocess":
-        dataset = PolypDatasetPreprocess(
-            image_root, gt_root, trainsize, phase=phase
-        )
+        dataset = PolypDatasetPreprocess(image_root, gt_root, trainsize, phase=phase)
     else:
         raise NotImplementedError
 
