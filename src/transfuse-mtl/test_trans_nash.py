@@ -220,6 +220,7 @@ y_pred = np.array([])
 output_dict = {}
 param_list = []
 
+
 for i in range(test_loader1.size):
     image, gt, name = test_loader1.load_data()
     # label = transforms.functional.to_tensor(gt)
