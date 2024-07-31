@@ -1,7 +1,9 @@
 import argparse
+import datetime
 import glob
 import os
 import sys
+from pathlib import Path
 
 import cv2
 import imageio
@@ -339,12 +341,10 @@ if TP != 0:
     output_dict["specificity_cutoff"] = specificity
 
 # ---- print the results ----
-for k, v in output_dict.items():
-    print(k, v)
-
-# ---- save the results ----
-with open(Path(save_path).joinpath("result.csv"), "a") as f:
-    writer = csv.DictWriter(f, output_dict.keys())
-    if f.tell() == 0:
-        writer.writeheader()
-    writer.writerow(output_dict)
+now = datetime.datetime.now()
+now_str = now.strftime("%Y-%m-%d_%H-%M-%S")
+with open(f"{Path(opt.test_save_path)} / {now_str}_result.csv", "w") as f:
+    f.write("name, value\n")
+    for k, v in output_dict.items():
+        print(k, v)
+        f.write(f"{k},{v}\n")
