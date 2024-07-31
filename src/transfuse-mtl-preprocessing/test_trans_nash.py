@@ -20,7 +20,6 @@ from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
 from torchvision import transforms
 
 from lib.TransFuse_l import TransFuse_L
-from utils import preprocess
 from utils.dataloader import test_dataset_preprocess as test_dataset
 from utils.set_seed import seed_everything
 
