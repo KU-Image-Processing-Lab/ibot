@@ -1,10 +1,11 @@
 import glob
 import os
 import shutil
+
 import cv2
 
-base = 'original_dataset_only_left'
-target = 'original_dataset_only_left_'
+base = "original_dataset_only_left"
+target = "original_dataset_only_left_"
 
 # base_dataset = f"./dataset/{base}/TrainDataset"
 # target_dataset = f"./dataset/{target}/TrainDataset"
