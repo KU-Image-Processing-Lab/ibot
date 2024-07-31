@@ -119,12 +119,27 @@ parser.add_argument(
     default="resnet10",
     help="前処理に使用するモデル",
 )
+parser.add_argument(
+    "--test_data_path1",
+    type=str,
+    default="./dataset/original_dataset_only_left/TestDataset/",
+)
+parser.add_argument(
+    "--test_data_path2",
+    type=str,
+    default="./dataset/original_dataset_only_left/sekkai_TestDataset/",
+)
+parser.add_argument("--save_path", type=str, default="./results/Transfuse_S/")
 
-data_path1 = "./dataset/original_dataset_only_left/TestDataset/"
-data_path2 = "./dataset/original_dataset_only_left/sekkai_TestDataset/"
-
-save_path = "./results/Transfuse_S/"
 opt = parser.parse_args()
+
+# data_path1 = "./dataset/original_dataset_only_left/TestDataset/"
+# data_path2 = "./dataset/original_dataset_only_left/sekkai_TestDataset/"
+# save_path = "./results/Transfuse_S/"
+
+data_path1 = opt.test_data_path1
+data_path2 = opt.test_data_path2
+save_path = opt.save_path
 
 # ---- build preprocess model ----
 if opt.discriminator == "resnet10":
