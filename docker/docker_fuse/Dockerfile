@@ -26,14 +26,15 @@ RUN pip install \
     albumentations==1.0.3 \
     scipy==1.6.2 \
     thop \
+    python-dotenv \
     pytorch_ranger \
     adabelief-pytorch \
     einops \
     timm==0.3.2 \
-    ml_collections \
-    tensorboardX \
-    ptflops \
-    mmcv==1.3.0 \
+    # ml_collections \
+    # tensorboardX \
+    # ptflops \
+    # mmcv==1.3.0 \
     cvxpy \
     torchvision \
     torchinfo
