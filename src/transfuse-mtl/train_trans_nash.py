@@ -432,7 +432,7 @@ if __name__ == "__main__":
         gt_root,
         batchsize=opt.batchsize,
         trainsize=opt.trainsize,
-        force_left=True,
+        dataset="preprocess",
     )
     total_step = len(train_loader)
 
@@ -442,6 +442,7 @@ if __name__ == "__main__":
         batchsize=opt.batchsize,
         trainsize=opt.trainsize,
         phase="val",
+        dataset="preprocess",
     )
 
     dataloaders_dict = {"train": train_loader, "val": val_loader}

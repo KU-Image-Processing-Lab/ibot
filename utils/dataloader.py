@@ -39,7 +39,7 @@ class PolypDataset(data.Dataset):
     dataloader for polyp segmentation tasks
     """
 
-    def __init__(self, image_root, gt_root, trainsize, phase="train", force_left=False):
+    def __init__(self, image_root, gt_root, trainsize, phase="train"):
         self.trainsize = trainsize
         self.images = [
             image_root + f
@@ -58,15 +58,17 @@ class PolypDataset(data.Dataset):
 
         self.transform3 = albu.Compose(
             [
-                # albu.ShiftScaleRotate(
-                #     shift_limit=0.15,
-                #     scale_limit=0.15,
-                #     rotate_limit=25,
-                #     p=0.5,
-                #     border_mode=0,
-                # ),
+                albu.ShiftScaleRotate(
+                    shift_limit=0.15,
+                    scale_limit=0.15,
+                    rotate_limit=25,
+                    p=0.5,
+                    border_mode=0,
+                ),
                 # albu.RandomSizedCrop(),
                 albu.ColorJitter(),
+                albu.HorizontalFlip(),
+                # albu.VerticalFlip()
             ]
         )
 
@@ -81,18 +83,9 @@ class PolypDataset(data.Dataset):
             [transforms.Resize((self.trainsize, self.trainsize)), transforms.ToTensor()]
         )
 
-        self.force_left = force_left
-
     def __getitem__(self, index):
         image = self.rgb_loader(self.images[index])
         gt = self.binary_loader(self.gts[index])
-        name = self.images[index].split("/")[-1]
-
-        #     image = Image.fromarray(image)
-        #     gt = Image.fromarray(gt)
-        #     image = image.convert("RGB")
-        #     gt = gt.convert("L")
-
         if self.phase == "train":
 
             image = np.array(image)
@@ -108,9 +101,9 @@ class PolypDataset(data.Dataset):
 
         # image, gt = self.transform(image, gt, phase=self.phase)
         image = self.img_transform(image)
-        gt = self.gt_transform(gt)
 
-        return image, gt, name
+        gt = self.gt_transform(gt)
+        return image, gt
 
     def filter_files(self):
         assert len(self.images) == len(self.gts)
@@ -150,6 +143,43 @@ class PolypDataset(data.Dataset):
         return self.size
 
 
+class PolypDatasetPreprocess(PolypDataset):
+    def __init__(self, image_root, gt_root, trainsize, phase="train"):
+        super(PolypDatasetPreprocess, self).__init__(
+            image_root, gt_root, trainsize, phase
+        )
+
+        self.transform3 = albu.Compose(
+            [
+                albu.ColorJitter(),
+            ]
+        )
+
+    def __getitem__(self, index):
+        image = self.rgb_loader(self.images[index])
+        gt = self.binary_loader(self.gts[index])
+        name = self.images[index].split("/")[-1]
+
+        if self.phase == "train":
+
+            image = np.array(image)
+            gt = np.array(gt)
+
+            augmented = self.transform3(image=image, mask=gt)
+
+            image, gt = augmented["image"], augmented["mask"]
+            image = Image.fromarray(image)
+            gt = Image.fromarray(gt)
+            image = image.convert("RGB")
+            gt = gt.convert("L")
+
+        # image, gt = self.transform(image, gt, phase=self.phase)
+        image = self.img_transform(image)
+        gt = self.gt_transform(gt)
+
+        return image, gt, name
+
+
 def get_loader(
     image_root,
     gt_root,
@@ -160,11 +190,15 @@ def get_loader(
     pin_memory=True,
     phase="train",
     droplast=False,
-    force_left=False,
+    dataset="default",
 ):
-    dataset = PolypDataset(
-        image_root, gt_root, trainsize, phase=phase, force_left=force_left
-    )
+    if dataset == "default":
+        dataset = PolypDataset(image_root, gt_root, trainsize, phase=phase)
+    elif dataset == "preprocess":
+        dataset = PolypDatasetPreprocess(image_root, gt_root, trainsize, phase=phase)
+    else:
+        raise NotImplementedError
+
     data_loader = data.DataLoader(
         dataset=dataset,
         batch_size=batchsize,
@@ -178,7 +212,7 @@ def get_loader(
 
 
 class test_dataset:
-    def __init__(self, image_root, gt_root, testsize, force_left=False):
+    def __init__(self, image_root, gt_root, testsize):
         self.testsize = testsize
         self.images = [
             image_root + f
@@ -192,6 +226,43 @@ class test_dataset:
         ]
         self.images = sorted(self.images)
         self.gts = sorted(self.gts)
+        self.transform = transforms.Compose(
+            [
+                transforms.Resize((self.testsize, self.testsize)),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+            ]
+        )
+        self.gt_transform = transforms.ToTensor()
+        self.size = len(self.images)
+        self.index = 0
+
+    def load_data(self):
+
+        image = self.rgb_loader(self.images[self.index])
+        image = self.transform(image).unsqueeze(0)
+        gt = self.binary_loader(self.gts[self.index])
+        name = self.images[self.index].split("/")[-1]
+        if name.endswith(".jpg"):
+            name = name.split(".jpg")[0] + ".png"
+        self.index += 1
+        return image, gt, name
+
+    def rgb_loader(self, path):
+        with open(path, "rb") as f:
+            img = Image.open(f)
+            return img.convert("RGB")
+
+    def binary_loader(self, path):
+        with open(path, "rb") as f:
+            img = Image.open(f)
+            return img.convert("L")
+
+
+class test_dataset_preprocess(test_dataset):
+    def __init__(self, image_root, gt_root, testsize):
+        super(test_dataset_preprocess, self).__init__(image_root, gt_root, testsize)
+
         self.img_transform = transforms.Compose(
             [
                 transforms.Resize((self.testsize, self.testsize)),
@@ -205,9 +276,6 @@ class test_dataset:
                 transforms.ToTensor(),
             ]
         )
-        self.size = len(self.images)
-        self.index = 0
-        self.force_left = force_left
 
     def load_data(self):
 
@@ -224,13 +292,3 @@ class test_dataset:
         self.index += 1
 
         return image, gt, name
-
-    def rgb_loader(self, path):
-        with open(path, "rb") as f:
-            img = Image.open(f)
-            return img.convert("RGB")
-
-    def binary_loader(self, path):
-        with open(path, "rb") as f:
-            img = Image.open(f)
-            return img.convert("L")
