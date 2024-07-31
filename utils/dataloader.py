@@ -86,7 +86,6 @@ class PolypDataset(data.Dataset):
     def __getitem__(self, index):
         image = self.rgb_loader(self.images[index])
         gt = self.binary_loader(self.gts[index])
-
         if self.phase == "train":
 
             image = np.array(image)
@@ -104,7 +103,6 @@ class PolypDataset(data.Dataset):
         image = self.img_transform(image)
 
         gt = self.gt_transform(gt)
-
         return image, gt
 
     def filter_files(self):
