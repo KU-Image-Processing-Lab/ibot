@@ -143,6 +143,43 @@ class PolypDataset(data.Dataset):
         return self.size
 
 
+class PolypDatasetPreprocess(PolypDataset):
+    def __init__(self, image_root, gt_root, trainsize, phase="train"):
+        super(PolypDatasetPreprocess, self).__init__(
+            image_root, gt_root, trainsize, phase
+        )
+
+        self.transform3 = albu.Compose(
+            [
+                albu.ColorJitter(),
+            ]
+        )
+
+    def __getitem__(self, index):
+        image = self.rgb_loader(self.images[index])
+        gt = self.binary_loader(self.gts[index])
+        name = self.images[index].split("/")[-1]
+
+        if self.phase == "train":
+
+            image = np.array(image)
+            gt = np.array(gt)
+
+            augmented = self.transform3(image=image, mask=gt)
+
+            image, gt = augmented["image"], augmented["mask"]
+            image = Image.fromarray(image)
+            gt = Image.fromarray(gt)
+            image = image.convert("RGB")
+            gt = gt.convert("L")
+
+        # image, gt = self.transform(image, gt, phase=self.phase)
+        image = self.img_transform(image)
+        gt = self.gt_transform(gt)
+
+        return image, gt, name
+
+
 def get_loader(
     image_root,
     gt_root,
@@ -153,8 +190,15 @@ def get_loader(
     pin_memory=True,
     phase="train",
     droplast=False,
+    dataset="default",
 ):
-    dataset = PolypDataset(image_root, gt_root, trainsize, phase=phase)
+    if dataset == "default":
+        dataset = PolypDataset(image_root, gt_root, trainsize, phase=phase)
+    elif dataset == "preprocess":
+        dataset = PolypDatasetPreprocess(image_root, gt_root, trainsize, phase=phase)
+    else:
+        raise NotImplementedError
+
     data_loader = data.DataLoader(
         dataset=dataset,
         batch_size=batchsize,
@@ -213,3 +257,38 @@ class test_dataset:
         with open(path, "rb") as f:
             img = Image.open(f)
             return img.convert("L")
+
+
+class test_dataset_preprocess(test_dataset):
+    def __init__(self, image_root, gt_root, testsize):
+        super(test_dataset_preprocess, self).__init__(image_root, gt_root, testsize)
+
+        self.img_transform = transforms.Compose(
+            [
+                transforms.Resize((self.testsize, self.testsize)),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+            ]
+        )
+        self.gt_transform = transforms.Compose(
+            [
+                transforms.Resize((self.testsize, self.testsize)),
+                transforms.ToTensor(),
+            ]
+        )
+
+    def load_data(self):
+
+        image = self.rgb_loader(self.images[self.index])
+        gt = self.binary_loader(self.gts[self.index])
+        name = self.images[self.index].split("/")[-1]
+
+        if name.endswith(".jpg"):
+            name = name.split(".jpg")[0] + ".png"
+
+        image = self.img_transform(image)
+        gt = self.gt_transform(gt)
+
+        self.index += 1
+
+        return image, gt, name

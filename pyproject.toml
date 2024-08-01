@@ -1,0 +1,15 @@
+[tool.ruff]
+target-version="py39"
+select = [
+    "E",
+    "F",
+    "W",
+    "I",
+    "Q",
+]
+line-length = 119
+[tool.ruff.flake8-quotes]
+inline-quotes = "single"
+
+[tool.ruff.isort]
+force-single-line = true
