@@ -35,3 +35,4 @@ docs | ドキュメント
 - [リモートブランチを取り込む](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/doc/remote_branch.md)
 - [プルリクエストについて](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/doc/pull_request.md)
 - [コミットメッセージについて](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/doc/commit.md)
+- [実験結果の共通化](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/doc/commit.md)
