@@ -29,10 +29,10 @@ docs | ドキュメント
 
 ## 参考ドキュメント
 
-- [環境構築](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/doc/settings.md)
-- [データセット](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/doc/datasets.md)
-- [ブランチの切り方](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/doc/branch.md)
-- [リモートブランチを取り込む](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/doc/remote_branch.md)
-- [プルリクエストについて](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/doc/pull_request.md)
-- [コミットメッセージについて](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/doc/commit.md)
-- [実験結果の共通化](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/doc/commit.md)
+- [環境構築](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/docs/settings.md)
+- [データセット](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/docs/datasets.md)
+- [ブランチの切り方](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/docs/branch.md)
+- [リモートブランチを取り込む](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/docs/remote_branch.md)
+- [プルリクエストについて](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/docs/pull_request.md)
+- [コミットメッセージについて](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/docs/commit.md)
+- [実験結果の共通化](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/docs/experimental_results.md)
