@@ -11,28 +11,24 @@
 import argparse
 import datetime
 import json
-import numpy as np
 import os
 import time
 from pathlib import Path
 
+import numpy as np
+import timm
 import torch
 import torch.backends.cudnn as cudnn
-from torch.utils.tensorboard import SummaryWriter
-import torchvision.transforms as transforms
 import torchvision.datasets as datasets
-
-import timm
+import torchvision.transforms as transforms
+from torch.utils.tensorboard import SummaryWriter
 
 assert timm.__version__ == "0.3.2"  # version check
-import timm.optim.optim_factory as optim_factory
-
-import util.misc as misc
-from util.misc import NativeScalerWithGradNormCount as NativeScaler
-
 import models_mae
-
+import timm.optim.optim_factory as optim_factory
+import util.misc as misc
 from engine_pretrain import train_one_epoch
+from util.misc import NativeScalerWithGradNormCount as NativeScaler
 
 
 def get_args_parser():
