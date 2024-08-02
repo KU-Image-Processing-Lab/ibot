@@ -13,40 +13,6 @@
 5. ディレクトリ構成を変更する場合は、他の人に事前に相談しよう。
 
 
-## 環境構築
-
-```bash
-$ cd docker/{docker-compose.ymlがあるディレクトリ}
-$ docker-compose up -d
-```
-
-### 環境変数の設定
-
-自作モジュールをimportするために、PYTHONPATHを設定してください。
-
-直接環境変数を設定するには以下のコマンドを実行してください。この設定はそのシェルを消さない限り有効になります.
-
-```bash
-$ export PYTHONPATH=<リポジトリのルートディレクトリ>:$PYTHONPATH
-```
-
-いちいち設定が面倒な場合は、Bashを使用ている場合は`~/.bashrc`に、Zshを使用している場合は`~/.zshrc`に以下の行を追加してください。
-
-```bash
-$ export PYTHONPATH=<リポジトリのルートディレクトリ>:$PYTHONPATH >> ~/.zshrc
-
-$ source ~/.bashrc
-or
-$ source ~/.zshrc
-```
-
-一度だけ環境変数を有効にする場合は、Pythonコマンドの前に環境変数を設定してください。
-
-```bash
-$ PYTHONPATH=<リポジトリのルートディレクトリ> python3 <スクリプト名>
-```
-
-これで`lib`や`utils`などのディレクトリをimportすることができます。
 
 ## ディレクトリ構成
 
@@ -60,61 +26,11 @@ scripts | 実行スクリプト
 dataset | データセット
 results | 推論結果
 
-## データセット
+## 参考ドキュメント
 
-Dropboxにて、[クロスバリデーション用のデータセット](https://www.dropbox.com/scl/fo/ppau6ovp1gj5dvi4wdz3k/AI1icwhvQCXbtmyP1ke4S78?rlkey=opnodhurbl1wq60m9qcpbx9l0&dl=0)を配布しています。
-
-パスワードは休憩室の番号の2乗です。
-
-### ブランチの切り方
-
-mainブランチには直接コミットせず、各自のブランチを切ってからmainブランチにプルリクエストを送ってください。
-
-`feature/機能名` でブランチを作成してください。
-
-```bash
-$ git switch -c feature/機能名
-```
-
-他のブランチに移動するには以下のコマンドを実行してください。
-
-```bash
-$ git switch ブランチ名
-```
-
-## リモートブランチを取り込む
-
-ローカルのブランチとリモートのブランチは通常分かれています。
-
-他人がプッシュしたリモートブランチを編集したい場合はリモートブランチをローカルに取り込んでください。
-
-そのまま取り込むだけなら以下でOKです。
-
-```bash
-$ git fetch origin リモートブランチ名
-```
-
-リモートブランチをローカルブランチに取り込む場合は以下のコマンドを実行してください。
-
-```bash
-$ git fetch origin リモートブランチ名:ローカルブランチ名
-```
-
-### プルリクエストについて
-
-プルリクエストを送る前に、mainブランチを最新の状態にしてください。
-
-```bash
-$ git checkout main
-$ git pull origin main
-```
-
-mainブランチを最新の状態にした後、プルリクエストを送ってください。
-
-### コミットメッセージについて
-
-コミットメッセージは日本語でいいです。
-
-```bash
-$ git commit -m "機能名: コミットメッセージ"
-```
+- [環境構築](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/doc/settings.md)
+- [データセット](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/doc/datasets.md)
+- [ブランチの切り方](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/doc/branch.md)
+- [リモートブランチを取り込む](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/doc/remote_branch.md)
+- [プルリクエストについて](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/doc/pull_request.md)
+- [コミットメッセージについて](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/doc/commit.md)
