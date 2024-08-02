@@ -178,19 +178,19 @@ model2.eval()
 
 
 os.makedirs(save_path, exist_ok=True)
-for file in glob.glob("./results/Transfuse_S/*.png"):
+for file in glob.glob(f"{save_path}/*.png"):
     os.remove(file)
-os.makedirs("./results/Transfuse_S/TP", exist_ok=True)
-for file in glob.glob("./results/Transfuse_S/TP/*.png"):
+os.makedirs(save_path / "TP", exist_ok=True)
+for file in glob.glob(f"{save_path}/TP/*.png"):
     os.remove(file)
-os.makedirs("./results/Transfuse_S/FN", exist_ok=True)
-for file in glob.glob("./results/Transfuse_S/FN/*.png"):
+os.makedirs(save_path / "FN", exist_ok=True)
+for file in glob.glob(f"{save_path}/FN/*.png"):
     os.remove(file)
-os.makedirs("./results/Transfuse_S/FP", exist_ok=True)
-for file in glob.glob("./results/Transfuse_S/FP/*.png"):
+os.makedirs(save_path / "FP", exist_ok=True)
+for file in glob.glob(f"{save_path}/FP/*.png"):
     os.remove(file)
-os.makedirs("./results/Transfuse_S/TN", exist_ok=True)
-for file in glob.glob("./results/Transfuse_S/TN/*.png"):
+os.makedirs(save_path / "TN", exist_ok=True)
+for file in glob.glob(f"{save_path}/TN/*.png"):
     os.remove(file)
 image_root1 = data_path1 / "images"
 gt_root1 = data_path1 / "masks"
@@ -210,7 +210,6 @@ y_pred = np.array([])
 
 output_dict = {}
 param_list = []
-
 
 for i in range(test_loader1.size):
     image, gt, name = test_loader1.load_data()
