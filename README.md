@@ -28,9 +28,9 @@ results | 推論結果
 
 ## 参考ドキュメント
 
-- [環境構築](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/doc/settings.md)
-- [データセット](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/doc/datasets.md)
-- [ブランチの切り方](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/doc/branch.md)
-- [リモートブランチを取り込む](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/doc/remote_branch.md)
-- [プルリクエストについて](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/doc/pull_request.md)
-- [コミットメッセージについて](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/doc/commit.md)
+- [環境構築](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/stable/doc/settings.md)
+- [データセット](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/stable/doc/datasets.md)
+- [ブランチの切り方](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/stable/doc/branch.md)
+- [リモートブランチを取り込む](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/stable/doc/remote_branch.md)
+- [プルリクエストについて](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/stable/doc/pull_request.md)
+- [コミットメッセージについて](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/stable/doc/commit.md)
