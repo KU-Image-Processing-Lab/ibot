@@ -25,6 +25,7 @@ snapshots | 学習済みモデルのスナップショット
 scripts | 実行スクリプト
 dataset | データセット
 results | 推論結果
+docs | ドキュメント
 
 ## 参考ドキュメント
 
