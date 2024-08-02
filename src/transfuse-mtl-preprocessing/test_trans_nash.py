@@ -12,12 +12,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn.functional as F
-from PIL.Image import isImageType
 from skimage import img_as_ubyte
 from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
                              precision_score, recall_score, roc_auc_score,
                              roc_curve)
-from torchvision import transforms
 
 from lib.TransFuse_l import TransFuse_L
 from utils.dataloader import test_dataset_preprocess as test_dataset
@@ -133,9 +131,9 @@ opt = parser.parse_args()
 # data_path2 = "./dataset/original_dataset_only_left/sekkai_TestDataset/"
 # save_path = "./results/Transfuse_S/"
 
-data_path1 = opt.test_data_path1
-data_path2 = opt.test_data_path2
-save_path = opt.save_path
+data_path1 = Path(opt.test_data_path1)
+data_path2 = Path(opt.test_data_path2)
+save_path = Path(opt.save_path)
 
 # ---- build preprocess model ----
 if opt.discriminator == "resnet10":
@@ -194,12 +192,12 @@ for file in glob.glob("./results/Transfuse_S/FP/*.png"):
 os.makedirs("./results/Transfuse_S/TN", exist_ok=True)
 for file in glob.glob("./results/Transfuse_S/TN/*.png"):
     os.remove(file)
-image_root1 = "{}/images/".format(data_path1)
-gt_root1 = "{}/masks/".format(data_path1)
+image_root1 = data_path1 / "images"
+gt_root1 = data_path1 / "masks"
 test_loader1 = test_dataset(image_root1, gt_root1, opt.testsize)
 
-image_root2 = "{}/images/".format(data_path2)
-gt_root2 = "{}/masks/".format(data_path2)
+image_root2 = data_path2 / "images"
+gt_root2 = data_path2 / "masks"
 test_loader2 = test_dataset(image_root2, gt_root2, opt.testsize)
 
 dice_bank = []
@@ -285,7 +283,7 @@ for i in range(test_loader1.size):
 
         res1 = 1.0 * (res1 > 0.5)  ############################
 
-        imageio.imsave(save_path + name, img_as_ubyte(res1))
+        imageio.imsave(str(save_path / name), img_as_ubyte(res1))
         res = res.repeat(1, 3, 1, 1)
 
         out = model2(res)
@@ -301,17 +299,17 @@ for i in range(test_loader1.size):
 
     if label == 1:
         if predicted == 1:
-            imageio.imsave(save_path + "TP/" + name, img_as_ubyte(res1))
+            imageio.imsave(save_path / "TP" / name, img_as_ubyte(res1))
 
         else:
-            imageio.imsave(save_path + "FN/" + name, img_as_ubyte(res1))
+            imageio.imsave(save_path / "FN" / name, img_as_ubyte(res1))
 
     else:
         if predicted == 1:
-            imageio.imsave(save_path + "FP/" + name, img_as_ubyte(res1))
+            imageio.imsave(save_path / "FP" / name, img_as_ubyte(res1))
 
         else:
-            imageio.imsave(save_path + "TN/" + name, img_as_ubyte(res1))
+            imageio.imsave(save_path / "TN" / name, img_as_ubyte(res1))
 
 output_dict["param_d_min"] = min(param_list)
 output_dict["param_d_max"] = max(param_list)
@@ -390,8 +388,8 @@ TPR = TP / (TP + FN)
 FPR = FP / (FP + TN)
 
 output_dict["Discriminator"] = opt.discriminator
-output_dict["pth_path"] = opt.pth_path
-output_dict["pth_path2"] = opt.pth_path2
+output_dict["pth_path"] = str(opt.pth_path)
+output_dict["pth_path2"] = str(opt.pth_path2)
 
 output_dict["Dice"] = np.mean(dice_bank)
 output_dict["IoU"] = np.mean(iou_bank)
