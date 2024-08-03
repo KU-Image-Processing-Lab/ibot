@@ -4,9 +4,15 @@ from pathlib import Path
 
 
 class CrossValidationDataset:
-    def __init__(self, root_path="./dataset", verbose=False):
+    def __init__(
+        self, seed, root_path="./dataset", save_dir="CrossValidation", verbose=False
+    ):
+        # ---- setting ----
         self.root_path = root_path
+        self.save_dir = save_dir
         self.verbose = verbose
+        self.seed = seed
+        random.seed(seed)
 
         # ---- sekkai dataset ----
         self.sekkai_train_list = self.get_data_set("Train", sekkai=True)
@@ -46,13 +52,13 @@ class CrossValidationDataset:
             )
         return set(Path(f"./{self.root_path}/{phase}Dataset/images").glob("*.png"))
 
-    def __call__(self, seed):
-        # ---- set random seed ----
-        self.seed = seed
-        random.seed(self.seed)
+    def __call__(self, index):
+        self.index = index
 
         # ---- shuffle ----
+        random.seed(self.seed)
         random.shuffle(self.sekkai)
+        random.seed(self.seed)
         random.shuffle(self.not_sekkai)
 
         # ---- split ----
@@ -78,19 +84,19 @@ class CrossValidationDataset:
 
     def _save(self, sekkai, not_sekkai, split):
         os.makedirs(
-            f"./dataset/CrossValidation/seed{self.seed}_{split}Dataset/images",
+            f"./dataset/{self.save_dir}/cv{self.index}_{split}Dataset/images",
             exist_ok=True,
         )
         os.makedirs(
-            f"./dataset/CrossValidation/seed{self.seed}_{split}Dataset/masks",
+            f"./dataset/{self.save_dir}/cv{self.index}_{split}Dataset/masks",
             exist_ok=True,
         )
         os.makedirs(
-            f"./dataset/CrossValidation/seed{self.seed}_sekkai_{split}Dataset/images",
+            f"./dataset/{self.save_dir}/cv{self.index}_sekkai_{split}Dataset/images",
             exist_ok=True,
         )
         os.makedirs(
-            f"./dataset/CrossValidation/seed{self.seed}_sekkai_{split}Dataset/masks",
+            f"./dataset/{self.save_dir}/cv{self.index}_sekkai_{split}Dataset/masks",
             exist_ok=True,
         )
 
@@ -99,10 +105,10 @@ class CrossValidationDataset:
         for se in sekkai:
             # ---- copy sekkai ----
             os.system(
-                f"cp {se} ./dataset/CrossValidation/seed{self.seed}_sekkai_{split}Dataset/images"
+                f"cp {se} ./dataset/{self.save_dir}/cv{self.index}_sekkai_{split}Dataset/images"
             )
             os.system(
-                f"cp {str(se).replace('images', 'masks')} ./dataset/CrossValidation/seed{self.seed}_sekkai_{split}Dataset/masks"
+                f"cp {str(se).replace('images', 'masks')} ./dataset/{self.save_dir}/cv{self.index}_sekkai_{split}Dataset/masks"
             )
 
         # dataset
@@ -110,26 +116,26 @@ class CrossValidationDataset:
         for se in sekkai:
             # ---- copy sekkai ----
             os.makedirs(
-                f"./dataset/CrossValidation/seed{self.seed}_{split}Dataset/images",
+                f"./dataset/{self.save_dir}/cv{self.index}_{split}Dataset/images",
                 exist_ok=True,
             )
             os.system(
-                f"cp {se} ./dataset/CrossValidation/seed{self.seed}_{split}Dataset/images"
+                f"cp {se} ./dataset/{self.save_dir}/cv{self.index}_{split}Dataset/images"
             )
             os.system(
-                f"cp {str(se).replace('images', 'masks')} ./dataset/CrossValidation/seed{self.seed}_{split}Dataset/masks"
+                f"cp {str(se).replace('images', 'masks')} ./dataset/{self.save_dir}/cv{self.index}_{split}Dataset/masks"
             )
         for ns in not_sekkai:
             # ---- copy not sekkai ----
             os.makedirs(
-                f"./dataset/CrossValidation/seed{self.seed}_{split}Dataset/images",
+                f"./dataset/{self.save_dir}/cv{self.index}_{split}Dataset/images",
                 exist_ok=True,
             )
             os.system(
-                f"cp {ns} ./dataset/CrossValidation/seed{self.seed}_{split}Dataset/images"
+                f"cp {ns} ./dataset/{self.save_dir}/cv{self.index}_{split}Dataset/images"
             )
             os.system(
-                f"cp {str(ns).replace('images', 'masks')} ./dataset/CrossValidation/seed{self.seed}_{split}Dataset/masks"
+                f"cp {str(ns).replace('images', 'masks')} ./dataset/{self.save_dir}/cv{self.index}_{split}Dataset/masks"
             )
 
     def _get_split_size(self):
@@ -158,7 +164,215 @@ class CrossValidationDataset:
         print(f">>> Not Sekkai: {len(self.not_sekkai)}")
 
 
+class CrossValidationDatasetOriginal:
+    def __init__(self, verbose=False):
+        # ---- setting ----
+        self.root_path = Path("dataset/CrossValidation")
+        self.save_dir = Path("dataset/CrossValidation_original")
+        self.verbose = verbose
+
+        self.target_path = Path("./dataset/original_dataset_only_left")
+        target_train_path = self.target_path / "TrainDataset" / "images"
+        target_val_path = self.target_path / "ValDataset" / "images"
+        target_test_path = self.target_path / "TestDataset" / "images"
+        self.target_list = (
+            list(target_train_path.glob("*.png"))
+            + list(target_val_path.glob("*.png"))
+            + list(target_test_path.glob("*.png"))
+        )
+
+        os.makedirs(self.save_dir, exist_ok=True)
+
+        if verbose:
+            self._verbose()
+
+    def _verbose(self):
+        print(f">>> Target: {len(self.target_list)}")
+
+    def _makedirs(self):
+        os.makedirs(
+            self.save_dir / f"cv{self.index}_TrainDataset/images", exist_ok=True
+        )
+        os.makedirs(self.save_dir / f"cv{self.index}_TrainDataset/masks", exist_ok=True)
+        os.makedirs(self.save_dir / f"cv{self.index}_ValDataset/images", exist_ok=True)
+        os.makedirs(self.save_dir / f"cv{self.index}_ValDataset/masks", exist_ok=True)
+        os.makedirs(self.save_dir / f"cv{self.index}_TestDataset/images", exist_ok=True)
+        os.makedirs(self.save_dir / f"cv{self.index}_TestDataset/masks", exist_ok=True)
+        os.makedirs(
+            self.save_dir / f"cv{self.index}_sekkai_TrainDataset/images", exist_ok=True
+        )
+        os.makedirs(
+            self.save_dir / f"cv{self.index}_sekkai_TrainDataset/masks", exist_ok=True
+        )
+        os.makedirs(
+            self.save_dir / f"cv{self.index}_sekkai_ValDataset/images", exist_ok=True
+        )
+        os.makedirs(
+            self.save_dir / f"cv{self.index}_sekkai_ValDataset/masks", exist_ok=True
+        )
+        os.makedirs(
+            self.save_dir / f"cv{self.index}_sekkai_TestDataset/images", exist_ok=True
+        )
+        os.makedirs(
+            self.save_dir / f"cv{self.index}_sekkai_TestDataset/masks", exist_ok=True
+        )
+
+    def __call__(self, index):
+        self.index = index
+        self._makedirs()
+
+        # ---- get path ----
+        train_path = self.root_path / f"cv{self.index}_TrainDataset"
+        val_path = self.root_path / f"cv{self.index}_ValDataset"
+        test_path = self.root_path / f"cv{self.index}_TestDataset"
+
+        sekkai_train_path = self.root_path / f"cv{self.index}_sekkai_TrainDataset"
+        sekkai_val_path = self.root_path / f"cv{self.index}_sekkai_ValDataset"
+        sekkai_test_path = self.root_path / f"cv{self.index}_sekkai_TestDataset"
+
+        # ---- get file list ----
+        train_list = list(train_path.glob("images/*.png"))
+        val_list = list(val_path.glob("images/*.png"))
+        test_list = list(test_path.glob("images/*.png"))
+
+        train_filename = [f.stem for f in train_list]
+        val_filename = [f.stem for f in val_list]
+        test_filename = [f.stem for f in test_list]
+
+        sekkai_train_list = list(sekkai_train_path.glob("images/*.png"))
+        sekkai_val_list = list(sekkai_val_path.glob("images/*.png"))
+        sekkai_test_list = list(sekkai_test_path.glob("images/*.png"))
+
+        if self.verbose:
+            print(f">>> Train: {len(train_list)}")
+            print(f">>> Val: {len(val_list)}")
+            print(f">>> Test: {len(test_list)}")
+            print(f">>> Sekkai Train: {len(sekkai_train_list)}")
+            print(f">>> Sekkai Val: {len(sekkai_val_list)}")
+            print(f">>> Sekkai Test: {len(sekkai_test_list)}")
+
+        sekkai_train_filename = [f.stem for f in sekkai_train_list]
+        sekkai_val_filename = [f.stem for f in sekkai_val_list]
+        sekkai_test_filename = [f.stem for f in sekkai_test_list]
+
+        for filename in train_filename:
+            if filename in list(map(lambda x: x.stem, self.target_list)):
+                target_file_path = [f for f in self.target_list if f.stem == filename][
+                    0
+                ]
+                save_file_path = (
+                    self.save_dir
+                    / f"cv{self.index}_TrainDataset"
+                    / "images"
+                    / f"{filename}.png"
+                )
+                os.system(f"cp {target_file_path} {save_file_path}")
+                os.system(
+                    f"cp {str(target_file_path).replace('images', 'masks')} {str(save_file_path).replace('images', 'masks')}"
+                )
+        for filename in val_filename:
+            if filename in list(map(lambda x: x.stem, self.target_list)):
+                target_file_path = [f for f in self.target_list if f.stem == filename][
+                    0
+                ]
+                save_file_path = (
+                    self.save_dir
+                    / f"cv{self.index}_ValDataset"
+                    / "images"
+                    / f"{filename}.png"
+                )
+                os.system(f"cp {target_file_path} {save_file_path}")
+                os.system(
+                    f"cp {str(target_file_path).replace('images', 'masks')} {str(save_file_path).replace('images', 'masks')}"
+                )
+        for filename in test_filename:
+            if filename in list(map(lambda x: x.stem, self.target_list)):
+                target_file_path = [f for f in self.target_list if f.stem == filename][
+                    0
+                ]
+                save_file_path = (
+                    self.save_dir
+                    / f"cv{self.index}_TestDataset"
+                    / "images"
+                    / f"{filename}.png"
+                )
+                os.system(f"cp {target_file_path} {save_file_path}")
+                os.system(
+                    f"cp {str(target_file_path).replace('images', 'masks')} {str(save_file_path).replace('images', 'masks')}"
+                )
+
+        for filename in sekkai_train_filename:
+            if filename in list(map(lambda x: x.stem, self.target_list)):
+                target_file_path = [f for f in self.target_list if f.stem == filename][
+                    0
+                ]
+                save_file_path = (
+                    self.save_dir
+                    / f"cv{self.index}_sekkai_TrainDataset"
+                    / "images"
+                    / f"{filename}.png"
+                )
+                os.system(f"cp {target_file_path} {save_file_path}")
+                os.system(
+                    f"cp {str(target_file_path).replace('images', 'masks')} {str(save_file_path).replace('images', 'masks')}"
+                )
+        for filename in sekkai_val_filename:
+            if filename in list(map(lambda x: x.stem, self.target_list)):
+                target_file_path = [f for f in self.target_list if f.stem == filename][
+                    0
+                ]
+                save_file_path = (
+                    self.save_dir
+                    / f"cv{self.index}_sekkai_ValDataset"
+                    / "images"
+                    / f"{filename}.png"
+                )
+                os.system(f"cp {target_file_path} {save_file_path}")
+                os.system(
+                    f"cp {str(target_file_path).replace('images', 'masks')} {str(save_file_path).replace('images', 'masks')}"
+                )
+        for filename in sekkai_test_filename:
+            if filename in list(map(lambda x: x.stem, self.target_list)):
+                target_file_path = [f for f in self.target_list if f.stem == filename][
+                    0
+                ]
+                save_file_path = (
+                    self.save_dir
+                    / f"cv{self.index}_sekkai_TestDataset"
+                    / "images"
+                    / f"{filename}.png"
+                )
+                os.system(f"cp {target_file_path} {save_file_path}")
+                os.system(
+                    f"cp {str(target_file_path).replace('images', 'masks')} {str(save_file_path).replace('images', 'masks')}"
+                )
+
+
 if __name__ == "__main__":
-    for i in [31, 42, 71, 91]:
-        cv = CrossValidationDataset(verbose=True)
-        cv(i)
+    # data_type = "original"
+
+    # for index, seed in enumerate([31, 42, 71, 91], start=1):
+    #     # ---- 前処理あり ----
+    #     if data_type == "default":
+    #         cv = CrossValidationDataset(
+    #                 verbose=True,
+    #                 seed=seed,
+    #             )
+    #     # ---- 前処理なし ----
+    #     elif data_type == "original":
+    #         cv = CrossValidationDataset(
+    #             root_path="dataset/original_dataset_only_left",
+    #             save_dir="CrossValidation_original",
+    #             verbose=True,
+    #             seed=seed,
+    #         )
+    #     else:
+    #         raise NotImplementedError
+
+    #     cv(index=index)
+
+    cv_original = CrossValidationDatasetOriginal(verbose=True)
+    for index in range(0, 5):
+        print(f">>> cv{index}")
+        cv_original(index=index)
+        print("-" * 50)

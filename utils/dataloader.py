@@ -263,6 +263,17 @@ class test_dataset_preprocess(test_dataset):
     def __init__(self, image_root, gt_root, testsize):
         super(test_dataset_preprocess, self).__init__(image_root, gt_root, testsize)
 
+        self.images = [
+            str(image_root / f)
+            for f in os.listdir(image_root)
+            if f.endswith(".jpg") or f.endswith(".png") or f.endswith(".tif")
+        ]
+        self.gts = [
+            str(gt_root / f)
+            for f in os.listdir(gt_root)
+            if f.endswith(".tif") or f.endswith(".png") or f.endswith(".jpg")
+        ]
+
         self.img_transform = transforms.Compose(
             [
                 transforms.Resize((self.testsize, self.testsize)),
