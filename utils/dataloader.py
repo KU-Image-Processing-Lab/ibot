@@ -215,12 +215,12 @@ class test_dataset:
     def __init__(self, image_root, gt_root, testsize):
         self.testsize = testsize
         self.images = [
-            image_root / f
+            image_root + f
             for f in os.listdir(image_root)
             if f.endswith(".jpg") or f.endswith(".png") or f.endswith(".tif")
         ]
         self.gts = [
-            gt_root / f
+            gt_root + f
             for f in os.listdir(gt_root)
             if f.endswith(".tif") or f.endswith(".png") or f.endswith(".jpg")
         ]
