@@ -8,6 +8,7 @@ select = [
     "Q",
 ]
 line-length = 119
+ignore = ["Q000", "I001", "E402"]
 [tool.ruff.flake8-quotes]
 inline-quotes = "single"
 

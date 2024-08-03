@@ -13,7 +13,7 @@ mkdir -p ./logs
 # --------------------------------------------------------------
 python3 ./utils/slack_bot.py --text "SCRIPT_DIR=${SCRIPT_DIR}${LF}TRAIN_SCRIPT_NAME=${TRAIN_SCRIPT_NAME}${LF}TEST_SCRIPT_NAME=${TEST_SCRIPT_NAME}"
 
-weightArray=("best" "99" "199")
+weightArray=("best" "best2" "99" "199")
 
 for i in {0..4}; do
 

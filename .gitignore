@@ -10,6 +10,7 @@ requirements.txt
 
 # directories
 **/__pycache__/**
+logs/
 fig/
 snapshots/
 results/
