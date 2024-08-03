@@ -4,8 +4,10 @@ from pathlib import Path
 
 
 class CrossValidationDataset:
-    def __init__(self, root_path="./dataset", verbose=False):
+    def __init__(self, root_path="./dataset", save_dir="CrossValidation", verbose=False):
+        # ---- setting ----
         self.root_path = root_path
+        self.save_dir = save_dir
         self.verbose = verbose
 
         # ---- sekkai dataset ----
@@ -46,8 +48,9 @@ class CrossValidationDataset:
             )
         return set(Path(f"./{self.root_path}/{phase}Dataset/images").glob("*.png"))
 
-    def __call__(self, seed):
+    def __call__(self, seed, index):
         # ---- set random seed ----
+        self.index = index
         self.seed = seed
         random.seed(self.seed)
 
@@ -78,19 +81,19 @@ class CrossValidationDataset:
 
     def _save(self, sekkai, not_sekkai, split):
         os.makedirs(
-            f"./dataset/CrossValidation/seed{self.seed}_{split}Dataset/images",
+            f"./dataset/{self.save_dir}/cv{self.index}_{split}Dataset/images",
             exist_ok=True,
         )
         os.makedirs(
-            f"./dataset/CrossValidation/seed{self.seed}_{split}Dataset/masks",
+            f"./dataset/{self.save_dir}/cv{self.index}_{split}Dataset/masks",
             exist_ok=True,
         )
         os.makedirs(
-            f"./dataset/CrossValidation/seed{self.seed}_sekkai_{split}Dataset/images",
+            f"./dataset/{self.save_dir}/cv{self.index}_sekkai_{split}Dataset/images",
             exist_ok=True,
         )
         os.makedirs(
-            f"./dataset/CrossValidation/seed{self.seed}_sekkai_{split}Dataset/masks",
+            f"./dataset/{self.save_dir}/cv{self.index}_sekkai_{split}Dataset/masks",
             exist_ok=True,
         )
 
@@ -99,10 +102,10 @@ class CrossValidationDataset:
         for se in sekkai:
             # ---- copy sekkai ----
             os.system(
-                f"cp {se} ./dataset/CrossValidation/seed{self.seed}_sekkai_{split}Dataset/images"
+                f"cp {se} ./dataset/{self.save_dir}/cv{self.index}_sekkai_{split}Dataset/images"
             )
             os.system(
-                f"cp {str(se).replace('images', 'masks')} ./dataset/CrossValidation/seed{self.seed}_sekkai_{split}Dataset/masks"
+                f"cp {str(se).replace('images', 'masks')} ./dataset/{self.save_dir}/cv{self.index}_sekkai_{split}Dataset/masks"
             )
 
         # dataset
@@ -110,26 +113,26 @@ class CrossValidationDataset:
         for se in sekkai:
             # ---- copy sekkai ----
             os.makedirs(
-                f"./dataset/CrossValidation/seed{self.seed}_{split}Dataset/images",
+                f"./dataset/{self.save_dir}/cv{self.index}_{split}Dataset/images",
                 exist_ok=True,
             )
             os.system(
-                f"cp {se} ./dataset/CrossValidation/seed{self.seed}_{split}Dataset/images"
+                f"cp {se} ./dataset/{self.save_dir}/cv{self.index}_{split}Dataset/images"
             )
             os.system(
-                f"cp {str(se).replace('images', 'masks')} ./dataset/CrossValidation/seed{self.seed}_{split}Dataset/masks"
+                f"cp {str(se).replace('images', 'masks')} ./dataset/{self.save_dir}/cv{self.index}_{split}Dataset/masks"
             )
         for ns in not_sekkai:
             # ---- copy not sekkai ----
             os.makedirs(
-                f"./dataset/CrossValidation/seed{self.seed}_{split}Dataset/images",
+                f"./dataset/{self.save_dir}/cv{self.index}_{split}Dataset/images",
                 exist_ok=True,
             )
             os.system(
-                f"cp {ns} ./dataset/CrossValidation/seed{self.seed}_{split}Dataset/images"
+                f"cp {ns} ./dataset/{self.save_dir}/cv{self.index}_{split}Dataset/images"
             )
             os.system(
-                f"cp {str(ns).replace('images', 'masks')} ./dataset/CrossValidation/seed{self.seed}_{split}Dataset/masks"
+                f"cp {str(ns).replace('images', 'masks')} ./dataset/{self.save_dir}/cv{self.index}_{split}Dataset/masks"
             )
 
     def _get_split_size(self):
@@ -159,6 +162,26 @@ class CrossValidationDataset:
 
 
 if __name__ == "__main__":
-    for i in [31, 42, 71, 91]:
+    data_type = "original"
+
+    # ---- 前処理あり ----
+    if data_type == "default":
         cv = CrossValidationDataset(verbose=True)
-        cv(i)
+    # ---- 前処理なし ----
+    elif data_type == "original":
+        cv = CrossValidationDataset(
+            root_path="dataset/original_dataset_only_left",
+            save_dir=f"CrossValidation_original",
+            verbose=True
+        )
+    else:
+        raise NotImplementedError
+
+    cv = CrossValidationDataset(
+            root_path="dataset/original_dataset_only_left",
+            save_dir=f"CrossValidation_original",
+            verbose=True
+        )
+
+    for index, seed in enumerate([31, 42, 71, 91]):
+        cv(seed=seed, index=index)
