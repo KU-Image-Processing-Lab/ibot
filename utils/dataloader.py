@@ -261,7 +261,9 @@ class test_dataset:
 
 class test_dataset_preprocess(test_dataset):
     def __init__(self, image_root, gt_root, testsize):
-        super(test_dataset_preprocess, self).__init__(image_root, gt_root, testsize)
+        super(test_dataset_preprocess, self)
+
+        self.testsize = testsize
 
         self.images = [
             str(image_root / f)
@@ -287,6 +289,12 @@ class test_dataset_preprocess(test_dataset):
                 transforms.ToTensor(),
             ]
         )
+
+        self.images = sorted(self.images)
+        self.gts = sorted(self.gts)
+        self.size = len(self.images)
+
+        self.index = 0
 
     def load_data(self):
 
