@@ -174,7 +174,7 @@ def train(
                     loss_record2.update(loss2.data, opt.batchsize)
                     loss_record3.update(loss3.data, opt.batchsize)
                     loss_record4.update(loss4.data, opt.batchsize)
-            if (i % opt.log_epoch == 0 or i == total_step) and phase == "train":
+            if (i % opt.log_iter == 0 or i == total_step) and phase == "train":
                 print(
                     "{} Epoch [{:03d}/{:03d}], Step [{:04d}/{:04d}], "
                     "[lateral-2: {:.4f}, lateral-3: {:0.4f}, lateral-4: {:0.4f}, d_loss: {:0.4f}".format(
@@ -318,7 +318,7 @@ if __name__ == "__main__":
         help="Discriminatorに使うモデル",
     )
     parser.add_argument(
-        "--log_epoch", type=int, default=20, help="ログ出力するエポックの単位"
+        "--log_iter", type=int, default=20, help="ログ出力するエポックの単位"
     )
     parser.add_argument(
         "--save_epoch", type=int, default=5, help="重み保存するエポックの単位"
