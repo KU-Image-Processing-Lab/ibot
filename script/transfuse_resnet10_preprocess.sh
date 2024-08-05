@@ -19,7 +19,7 @@ python3 ./src/${SCRIPT_DIR}/${TRAIN_SCRIPT_NAME} \
     --batchsize 4 \
     --trainsize 352 \
     --discriminator resnet10 \
-    --log_epoch 20 \
+    --log_iter 20 \
     --save_epoch 50 \
     --train_path ./dataset/original_dataset_only_left/TrainDataset \
     --val_path ./dataset/original_dataset_only_left/ValDataset \
