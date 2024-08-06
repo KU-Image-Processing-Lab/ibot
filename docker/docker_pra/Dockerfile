@@ -2,8 +2,6 @@
 #FROM nvcr.io/nvidia/pytorch:19.09-py3
 FROM nvcr.io/nvidia/pytorch:22.08-py3
 
-MAINTAINER Soh Yoshida <sohy@kansai-u.ac.jp>
-
 ENV https_proxy http://proxy.itc.kansai-u.ac.jp:8080
 ENV http_proxy http://proxy.itc.kansai-u.ac.jp:8080
 

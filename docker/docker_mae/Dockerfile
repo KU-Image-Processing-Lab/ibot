@@ -1,7 +1,5 @@
 FROM nvcr.io/nvidia/pytorch:20.12-py3
 
-MAINTAINER Soh Yoshida <sohy@kansai-u.ac.jp>
-
 ENV https_proxy http://proxy.itc.kansai-u.ac.jp:8080
 ENV http_proxy http://proxy.itc.kansai-u.ac.jp:8080
 
