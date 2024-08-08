@@ -7,12 +7,6 @@ jobs:
       - uses: actions/checkout@v3
       - uses: chartboost/ruff-action@v1
         with:
-            src: "./src"
-            version: 0.0.292
-            args: --config pyproject.toml
-      - uses: actions/checkout@v3
-      - uses: chartboost/ruff-action@v1
-        with:
             src: "./utils"
             version: 0.0.292
             args: --config pyproject.toml
@@ -20,5 +14,11 @@ jobs:
       - uses: chartboost/ruff-action@v1
         with:
             src: "./lib"
+            version: 0.0.292
+            args: --config pyproject.toml
+      - uses: actions/checkout@v3
+      - uses: chartboost/ruff-action@v1
+        with:
+            src: "./src"
             version: 0.0.292
             args: --config pyproject.toml
