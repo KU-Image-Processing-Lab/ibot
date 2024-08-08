@@ -8,9 +8,9 @@ select = [
     "Q",
 ]
 line-length = 119
-ignore = ["Q000", "I001", "E402"]
+ignore = ["Q000", "I001", "E402", "F401"]
 [tool.ruff.flake8-quotes]
-inline-quotes = "single"
+inline-quotes = "double"
 
 [tool.ruff.isort]
 force-single-line = true
