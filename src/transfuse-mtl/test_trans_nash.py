@@ -336,7 +336,7 @@ if TP != 0:
 # ---- print the results ----
 now = datetime.datetime.now()
 now_str = now.strftime("%Y-%m-%d_%H-%M-%S")
-with open(f"{Path(opt.test_save_path)} / {now_str}_result.csv", "w") as f:
+with open(Path(opt.test_save_path) / f"{now_str}_result.csv", "w") as f:
     f.write("name, value\n")
     for k, v in output_dict.items():
         print(k, v)
