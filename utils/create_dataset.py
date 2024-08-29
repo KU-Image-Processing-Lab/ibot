@@ -2,6 +2,8 @@ import os
 import random
 from pathlib import Path
 
+import cv2
+
 
 class CrossValidationDataset:
     def __init__(
@@ -348,6 +350,109 @@ class CrossValidationDatasetOriginal:
                 )
 
 
+class CropConstParamD:
+    def __init__(
+        self,
+        root_dir: str = "CrossValidation_original",
+        mode: str = "cv",
+        param_d: float = 0.625,
+        verbose: bool = False,
+        image_size: int = 352,
+    ) -> None:
+
+        self.root_path = Path(f"dataset/{root_dir}")
+        self.save_dir = Path(f"dataset/CrossValidation_original_crop_{param_d}")
+        self.mode = mode
+        self.param_d = param_d
+        self.verbose = verbose
+        self.image_size = image_size
+
+        os.makedirs(self.save_dir, exist_ok=True)
+
+    def _get_dataset_list_cv(self) -> None:
+        self.train_list = list(
+            self.root_path.glob(f"cv{self.index}_TrainDataset/images/*.png")
+        )
+        self.val_list = list(
+            self.root_path.glob(f"cv{self.index}_ValDataset/images/*.png")
+        )
+        self.test_list = list(
+            self.root_path.glob(f"cv{self.index}_TestDataset/images/*.png")
+        )
+
+        self.sekkai_train_list = list(
+            self.root_path.glob(f"cv{self.index}_sekkai_TrainDataset/images/*.png")
+        )
+        self.sekkai_val_list = list(
+            self.root_path.glob(f"cv{self.index}_sekkai_ValDataset/images/*.png")
+        )
+        self.sekkai_test_list = list(
+            self.root_path.glob(f"cv{self.index}_sekkai_TestDataset/images/*.png")
+        )
+
+    def _crop_image(self, image_path: Path, mask_path: Path) -> None:
+        image = cv2.imread(str(image_path))
+        mask = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
+
+        height, width = image.shape[:2]
+
+        # w-0.375(w-h) = 0.625w + 0.375h
+        crop_x = int(self.param_d * width + (1 - self.param_d) * height)
+        crop_image = image[:, :crop_x]
+        crop_mask = mask[:, :crop_x]
+
+        # resize original size
+        crop_image = cv2.resize(crop_image, (self.image_size, self.image_size))
+        crop_mask = cv2.resize(crop_mask, (self.image_size, self.image_size))
+
+        cv2.imwrite(str(self.save_dir_dataset / image_path.name), crop_image)
+        cv2.imwrite(
+            str(self.save_dir_dataset / mask_path.name).replace("images", "masks"),
+            crop_mask,
+        )
+
+        if self.verbose:
+            print(f">>> {str(self.save_dir_dataset / image_path.name)}")
+            print(
+                f">>> {str(self.save_dir_dataset / image_path.name).replace('images', 'masks')}"
+            )
+            print("=" * 10)
+
+    def _make_crop_dataset(self, data_list) -> None:
+        for image_path in data_list:
+            image_path = Path(image_path)
+            mask_path = Path(str(image_path).replace("images", "masks"))
+            self._crop_image(image_path, mask_path)
+
+    def __call__(self) -> None:
+        if self.mode == "cv":
+            # for index in range(5):
+            # self.index = index
+
+            self.index = 0
+            self._get_dataset_list_cv()
+            for data_list in [
+                self.train_list,
+                self.val_list,
+                self.test_list,
+                self.sekkai_train_list,
+                self.sekkai_val_list,
+                self.sekkai_test_list,
+            ]:
+
+                self.save_dir_dataset = (
+                    self.save_dir
+                    / data_list[0].parents[1].name
+                    / data_list[0].parents[0].name
+                )
+                print(f">>> save_dir: {self.save_dir_dataset}")
+                os.makedirs(self.save_dir_dataset, exist_ok=True)
+                os.makedirs(
+                    str(self.save_dir_dataset).replace("images", "masks"), exist_ok=True
+                )
+                self._make_crop_dataset(data_list)
+
+
 if __name__ == "__main__":
     # data_type = "original"
 
@@ -371,8 +476,27 @@ if __name__ == "__main__":
 
     #     cv(index=index)
 
-    cv_original = CrossValidationDatasetOriginal(verbose=True)
-    for index in range(0, 5):
-        print(f">>> cv{index}")
-        cv_original(index=index)
+    #     cv_original = CrossValidationDatasetOriginal(verbose=True)
+    #     for index in range(0, 5):
+    #         print(f">>> cv{index}")
+    #         cv_original(index=index)
+    #         print("-" * 50)
+
+    param_d_list = [
+        0.625,
+        0.615,
+        0.620,
+        0.630,
+        0.635,
+        0.550,
+        0.575,
+        0.600,
+        0.650,
+        0.675,
+        0.670,
+    ]
+    for param_d in param_d_list:
+        print(f">>> param_d: {param_d}")
+        crop = CropConstParamD(param_d=param_d)
+        crop()
         print("-" * 50)
