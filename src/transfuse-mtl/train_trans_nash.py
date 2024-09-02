@@ -39,6 +39,8 @@ def structure_loss(pred, mask):
 
 def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best2_loss):
     val_loss = 0
+    save_path = f"snapshots/{opt.train_save}/"
+    os.makedirs(save_path, exist_ok=True)
     for phase in ["train", "val"]:
         if phase == "train":
             for model in models.values():
