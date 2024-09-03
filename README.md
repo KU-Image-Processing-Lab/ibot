@@ -30,6 +30,7 @@ docs | ドキュメント
 
 ## 参考ドキュメント
 
+- [モデルを学習・テストする方法](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/docs/train_test_model.md)
 - [環境構築](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/docs/settings.md)
 - [データセット](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/docs/datasets.md)
 - [ブランチの切り方](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/docs/branch.md)
