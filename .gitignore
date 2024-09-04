@@ -3,11 +3,6 @@
 .env
 *.pth
 
-# pipenv
-Pipfile
-Pipfile.lock
-requirements.txt
-
 # directories
 **/__pycache__/**
 logs/
