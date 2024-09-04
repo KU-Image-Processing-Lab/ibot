@@ -493,7 +493,7 @@ if __name__ == "__main__":
         0.600,
         0.650,
         0.675,
-        0.670,
+        0.700,
     ]
     for param_d in param_d_list:
         print(f">>> param_d: {param_d}")
