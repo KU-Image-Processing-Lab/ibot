@@ -1,0 +1,10 @@
+python-dotenv
+requests
+torchinfo
+imageio
+scikit-image
+opencv-python
+timm==0.3.2
+pre-commit
+scikit-image
+scikit-learn
