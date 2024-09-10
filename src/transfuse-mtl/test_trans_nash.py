@@ -120,6 +120,7 @@ opt = parser.parse_args()
 data_path1 = opt.test_data_path1
 data_path2 = opt.test_data_path2
 save_path = opt.test_save_path
+os.makedirs(save_path, exist_ok=True)
 
 model = TransFuse_L()
 model.load_state_dict(torch.load(opt.pth_path))
@@ -174,6 +175,10 @@ dice_bank = []
 iou_bank = []
 acc_bank = []
 
+dice_dict = {}
+iou_dict = {}
+acc_dict = {}
+
 y_true = np.array([])
 y_score = np.array([])
 y_pred = np.array([])
@@ -200,7 +205,7 @@ for i in range(test_loader1.size):
         # print(res1.max(),res1.min(),res1.mean())
 
         # res1 = (res1 - res1.min()) / (res1.max() - res1.min() + 1e-8)  ############################
-        res1 = 1.0 * (res1 > 0.5)  ############################
+        res1 = 1.0 * (res1 > 0.5)
         # print(res1.max(),res1.min(),res1.mean())
 
         imageio.imsave(save_path + name, img_as_ubyte(res1))
@@ -260,6 +265,10 @@ for i in range(test_loader2.size):
     acc_bank.append(acc)
     dice_bank.append(dice)
     iou_bank.append(iou)
+
+    acc_dict[name] = acc
+    dice_dict[name] = dice
+    iou_dict[name] = iou
 
 # ---- calculate the confusion matrix ----
 cm = confusion_matrix(y_true, y_pred)
@@ -341,3 +350,15 @@ with open(Path(opt.test_save_path) / f"{now_str}_result.csv", "w") as f:
     for k, v in output_dict.items():
         print(k, v)
         f.write(f"{k},{v}\n")
+
+# ---- save the acc, dice, iou as datframe ----
+import pandas as pd
+
+df = pd.DataFrame(
+    {
+        "acc": acc_dict,
+        "dice": dice_dict,
+        "iou": iou_dict,
+    }
+)
+df.to_csv(Path(opt.test_save_path) / f"{now_str}_result.csv")
