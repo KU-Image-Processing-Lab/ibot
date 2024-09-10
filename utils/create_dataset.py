@@ -447,7 +447,8 @@ class CropConstParamD:
                     print(f">>> save_dir: {self.save_dir_dataset}")
                     os.makedirs(self.save_dir_dataset, exist_ok=True)
                     os.makedirs(
-                        str(self.save_dir_dataset).replace("images", "masks"), exist_ok=True
+                        str(self.save_dir_dataset).replace("images", "masks"),
+                        exist_ok=True,
                     )
                     self._make_crop_dataset(data_list)
 
