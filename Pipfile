@@ -1,0 +1,24 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+torch = "*"
+matplotlib = "*"
+torchvision = "*"
+python-dotenv = "*"
+requests = "*"
+torchinfo = "*"
+opencv-python = "*"
+timm = "==0.3.2"
+imageio = "*"
+scikit-image = "*"
+pre-commit = "*"
+scikit-learn = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.10"
+python_full_version = "3.10.6"
