@@ -21,7 +21,7 @@ paramD=(0.6 0.615 0.62 0.625 0.63 0.635 0.65 0.675)
 for d in ${paramD[@]}; do
     for i in {1..4}; do
 
-        TRAIN_SAVE="transfuse_resnet10_const_param_d_${d}"
+        TRAIN_SAVE="transfuse_resnet10_const_param_d_${d}_cv${i}"
 
         python3 ./utils/slack_bot.py --text "Param D: ${d}"
         python3 ./src/${SCRIPT_DIR}/${TRAIN_SCRIPT_NAME} \
