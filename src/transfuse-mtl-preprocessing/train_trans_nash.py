@@ -245,7 +245,33 @@ def train(
     return epoch, train_loss, val_loss, train_d_loss, val_d_loss, best_loss, best2_loss
 
 
-if __name__ == "__main__":
+def get_discriminator(opt: argparse.Namespace) -> torch.nn.Module:
+    if opt.discriminator == "resnet10":
+        from lib.ResNet_10 import ResNet10
+
+        return ResNet10()
+    elif opt.discriminator == "res2net":
+        from lib.Discriminator_ResNet import Discriminator
+
+        return Discriminator()
+    else:
+        sys.exit("Invalid discriminator model")
+
+
+def get_preprocess(opt: argparse.Namespace) -> torch.nn.Module:
+    if opt.preprocess == "resnet10":
+        from lib.ResNet_10_preprocess import ResNet10
+
+        return ResNet10()
+    elif opt.preprocess == "res2net":
+        from lib.Discriminator_ResNet import Discriminator
+
+        return Discriminator()
+    else:
+        sys.exit("Invalid preprocess model")
+
+
+def arg_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("--epoch", type=int, default=100, help="epoch number")
     parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
@@ -302,15 +328,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--beta2", type=float, default=0.999, help="beta2 of adam optimizer"
     )
-
     parser.add_argument(
         "--tuning",
         action="store_true",
         help="セグメンテーションチューニングを適用するかどうか",
     )
-
     parser.add_argument("--mtl", type=str, default="nashmtl")
-
     parser.add_argument(
         "--discriminator",
         type=str,
@@ -335,36 +358,18 @@ if __name__ == "__main__":
         default="resnet10",
         help="前処理に使用するモデル",
     )
+    return parser.parse_args()
 
-    opt = parser.parse_args()
 
-    save_parameter(opt)
+def set_device():
+    return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    # ---- build discriminator ----
-    if opt.discriminator == "resnet10":
-        from lib.ResNet_10 import ResNet10
 
-        model2 = ResNet10()
-    elif opt.discriminator == "res2net":
-        from lib.Discriminator_ResNet import Discriminator
-
-        model2 = Discriminator()
-    else:
-        sys.exit("Invalid discriminator model")
-
-    # ---- build preprocess model ----
-    if opt.discriminator == "resnet10":
-        from lib.ResNet_10_preprocess import ResNet10
-
-        model0 = ResNet10()
-    elif opt.discriminator == "res2net":
-        from lib.Discriminator_ResNet import Discriminator
-
-        model0 = Discriminator()
-    else:
-        sys.exit("Invalid preprocess model")
-
+def get_models(opt: argparse.Namespace, device: torch.device) -> dict:
+    model0 = get_preprocess(opt)
     model1 = TransFuse_L(pretrained=True)
+    model2 = get_discriminator(opt)
+
     if opt.tuning:
         model1.load_state_dict(torch.load(opt.mae_weight))
 
@@ -372,13 +377,20 @@ if __name__ == "__main__":
         for param in model1.parameters():
             param.requires_grad = False
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model0.to(device)
     model1.to(device)
     model2.to(device)
 
-    models = {"Preprocess": model0, "Transfuse": model1, "Discriminator": model2}
+    models = {
+        "Preprocess": model0,
+        "Transfuse": model1,
+        "Discriminator": model2
+    }
 
+    return models
+
+
+def set_mtl_parameters(models: dict, opt: argparse.Namespace, device: torch.device) -> dict:
     weight_methods_parameters = extract_weight_method_parameters_from_args()
     weight_method = WeightMethods(
         opt.mtl, n_tasks=2, device=device, **weight_methods_parameters[opt.mtl]
@@ -388,19 +400,41 @@ if __name__ == "__main__":
 
     shared_parameters = [
         p
-        for n, p in model1.named_parameters()
+        for n, p in models["TransFuse"].named_parameters()
         if "final_x" not in n and "final_1" not in n and "cls" not in n
     ]
     task_specific_parameters = [
         p
-        for n, p in model1.named_parameters()
+        for n, p in models["TransFuse"].named_parameters()
         if "final_x" in n or "final_1" in n or "cls" in n
     ]
 
-    for n, p in model0.named_parameters():
+    for _, p in models["Preprocess"].named_parameters():
         task_specific_parameters.append(p)
-    for n, p in model2.named_parameters():
+    for _, p in models["Discriminator"].named_parameters():
         task_specific_parameters.append(p)
+
+    output_dict = {
+        "weight_method": weight_method,
+        "params": params,
+        "shared_parameters": shared_parameters,
+        "task_specific_parameters": task_specific_parameters
+    }
+    return output_dict
+
+
+if __name__ == "__main__":
+    opt = arg_parser()
+    save_parameter(opt)
+
+    device = set_device()
+    models = get_models(opt, device)
+
+    mtl_parameter = set_mtl_parameters(models, opt, device)
+    weight_method = mtl_parameter["weight_method"]
+    params = mtl_parameter["params"]
+    shared_parameters = mtl_parameter["shared_parameters"]
+    task_specific_parameters = mtl_parameter["task_specific_parameters"]
 
     optimizer = torch.optim.Adam(
         [
@@ -409,19 +443,11 @@ if __name__ == "__main__":
         ],
     )
 
-    # criterion = nn.CrossEntropyLoss(reduction='mean')
-    # criterion = nn.BCEWithLogitsLoss(reduction='mean')
     criterion = SmoothCrossEntropy()
 
-    image_root = "{}/images/".format(opt.train_path)
-    gt_root = "{}/masks/".format(opt.train_path)
-
-    image_root_val = "{}/images/".format(opt.val_path)
-    gt_root_val = "{}/masks/".format(opt.val_path)
-
     train_loader = get_loader(
-        image_root,
-        gt_root,
+        f"{opt.train_path}/images",
+        f"{opt.train_path}/masks",
         batchsize=opt.batchsize,
         trainsize=opt.trainsize,
         dataset="preprocess",
@@ -429,15 +455,18 @@ if __name__ == "__main__":
     total_step = len(train_loader)
 
     val_loader = get_loader(
-        image_root_val,
-        gt_root_val,
+        f"{opt.val_path}/images",
+        f"{opt.val_path}/masks",
         batchsize=opt.batchsize,
         trainsize=opt.trainsize,
         phase="val",
         dataset="preprocess",
     )
 
-    dataloaders_dict = {"train": train_loader, "val": val_loader}
+    dataloaders_dict = {
+        "train": train_loader,
+        "val": val_loader
+    }
 
     print("#" * 20, "Start Training", "#" * 20)
 
