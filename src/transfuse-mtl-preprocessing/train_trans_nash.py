@@ -39,9 +39,22 @@ def structure_loss(pred, mask):
     return (wbce + wiou).mean()
 
 
-def train(
-    dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best2_loss, device
-):
+def train(input_dict: dict):
+    dataloaders_dict = input_dict["dataloaders_dict"]
+    models = input_dict["models"]
+    optimizer = input_dict["optimizer"]
+    criterion = input_dict["criterion"]
+    epoch = input_dict["epoch"]
+    best_loss = input_dict["best_loss"]
+    best2_loss = input_dict["best2_loss"]
+    device = input_dict["device"]
+    opt = input_dict["opt"]
+    total_step = input_dict["total_step"]
+    weight_method = input_dict["weight_method"]
+    shared_parameters = input_dict["shared_parameters"]
+    task_specific_parameters = input_dict["task_specific_parameters"]
+    del input_dict
+
     val_loss = 0
 
     for phase in ["train", "val"]:
@@ -242,7 +255,17 @@ def train(
     print("train_loss: {0:.4f}, val_loss: {1:.4f}".format(train_loss, val_loss))
     print("train_d_loss: {0:.4f}, val_d_loss: {1:.4f}".format(train_d_loss, val_d_loss))
 
-    return epoch, train_loss, val_loss, train_d_loss, val_d_loss, best_loss, best2_loss
+    output_dict = {
+        "epoch": epoch,
+        "train_loss": train_loss,
+        "val_loss": val_loss,
+        "train_d_loss": train_d_loss,
+        "val_d_loss": val_d_loss,
+        "best_loss": best_loss,
+        "best2_loss": best2_loss,
+    }
+
+    return output_dict
 
 
 def get_discriminator(opt: argparse.Namespace) -> torch.nn.Module:
@@ -423,7 +446,28 @@ def set_mtl_parameters(models: dict, opt: argparse.Namespace, device: torch.devi
     return output_dict
 
 
-if __name__ == "__main__":
+def plot_loss(epoch_list, train_loss_list, val_loss_list, train_d_loss_list, val_d_loss_list, opt):
+    fig = plt.figure()
+    plt.plot(epoch_list, train_loss_list, label="train_loss")
+    plt.plot(epoch_list, val_loss_list, label="val_loss", linestyle="--")
+    plt.xlabel("epochs")
+    plt.ylabel("loss")
+    plt.xlim(left=0)
+    plt.legend(loc="upper right")
+
+    fig2 = plt.figure()
+    plt.plot(epoch_list, train_d_loss_list, label="train_d_loss", linestyle=":")
+    plt.plot(epoch_list, val_d_loss_list, label="val_d_loss", linestyle="-.")
+    plt.xlabel("epochs")
+    plt.ylabel("loss")
+    plt.xlim(left=0)
+    plt.legend(loc="upper right")
+    # 保存先ディレクトリを作成
+    os.makedirs(opt.loss_dir, exist_ok=True)
+    fig.savefig(opt.seg_loss_path)
+    fig2.savefig(opt.dis_loss_path)
+
+def main():
     opt = arg_parser()
     save_parameter(opt)
 
@@ -483,24 +527,29 @@ if __name__ == "__main__":
 
     for epoch in range(1, opt.epoch):
         adjust_lr(optimizer, opt.lr, epoch, opt.decay_rate, opt.decay_epoch)
-        (
-            epoch,
-            train_loss,
-            val_loss,
-            train_d_loss,
-            val_d_loss,
-            best_loss,
-            best2_loss,
-        ) = train(
-            dataloaders_dict,
-            models,
-            optimizer,
-            criterion,
-            epoch,
-            best_loss,
-            best2_loss,
-            device,
-        )
+        input_dict = {
+            "dataloaders_dict": dataloaders_dict,
+            "models": models,
+            "optimizer": optimizer,
+            "criterion": criterion,
+            "epoch": epoch,
+            "best_loss": best_loss,
+            "best2_loss": best2_loss,
+            "device": device,
+            "opt": opt,
+            "total_step": total_step,
+            "weight_method": weight_method,
+            "shared_parameters": shared_parameters,
+            "task_specific_parameters": task_specific_parameters,
+        }
+        output = train(input_dict)
+        best_loss = output["best_loss"]
+        best2_loss = output["best2_loss"]
+        train_loss = output["train_loss"]
+        val_loss = output["val_loss"]
+        train_d_loss = output["train_d_loss"]
+        val_d_loss = output["val_d_loss"]
+
         epoch_list.append(epoch)
         train_loss = train_loss.cpu().data.numpy()
         train_loss_list.append(train_loss)
@@ -517,22 +566,8 @@ if __name__ == "__main__":
     # 学習にかかった時間の計算
     training_time = end_time - start_time
     print(f"学習にかかった時間:{training_time}秒")
-    fig = plt.figure()
-    plt.plot(epoch_list, train_loss_list, label="train_loss")
-    plt.plot(epoch_list, val_loss_list, label="val_loss", linestyle="--")
-    plt.xlabel("epochs")
-    plt.ylabel("loss")
-    plt.xlim(left=0)
-    plt.legend(loc="upper right")
 
-    fig2 = plt.figure()
-    plt.plot(epoch_list, train_d_loss_list, label="train_d_loss", linestyle=":")
-    plt.plot(epoch_list, val_d_loss_list, label="val_d_loss", linestyle="-.")
-    plt.xlabel("epochs")
-    plt.ylabel("loss")
-    plt.xlim(left=0)
-    plt.legend(loc="upper right")
-    # 保存先ディレクトリを作成
-    os.makedirs(opt.loss_dir, exist_ok=True)
-    fig.savefig(opt.seg_loss_path)
-    fig2.savefig(opt.dis_loss_path)
+    plot_loss(epoch_list, train_loss_list, val_loss_list, train_d_loss_list, val_d_loss_list, opt)
+
+if __name__ == "__main__":
+    main()
