@@ -1,7 +1,7 @@
 import argparse
 import os
-import sys
 import pathlib
+import sys
 import time
 from datetime import datetime
 
@@ -14,7 +14,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 
 from lib.TransFuse_l import TransFuse_L
-from utils.dataloader import get_loader, PolypDatasetPostprocess
+from utils.dataloader import PolypDatasetPostprocess, get_loader
 from utils.mtl import extract_weight_method_parameters_from_args
 from utils.save_parameter import save_parameter
 from utils.set_seed import seed_everything
@@ -44,7 +44,9 @@ def save_crop_image(cropped_images: torch.Tensor, name: list, epoch: int) -> Non
     for j in range(cropped_images.size(0)):
         img = cropped_images[j].mul(255).byte()
         img = img.permute(1, 2, 0).cpu().numpy()
-        cv2.imwrite(f"./fig/train_Epoch{epoch}_{name[j].replace('.png', '')}_image.png", img)
+        cv2.imwrite(
+            f"./fig/train_Epoch{epoch}_{name[j].replace('.png', '')}_image.png", img
+        )
 
 
 def binary_mask(cropped_gts: torch.Tensor, name: list, epoch: int) -> torch.Tensor:
@@ -159,7 +161,9 @@ def train(input_dict: dict):
 
                     # cropped_gts = binary_mask(cropped_gts, name, epoch)
 
-                    cropped_images, cropped_gts = postprocess(cropped_images, cropped_gts)
+                    cropped_images, cropped_gts = postprocess(
+                        cropped_images, cropped_gts
+                    )
 
                     # ---- forward ----
                     lateral_map_4, lateral_map_3, lateral_map_2 = models["Transfuse"](
@@ -414,16 +418,14 @@ def get_models(opt: argparse.Namespace, device: torch.device) -> dict:
     model1.to(device)
     model2.to(device)
 
-    models = {
-        "Preprocess": model0,
-        "Transfuse": model1,
-        "Discriminator": model2
-    }
+    models = {"Preprocess": model0, "Transfuse": model1, "Discriminator": model2}
 
     return models
 
 
-def set_mtl_parameters(models: dict, opt: argparse.Namespace, device: torch.device) -> dict:
+def set_mtl_parameters(
+    models: dict, opt: argparse.Namespace, device: torch.device
+) -> dict:
     weight_methods_parameters = extract_weight_method_parameters_from_args()
     weight_method = WeightMethods(
         opt.mtl, n_tasks=2, device=device, **weight_methods_parameters[opt.mtl]
@@ -451,12 +453,14 @@ def set_mtl_parameters(models: dict, opt: argparse.Namespace, device: torch.devi
         "weight_method": weight_method,
         "params": params,
         "shared_parameters": shared_parameters,
-        "task_specific_parameters": task_specific_parameters
+        "task_specific_parameters": task_specific_parameters,
     }
     return output_dict
 
 
-def plot_loss(epoch_list, train_loss_list, val_loss_list, train_d_loss_list, val_d_loss_list, opt):
+def plot_loss(
+    epoch_list, train_loss_list, val_loss_list, train_d_loss_list, val_d_loss_list, opt
+):
     fig = plt.figure()
     plt.plot(epoch_list, train_loss_list, label="train_loss")
     plt.plot(epoch_list, val_loss_list, label="val_loss", linestyle="--")
@@ -476,6 +480,7 @@ def plot_loss(epoch_list, train_loss_list, val_loss_list, train_d_loss_list, val
     os.makedirs(opt.loss_dir, exist_ok=True)
     fig.savefig(opt.seg_loss_path)
     fig2.savefig(opt.dis_loss_path)
+
 
 def main():
     opt = arg_parser()
@@ -518,10 +523,7 @@ def main():
         dataset="preprocess",
     )
 
-    dataloaders_dict = {
-        "train": train_loader_preprocess,
-        "val": val_loader_preprocess
-    }
+    dataloaders_dict = {"train": train_loader_preprocess, "val": val_loader_preprocess}
 
     postprocess = PolypDatasetPostprocess(opt.trainsize, phase="train")
 
@@ -554,7 +556,7 @@ def main():
             "weight_method": weight_method,
             "shared_parameters": shared_parameters,
             "task_specific_parameters": task_specific_parameters,
-            "postprocess": postprocess
+            "postprocess": postprocess,
         }
         output = train(input_dict)
         best_loss = output["best_loss"]
@@ -581,7 +583,15 @@ def main():
     training_time = end_time - start_time
     print(f"学習にかかった時間:{training_time}秒")
 
-    plot_loss(epoch_list, train_loss_list, val_loss_list, train_d_loss_list, val_d_loss_list, opt)
+    plot_loss(
+        epoch_list,
+        train_loss_list,
+        val_loss_list,
+        train_d_loss_list,
+        val_d_loss_list,
+        opt,
+    )
+
 
 if __name__ == "__main__":
     main()
