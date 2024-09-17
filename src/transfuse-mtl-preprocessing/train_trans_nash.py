@@ -1,6 +1,7 @@
 import argparse
 import os
 import sys
+import pathlib
 import time
 from datetime import datetime
 
@@ -13,7 +14,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 
 from lib.TransFuse_l import TransFuse_L
-from utils.dataloader import get_loader
+from utils.dataloader import get_loader, PolypDatasetPostprocess
 from utils.mtl import extract_weight_method_parameters_from_args
 from utils.save_parameter import save_parameter
 from utils.set_seed import seed_everything
@@ -39,6 +40,33 @@ def structure_loss(pred, mask):
     return (wbce + wiou).mean()
 
 
+def save_crop_image(cropped_images: torch.Tensor, name: list, epoch: int) -> None:
+    for j in range(cropped_images.size(0)):
+        img = cropped_images[j].mul(255).byte()
+        img = img.permute(1, 2, 0).cpu().numpy()
+        cv2.imwrite(f"./fig/train_Epoch{epoch}_{name[j].replace('.png', '')}_image.png", img)
+
+
+def binary_mask(cropped_gts: torch.Tensor, name: list, epoch: int) -> torch.Tensor:
+    lower = np.array([0, 0, 0], dtype="uint8")
+    upper = np.array([255, 50, 255], dtype="uint8")
+
+    for j in range(cropped_gts.size(0)):
+        img = cropped_gts[j].mul(255).byte()
+        img = img.permute(1, 2, 0).cpu().numpy()
+        img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+        img = cv2.inRange(img, lower, upper)
+        img = cv2.bitwise_not(img)
+        cv2.imwrite(
+            f"./fig/train_Epoch{epoch}_{name[j].replace('.png', '')}_mask.png",
+            img,
+        )
+        img_tensor = torch.from_numpy(img).unsqueeze(0).float()
+        cropped_gts[j] = img_tensor
+
+    return cropped_gts
+
+
 def train(input_dict: dict):
     dataloaders_dict = input_dict["dataloaders_dict"]
     models = input_dict["models"]
@@ -53,6 +81,7 @@ def train(input_dict: dict):
     weight_method = input_dict["weight_method"]
     shared_parameters = input_dict["shared_parameters"]
     task_specific_parameters = input_dict["task_specific_parameters"]
+    postprocess = input_dict["postprocess"]
     del input_dict
 
     val_loss = 0
@@ -74,12 +103,10 @@ def train(input_dict: dict):
             AvgMeter(),
         )
 
-        os.makedirs(f"./snapshots/{opt.train_save}/crop_images", exist_ok=True)
-        os.makedirs(f"./snapshots/{opt.train_save}/crop_gts", exist_ok=True)
         for i, pack in enumerate(dataloaders_dict[phase], start=1):
             for rate in size_rates:
                 optimizer.zero_grad()
-                images, gts, name = pack
+                images, gts, _ = pack
                 labels = torch.einsum("ijkl->i", gts) > 0
 
                 labels = torch.where(labels > 0, torch.tensor(1), torch.tensor(0))
@@ -104,7 +131,6 @@ def train(input_dict: dict):
                     )
                 with torch.set_grad_enabled(phase == "train"):
                     param_d = models["Preprocess"](images) * opt.trainsize
-
                     # ---- crop images ----
                     cropped_images = torch.Tensor().cuda()
                     for j in range(images.size(0)):
@@ -117,11 +143,7 @@ def train(input_dict: dict):
                         )
                         cropped_images = torch.cat((cropped_images, crop), dim=0)
 
-                    # # ---- save images ----
-                    # for j in range(cropped_images.size(0)):
-                    #     img = cropped_images[j].mul(255).byte()
-                    #     img = img.permute(1, 2, 0).cpu().numpy()
-                    #     cv2.imwrite(f"./fig/train_Epoch{epoch}_{name[j].replace('.png', '')}_image.png", img)
+                    # save_crop_image(cropped_images, name, epoch)
 
                     # ---- crop gts ----
                     cropped_gts = torch.Tensor().cuda()
@@ -135,21 +157,9 @@ def train(input_dict: dict):
                         )
                         cropped_gts = torch.cat((cropped_gts, crop), dim=0)
 
-                    # # ---- binarization gt ----
-                    # lower = np.array([0, 0, 0], dtype="uint8")
-                    # upper = np.array([255, 50, 255], dtype="uint8")
-                    # for j in range(cropped_gts.size(0)):
-                    #     img = cropped_gts[j].mul(255).byte()
-                    #     img = img.permute(1, 2, 0).cpu().numpy()
-                    #     img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-                    #     img = cv2.inRange(img, lower, upper)
-                    #     img = cv2.bitwise_not(img)
-                    #     # cv2.imwrite(
-                    #     #     f"./fig/train_Epoch{epoch}_{name[j].replace('.png', '')}_mask.png",
-                    #     #     img,
-                    #     # )
-                    #     img_tensor = torch.from_numpy(img).unsqueeze(0).float()
-                    #     cropped_gts[j] = img_tensor
+                    # cropped_gts = binary_mask(cropped_gts, name, epoch)
+
+                    cropped_images, cropped_gts = postprocess(cropped_images, cropped_gts)
 
                     # ---- forward ----
                     lateral_map_4, lateral_map_3, lateral_map_2 = models["Transfuse"](
@@ -294,7 +304,7 @@ def get_preprocess(opt: argparse.Namespace) -> torch.nn.Module:
         sys.exit("Invalid preprocess model")
 
 
-def arg_parser():
+def arg_parser() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--epoch", type=int, default=100, help="epoch number")
     parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
@@ -489,18 +499,19 @@ def main():
 
     criterion = SmoothCrossEntropy()
 
-    train_loader = get_loader(
-        f"{opt.train_path}/images",
-        f"{opt.train_path}/masks",
+    train_loader_preprocess = get_loader(
+        pathlib.Path(opt.train_path) / "images",
+        pathlib.Path(opt.train_path) / "masks",
         batchsize=opt.batchsize,
         trainsize=opt.trainsize,
+        phase="train",
         dataset="preprocess",
     )
-    total_step = len(train_loader)
+    total_step = len(train_loader_preprocess)
 
-    val_loader = get_loader(
-        f"{opt.val_path}/images",
-        f"{opt.val_path}/masks",
+    val_loader_preprocess = get_loader(
+        pathlib.Path(opt.val_path) / "images",
+        pathlib.Path(opt.val_path) / "masks",
         batchsize=opt.batchsize,
         trainsize=opt.trainsize,
         phase="val",
@@ -508,9 +519,11 @@ def main():
     )
 
     dataloaders_dict = {
-        "train": train_loader,
-        "val": val_loader
+        "train": train_loader_preprocess,
+        "val": val_loader_preprocess
     }
+
+    postprocess = PolypDatasetPostprocess(opt.trainsize, phase="train")
 
     print("#" * 20, "Start Training", "#" * 20)
 
@@ -541,6 +554,7 @@ def main():
             "weight_method": weight_method,
             "shared_parameters": shared_parameters,
             "task_specific_parameters": task_specific_parameters,
+            "postprocess": postprocess
         }
         output = train(input_dict)
         best_loss = output["best_loss"]
