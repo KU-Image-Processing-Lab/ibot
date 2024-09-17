@@ -1,4 +1,5 @@
 import os
+import pathlib
 import random
 
 import albumentations as albu
@@ -143,6 +144,38 @@ class PolypDataset(data.Dataset):
         return self.size
 
 
+class PolypDatasetPostprocess(PolypDataset):
+    def __init__(self, trainsize, phase="train"):
+        self.trainsize = trainsize
+        self.phase = phase
+
+    def __call__(self, images, gts):
+        processed_images = []
+        processed_gts = []
+        for image, gt in zip(images, gts):
+            image = Image.fromarray(image).convert("RGB")
+            gt = Image.fromarray(gt)
+
+            image = image.convert("RGB")
+            gt = gt.convert("L")
+            if self.phase == "train":
+                image = np.array(image)
+                gt = np.array(gt)
+
+                augmented = self.transform3(image=image, mask=gt)
+
+                image, gt = augmented["image"], augmented["mask"]
+                image = Image.fromarray(image)
+                gt = Image.fromarray(gt)
+                image = image.convert("RGB")
+                gt = gt.convert("L")
+
+            processed_images.append(self.img_transform(image))
+            processed_gts.append(self.gt_transform(gt))
+
+        return processed_images, processed_gts
+
+
 class PolypDatasetPreprocess(PolypDataset):
     def __init__(self, image_root, gt_root, trainsize, phase="train"):
         super(PolypDatasetPreprocess, self).__init__(
@@ -181,16 +214,16 @@ class PolypDatasetPreprocess(PolypDataset):
 
 
 def get_loader(
-    image_root,
-    gt_root,
-    batchsize,
-    trainsize,
-    shuffle=True,
-    num_workers=4,
-    pin_memory=True,
-    phase="train",
-    droplast=False,
-    dataset="default",
+    image_root: pathlib.Path,
+    gt_root: pathlib.Path,
+    batchsize: int,
+    trainsize: int,
+    shuffle: bool = True,
+    num_workers: int = 4,
+    pin_memory: bool = True,
+    phase: str = "train",
+    droplast: bool = False,
+    dataset: str = "default",
 ):
     if dataset == "default":
         dataset = PolypDataset(image_root, gt_root, trainsize, phase=phase)
