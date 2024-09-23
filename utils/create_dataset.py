@@ -1,8 +1,8 @@
+import argparse
+import cv2
 import os
 import random
 from pathlib import Path
-
-import cv2
 
 
 class CrossValidationDataset:
@@ -452,51 +452,60 @@ class CropConstParamD:
                     )
                     self._make_crop_dataset(data_list)
 
+def arg_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--data_type",
+        type=str,
+        default='default',
+        help="default, original, crop",
+    )
+    return parser.parse_args()
 
 if __name__ == "__main__":
-    # data_type = "original"
 
-    # for index, seed in enumerate([31, 42, 71, 91], start=1):
-    #     # ---- 前処理あり ----
-    #     if data_type == "default":
-    #         cv = CrossValidationDataset(
-    #                 verbose=True,
-    #                 seed=seed,
-    #             )
-    #     # ---- 前処理なし ----
-    #     elif data_type == "original":
-    #         cv = CrossValidationDataset(
-    #             root_path="dataset/original_dataset_only_left",
-    #             save_dir="CrossValidation_original",
-    #             verbose=True,
-    #             seed=seed,
-    #         )
-    #     else:
-    #         raise NotImplementedError
+    args = arg_parser()
+    data_type = args.data_type
 
-    #     cv(index=index)
+    if data_type == "default":
+        for index, seed in enumerate([31, 42, 71, 91], start=1):
+            cv = CrossValidationDataset(
+                    verbose=True,
+                    seed=seed,
+                )
+            cv(index=index)
 
-    #     cv_original = CrossValidationDatasetOriginal(verbose=True)
-    #     for index in range(0, 5):
-    #         print(f">>> cv{index}")
-    #         cv_original(index=index)
-    #         print("-" * 50)
+            cv_original = CrossValidationDatasetOriginal(verbose=True)
+            for index in range(0, 5):
+                print(f">>> cv{index}")
+                cv_original(index=index)
+                print("-" * 50)
 
-    param_d_list = [
-        0.625,
-        0.615,
-        0.620,
-        0.630,
-        0.635,
-        0.550,
-        0.575,
-        0.600,
-        0.650,
-        0.675,
-        0.700,
-    ]
-    for param_d in param_d_list:
-        print(f">>> param_d: {param_d}")
-        crop = CropConstParamD(param_d=param_d)
-        crop()
-        print("-" * 50)
+    elif data_type == "original":
+        for index, seed in enumerate([31, 42, 71, 91], start=1):
+            cv = CrossValidationDataset(
+                root_path="dataset/original_dataset_only_left",
+                save_dir="CrossValidation_original",
+                verbose=True,
+                seed=seed,
+            )
+            cv(index=index)
+
+            cv_original = CrossValidationDatasetOriginal(verbose=True)
+            for index in range(0, 5):
+                print(f">>> cv{index}")
+                cv_original(index=index)
+                print("-" * 50)
+
+    elif data_type == "crop":
+        param_d_list = [
+            0.625, 0.615, 0.620,
+            0.630, 0.635, 0.550,
+            0.575, 0.600, 0.650,
+            0.675, 0.700,
+        ]
+        for param_d in param_d_list:
+            print(f">>> param_d: {param_d}")
+            crop = CropConstParamD(param_d=param_d)
+            crop()
+            print("-" * 50)
