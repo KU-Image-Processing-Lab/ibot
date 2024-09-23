@@ -38,3 +38,4 @@ docs | ドキュメント
 - [プルリクエストについて](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/docs/pull_request.md)
 - [コミットメッセージについて](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/docs/commit.md)
 - [実験結果の共通化](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/docs/experimental_results.md)
+- [GitHubのリポジトリをクローンする](https://github.com/KU-Image-Processing-Lab/medical-image-processing/tree/main/docs/clone_repository.md)
