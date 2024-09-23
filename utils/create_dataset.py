@@ -1,8 +1,9 @@
 import argparse
-import cv2
 import os
 import random
 from pathlib import Path
+
+import cv2
 
 
 class CrossValidationDataset:
@@ -452,15 +453,17 @@ class CropConstParamD:
                     )
                     self._make_crop_dataset(data_list)
 
+
 def arg_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--data_type",
         type=str,
-        default='default',
+        default="default",
         help="default, original, crop",
     )
     return parser.parse_args()
+
 
 if __name__ == "__main__":
 
@@ -470,9 +473,9 @@ if __name__ == "__main__":
     if data_type == "default":
         for index, seed in enumerate([31, 42, 71, 91], start=1):
             cv = CrossValidationDataset(
-                    verbose=True,
-                    seed=seed,
-                )
+                verbose=True,
+                seed=seed,
+            )
             cv(index=index)
 
             cv_original = CrossValidationDatasetOriginal(verbose=True)
@@ -499,10 +502,17 @@ if __name__ == "__main__":
 
     elif data_type == "crop":
         param_d_list = [
-            0.625, 0.615, 0.620,
-            0.630, 0.635, 0.550,
-            0.575, 0.600, 0.650,
-            0.675, 0.700,
+            0.625,
+            0.615,
+            0.620,
+            0.630,
+            0.635,
+            0.550,
+            0.575,
+            0.600,
+            0.650,
+            0.675,
+            0.700,
         ]
         for param_d in param_d_list:
             print(f">>> param_d: {param_d}")
