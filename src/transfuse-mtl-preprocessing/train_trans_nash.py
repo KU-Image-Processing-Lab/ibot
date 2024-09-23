@@ -295,7 +295,7 @@ def get_discriminator(opt: argparse.Namespace) -> torch.nn.Module:
         sys.exit("Invalid discriminator model")
 
 
-def get_preprocess(opt: argparse.Namespace) -> torch.nn.Module:
+def get_preprocess_model(opt: argparse.Namespace) -> torch.nn.Module:
     if opt.preprocess == "resnet10":
         from lib.ResNet_10_preprocess import ResNet10
 
@@ -403,7 +403,7 @@ def set_device():
 
 
 def get_models(opt: argparse.Namespace, device: torch.device) -> dict:
-    model0 = get_preprocess(opt)
+    model0 = get_preprocess_model(opt)
     model1 = TransFuse_L(pretrained=True)
     model2 = get_discriminator(opt)
 
