@@ -18,8 +18,8 @@ from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
                              roc_curve)
 
 from lib.TransFuse_l import TransFuse_L
-from utils.dataloader import test_dataset_preprocess as test_dataset
 from utils.dataloader import test_dataset as test_dataset_postprocess
+from utils.dataloader import test_dataset_preprocess as test_dataset
 from utils.set_seed import seed_everything
 
 matplotlib.use("Agg")
@@ -159,7 +159,6 @@ def get_models_for_test(opt: argparse.Namespace, device: torch.device) -> dict:
     model1 = TransFuse_L()
     model2 = get_discriminator(opt)
 
-
     # if opt.tuning and opt.mtl == "stl":
     #     for param in model1.parameters():
     #         param.requires_grad = False
@@ -292,11 +291,16 @@ def main():
             #     img_tensor = torch.from_numpy(img).unsqueeze(0).float()
             #     cropped_gt[j] = img_tensor
 
-            cropped_image, cropped_gt = test_loader1_postprocess(cropped_image, cropped_gt)
+            cropped_image, cropped_gt = test_loader1_postprocess(
+                cropped_image, cropped_gt
+            )
             _, _, res = models["Transfuse"](cropped_image)
 
             res1 = F.upsample(
-                res, size=(opt.testsize, opt.testsize), mode="bilinear", align_corners=False
+                res,
+                size=(opt.testsize, opt.testsize),
+                mode="bilinear",
+                align_corners=False,
             )
             res1 = res1.sigmoid().data.cpu().numpy().squeeze()
 
@@ -382,9 +386,10 @@ def main():
                 cropped_gt = torch.cat((cropped_gt, crop), dim=0)
 
             cropped_gt = cropped_gt.squeeze().cpu().numpy()
-            cropped_image, cropped_gt = test_loader2_postprocess(cropped_image, cropped_gt)
+            cropped_image, cropped_gt = test_loader2_postprocess(
+                cropped_image, cropped_gt
+            )
             _, _, res = models["Transfuse"](cropped_image)
-
 
         res = F.upsample(
             res, size=(opt.testsize, opt.testsize), mode="bilinear", align_corners=False
@@ -485,6 +490,7 @@ def main():
         f.write("columns,values\n")
         for k, v in output_dict.items():
             f.write(f"{k},{v}\n")
+
 
 if __name__ == "__main__":
     main()
