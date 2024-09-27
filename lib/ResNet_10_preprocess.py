@@ -102,6 +102,12 @@ class ResNet10(nn.Module):
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(512, 1)
 
+        # 出力層の初期化
+        d_init = 0.5
+        nn.init.zeros_(self.fc.weight)
+        bias_init = math.log(1 / (d_init - 1))
+        nn.init.constant_(self.fc.bias, bias_init)
+
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
