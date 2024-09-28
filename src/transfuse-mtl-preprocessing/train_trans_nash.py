@@ -1,5 +1,6 @@
 import argparse
 import os
+import pathlib
 import sys
 import time
 from datetime import datetime
@@ -13,7 +14,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 
 from lib.TransFuse_l import TransFuse_L
-from utils.dataloader import get_loader
+from utils.dataloader import PolypDatasetPostprocess, get_loader
 from utils.mtl import extract_weight_method_parameters_from_args
 from utils.save_parameter import save_parameter
 from utils.set_seed import seed_everything
@@ -39,9 +40,52 @@ def structure_loss(pred, mask):
     return (wbce + wiou).mean()
 
 
-def train(
-    dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best2_loss, device
-):
+def save_crop_image(cropped_images: torch.Tensor, name: list, epoch: int) -> None:
+    for j in range(cropped_images.size(0)):
+        img = cropped_images[j].mul(255).byte()
+        img = img.permute(1, 2, 0).cpu().numpy()
+        cv2.imwrite(
+            f"./fig/train_Epoch{epoch}_{name[j].replace('.png', '')}_image.png", img
+        )
+
+
+def binary_mask(cropped_gts: torch.Tensor, name: list, epoch: int) -> torch.Tensor:
+    lower = np.array([0, 0, 0], dtype="uint8")
+    upper = np.array([255, 50, 255], dtype="uint8")
+
+    for j in range(cropped_gts.size(0)):
+        img = cropped_gts[j].mul(255).byte()
+        img = img.permute(1, 2, 0).cpu().numpy()
+        img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+        img = cv2.inRange(img, lower, upper)
+        img = cv2.bitwise_not(img)
+        cv2.imwrite(
+            f"./fig/train_Epoch{epoch}_{name[j].replace('.png', '')}_mask.png",
+            img,
+        )
+        img_tensor = torch.from_numpy(img).unsqueeze(0).float()
+        cropped_gts[j] = img_tensor
+
+    return cropped_gts
+
+
+def train(input_dict: dict):
+    dataloaders_dict = input_dict["dataloaders_dict"]
+    models = input_dict["models"]
+    optimizer = input_dict["optimizer"]
+    criterion = input_dict["criterion"]
+    epoch = input_dict["epoch"]
+    best_loss = input_dict["best_loss"]
+    best2_loss = input_dict["best2_loss"]
+    device = input_dict["device"]
+    opt = input_dict["opt"]
+    total_step = input_dict["total_step"]
+    weight_method = input_dict["weight_method"]
+    shared_parameters = input_dict["shared_parameters"]
+    task_specific_parameters = input_dict["task_specific_parameters"]
+    postprocess = input_dict["postprocess"]
+    del input_dict
+
     val_loss = 0
 
     for phase in ["train", "val"]:
@@ -61,12 +105,10 @@ def train(
             AvgMeter(),
         )
 
-        os.makedirs(f"./snapshots/{opt.train_save}/crop_images", exist_ok=True)
-        os.makedirs(f"./snapshots/{opt.train_save}/crop_gts", exist_ok=True)
         for i, pack in enumerate(dataloaders_dict[phase], start=1):
             for rate in size_rates:
                 optimizer.zero_grad()
-                images, gts, name = pack
+                images, gts, _ = pack
                 labels = torch.einsum("ijkl->i", gts) > 0
 
                 labels = torch.where(labels > 0, torch.tensor(1), torch.tensor(0))
@@ -91,7 +133,6 @@ def train(
                     )
                 with torch.set_grad_enabled(phase == "train"):
                     param_d = models["Preprocess"](images) * opt.trainsize
-
                     # ---- crop images ----
                     cropped_images = torch.Tensor().cuda()
                     for j in range(images.size(0)):
@@ -104,11 +145,7 @@ def train(
                         )
                         cropped_images = torch.cat((cropped_images, crop), dim=0)
 
-                    # # ---- save images ----
-                    # for j in range(cropped_images.size(0)):
-                    #     img = cropped_images[j].mul(255).byte()
-                    #     img = img.permute(1, 2, 0).cpu().numpy()
-                    #     cv2.imwrite(f"./fig/train_Epoch{epoch}_{name[j].replace('.png', '')}_image.png", img)
+                    # save_crop_image(cropped_images, name, epoch)
 
                     # ---- crop gts ----
                     cropped_gts = torch.Tensor().cuda()
@@ -122,21 +159,11 @@ def train(
                         )
                         cropped_gts = torch.cat((cropped_gts, crop), dim=0)
 
-                    # # ---- binarization gt ----
-                    # lower = np.array([0, 0, 0], dtype="uint8")
-                    # upper = np.array([255, 50, 255], dtype="uint8")
-                    # for j in range(cropped_gts.size(0)):
-                    #     img = cropped_gts[j].mul(255).byte()
-                    #     img = img.permute(1, 2, 0).cpu().numpy()
-                    #     img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-                    #     img = cv2.inRange(img, lower, upper)
-                    #     img = cv2.bitwise_not(img)
-                    #     # cv2.imwrite(
-                    #     #     f"./fig/train_Epoch{epoch}_{name[j].replace('.png', '')}_mask.png",
-                    #     #     img,
-                    #     # )
-                    #     img_tensor = torch.from_numpy(img).unsqueeze(0).float()
-                    #     cropped_gts[j] = img_tensor
+                    # cropped_gts = binary_mask(cropped_gts, name, epoch)
+
+                    cropped_images, cropped_gts = postprocess(
+                        cropped_images, cropped_gts
+                    )
 
                     # ---- forward ----
                     lateral_map_4, lateral_map_3, lateral_map_2 = models["Transfuse"](
@@ -242,10 +269,46 @@ def train(
     print("train_loss: {0:.4f}, val_loss: {1:.4f}".format(train_loss, val_loss))
     print("train_d_loss: {0:.4f}, val_d_loss: {1:.4f}".format(train_d_loss, val_d_loss))
 
-    return epoch, train_loss, val_loss, train_d_loss, val_d_loss, best_loss, best2_loss
+    output_dict = {
+        "epoch": epoch,
+        "train_loss": train_loss,
+        "val_loss": val_loss,
+        "train_d_loss": train_d_loss,
+        "val_d_loss": val_d_loss,
+        "best_loss": best_loss,
+        "best2_loss": best2_loss,
+    }
+
+    return output_dict
 
 
-if __name__ == "__main__":
+def get_discriminator(opt: argparse.Namespace) -> torch.nn.Module:
+    if opt.discriminator == "resnet10":
+        from lib.ResNet_10 import ResNet10
+
+        return ResNet10()
+    elif opt.discriminator == "res2net":
+        from lib.Discriminator_ResNet import Discriminator
+
+        return Discriminator()
+    else:
+        sys.exit("Invalid discriminator model")
+
+
+def get_preprocess_model(opt: argparse.Namespace) -> torch.nn.Module:
+    if opt.preprocess == "resnet10":
+        from lib.ResNet_10_preprocess import ResNet10
+
+        return ResNet10()
+    elif opt.preprocess == "res2net":
+        from lib.Discriminator_ResNet import Discriminator
+
+        return Discriminator()
+    else:
+        sys.exit("Invalid preprocess model")
+
+
+def arg_parser() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--epoch", type=int, default=100, help="epoch number")
     parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
@@ -302,15 +365,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--beta2", type=float, default=0.999, help="beta2 of adam optimizer"
     )
-
     parser.add_argument(
         "--tuning",
         action="store_true",
         help="セグメンテーションチューニングを適用するかどうか",
     )
-
     parser.add_argument("--mtl", type=str, default="nashmtl")
-
     parser.add_argument(
         "--discriminator",
         type=str,
@@ -335,36 +395,18 @@ if __name__ == "__main__":
         default="resnet10",
         help="前処理に使用するモデル",
     )
+    return parser.parse_args()
 
-    opt = parser.parse_args()
 
-    save_parameter(opt)
+def set_device():
+    return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    # ---- build discriminator ----
-    if opt.discriminator == "resnet10":
-        from lib.ResNet_10 import ResNet10
 
-        model2 = ResNet10()
-    elif opt.discriminator == "res2net":
-        from lib.Discriminator_ResNet import Discriminator
-
-        model2 = Discriminator()
-    else:
-        sys.exit("Invalid discriminator model")
-
-    # ---- build preprocess model ----
-    if opt.discriminator == "resnet10":
-        from lib.ResNet_10_preprocess import ResNet10
-
-        model0 = ResNet10()
-    elif opt.discriminator == "res2net":
-        from lib.Discriminator_ResNet import Discriminator
-
-        model0 = Discriminator()
-    else:
-        sys.exit("Invalid preprocess model")
-
+def get_models(opt: argparse.Namespace, device: torch.device) -> dict:
+    model0 = get_preprocess_model(opt)
     model1 = TransFuse_L(pretrained=True)
+    model2 = get_discriminator(opt)
+
     if opt.tuning:
         model1.load_state_dict(torch.load(opt.mae_weight))
 
@@ -372,13 +414,18 @@ if __name__ == "__main__":
         for param in model1.parameters():
             param.requires_grad = False
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model0.to(device)
     model1.to(device)
     model2.to(device)
 
     models = {"Preprocess": model0, "Transfuse": model1, "Discriminator": model2}
 
+    return models
+
+
+def set_mtl_parameters(
+    models: dict, opt: argparse.Namespace, device: torch.device
+) -> dict:
     weight_methods_parameters = extract_weight_method_parameters_from_args()
     weight_method = WeightMethods(
         opt.mtl, n_tasks=2, device=device, **weight_methods_parameters[opt.mtl]
@@ -388,106 +435,32 @@ if __name__ == "__main__":
 
     shared_parameters = [
         p
-        for n, p in model1.named_parameters()
+        for n, p in models["TransFuse"].named_parameters()
         if "final_x" not in n and "final_1" not in n and "cls" not in n
     ]
     task_specific_parameters = [
         p
-        for n, p in model1.named_parameters()
+        for n, p in models["TransFuse"].named_parameters()
         if "final_x" in n or "final_1" in n or "cls" in n
     ]
 
-    for n, p in model0.named_parameters():
+    for _, p in models["Preprocess"].named_parameters():
         task_specific_parameters.append(p)
-    for n, p in model2.named_parameters():
+    for _, p in models["Discriminator"].named_parameters():
         task_specific_parameters.append(p)
 
-    optimizer = torch.optim.Adam(
-        [
-            dict(params=params, lr=opt.lr, betas=(opt.beta1, opt.beta2)),
-            dict(params=weight_method.parameters(), lr=0.025),
-        ],
-    )
+    output_dict = {
+        "weight_method": weight_method,
+        "params": params,
+        "shared_parameters": shared_parameters,
+        "task_specific_parameters": task_specific_parameters,
+    }
+    return output_dict
 
-    # criterion = nn.CrossEntropyLoss(reduction='mean')
-    # criterion = nn.BCEWithLogitsLoss(reduction='mean')
-    criterion = SmoothCrossEntropy()
 
-    image_root = "{}/images/".format(opt.train_path)
-    gt_root = "{}/masks/".format(opt.train_path)
-
-    image_root_val = "{}/images/".format(opt.val_path)
-    gt_root_val = "{}/masks/".format(opt.val_path)
-
-    train_loader = get_loader(
-        image_root,
-        gt_root,
-        batchsize=opt.batchsize,
-        trainsize=opt.trainsize,
-        dataset="preprocess",
-    )
-    total_step = len(train_loader)
-
-    val_loader = get_loader(
-        image_root_val,
-        gt_root_val,
-        batchsize=opt.batchsize,
-        trainsize=opt.trainsize,
-        phase="val",
-        dataset="preprocess",
-    )
-
-    dataloaders_dict = {"train": train_loader, "val": val_loader}
-
-    print("#" * 20, "Start Training", "#" * 20)
-
-    epoch_list = []
-    train_loss_list = []
-    val_loss_list = []
-    train_d_loss_list = []
-    val_d_loss_list = []
-    best_loss = 100000
-    best2_loss = 100000
-
-    # 学習開始時間の記録
-    start_time = time.time()
-
-    for epoch in range(1, opt.epoch):
-        adjust_lr(optimizer, opt.lr, epoch, opt.decay_rate, opt.decay_epoch)
-        (
-            epoch,
-            train_loss,
-            val_loss,
-            train_d_loss,
-            val_d_loss,
-            best_loss,
-            best2_loss,
-        ) = train(
-            dataloaders_dict,
-            models,
-            optimizer,
-            criterion,
-            epoch,
-            best_loss,
-            best2_loss,
-            device,
-        )
-        epoch_list.append(epoch)
-        train_loss = train_loss.cpu().data.numpy()
-        train_loss_list.append(train_loss)
-        val_loss = val_loss.cpu().data.numpy()
-        val_loss_list.append(val_loss)
-        train_d_loss = train_d_loss.cpu().data.numpy()
-        train_d_loss_list.append(train_d_loss)
-        val_d_loss = val_d_loss.cpu().data.numpy()
-        val_d_loss_list.append(val_d_loss)
-
-    # 学習終了時間の記録
-    end_time = time.time()
-
-    # 学習にかかった時間の計算
-    training_time = end_time - start_time
-    print(f"学習にかかった時間:{training_time}秒")
+def plot_loss(
+    epoch_list, train_loss_list, val_loss_list, train_d_loss_list, val_d_loss_list, opt
+):
     fig = plt.figure()
     plt.plot(epoch_list, train_loss_list, label="train_loss")
     plt.plot(epoch_list, val_loss_list, label="val_loss", linestyle="--")
@@ -507,3 +480,118 @@ if __name__ == "__main__":
     os.makedirs(opt.loss_dir, exist_ok=True)
     fig.savefig(opt.seg_loss_path)
     fig2.savefig(opt.dis_loss_path)
+
+
+def main():
+    opt = arg_parser()
+    save_parameter(opt)
+
+    device = set_device()
+    models = get_models(opt, device)
+
+    mtl_parameter = set_mtl_parameters(models, opt, device)
+    weight_method = mtl_parameter["weight_method"]
+    params = mtl_parameter["params"]
+    shared_parameters = mtl_parameter["shared_parameters"]
+    task_specific_parameters = mtl_parameter["task_specific_parameters"]
+
+    optimizer = torch.optim.Adam(
+        [
+            dict(params=params, lr=opt.lr, betas=(opt.beta1, opt.beta2)),
+            dict(params=weight_method.parameters(), lr=0.025),
+        ],
+    )
+
+    criterion = SmoothCrossEntropy()
+
+    train_loader_preprocess = get_loader(
+        pathlib.Path(opt.train_path) / "images",
+        pathlib.Path(opt.train_path) / "masks",
+        batchsize=opt.batchsize,
+        trainsize=opt.trainsize,
+        phase="train",
+        dataset="preprocess",
+    )
+    total_step = len(train_loader_preprocess)
+
+    val_loader_preprocess = get_loader(
+        pathlib.Path(opt.val_path) / "images",
+        pathlib.Path(opt.val_path) / "masks",
+        batchsize=opt.batchsize,
+        trainsize=opt.trainsize,
+        phase="val",
+        dataset="preprocess",
+    )
+
+    dataloaders_dict = {"train": train_loader_preprocess, "val": val_loader_preprocess}
+
+    postprocess = PolypDatasetPostprocess(opt.trainsize, phase="train")
+
+    print("#" * 20, "Start Training", "#" * 20)
+
+    epoch_list = []
+    train_loss_list = []
+    val_loss_list = []
+    train_d_loss_list = []
+    val_d_loss_list = []
+    best_loss = 100000
+    best2_loss = 100000
+
+    # 学習開始時間の記録
+    start_time = time.time()
+
+    for epoch in range(1, opt.epoch):
+        adjust_lr(optimizer, opt.lr, epoch, opt.decay_rate, opt.decay_epoch)
+        input_dict = {
+            "dataloaders_dict": dataloaders_dict,
+            "models": models,
+            "optimizer": optimizer,
+            "criterion": criterion,
+            "epoch": epoch,
+            "best_loss": best_loss,
+            "best2_loss": best2_loss,
+            "device": device,
+            "opt": opt,
+            "total_step": total_step,
+            "weight_method": weight_method,
+            "shared_parameters": shared_parameters,
+            "task_specific_parameters": task_specific_parameters,
+            "postprocess": postprocess,
+        }
+        output = train(input_dict)
+        best_loss = output["best_loss"]
+        best2_loss = output["best2_loss"]
+        train_loss = output["train_loss"]
+        val_loss = output["val_loss"]
+        train_d_loss = output["train_d_loss"]
+        val_d_loss = output["val_d_loss"]
+
+        epoch_list.append(epoch)
+        train_loss = train_loss.cpu().data.numpy()
+        train_loss_list.append(train_loss)
+        val_loss = val_loss.cpu().data.numpy()
+        val_loss_list.append(val_loss)
+        train_d_loss = train_d_loss.cpu().data.numpy()
+        train_d_loss_list.append(train_d_loss)
+        val_d_loss = val_d_loss.cpu().data.numpy()
+        val_d_loss_list.append(val_d_loss)
+
+    # 学習終了時間の記録
+    end_time = time.time()
+
+    # 学習にかかった時間の計算
+    training_time = end_time - start_time
+    print(f"学習にかかった時間:{training_time}秒")
+
+    plot_loss(
+        epoch_list,
+        train_loss_list,
+        val_loss_list,
+        train_d_loss_list,
+        val_d_loss_list,
+        opt,
+    )
+
+
+if __name__ == "__main__":
+    main()

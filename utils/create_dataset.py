@@ -426,31 +426,31 @@ class CropConstParamD:
 
     def __call__(self) -> None:
         if self.mode == "cv":
-            # for index in range(5):
-            # self.index = index
+            for index in range(5):
+                self.index = index
 
-            self.index = 0
-            self._get_dataset_list_cv()
-            for data_list in [
-                self.train_list,
-                self.val_list,
-                self.test_list,
-                self.sekkai_train_list,
-                self.sekkai_val_list,
-                self.sekkai_test_list,
-            ]:
+                self._get_dataset_list_cv()
+                for data_list in [
+                    self.train_list,
+                    self.val_list,
+                    self.test_list,
+                    self.sekkai_train_list,
+                    self.sekkai_val_list,
+                    self.sekkai_test_list,
+                ]:
 
-                self.save_dir_dataset = (
-                    self.save_dir
-                    / data_list[0].parents[1].name
-                    / data_list[0].parents[0].name
-                )
-                print(f">>> save_dir: {self.save_dir_dataset}")
-                os.makedirs(self.save_dir_dataset, exist_ok=True)
-                os.makedirs(
-                    str(self.save_dir_dataset).replace("images", "masks"), exist_ok=True
-                )
-                self._make_crop_dataset(data_list)
+                    self.save_dir_dataset = (
+                        self.save_dir
+                        / data_list[0].parents[1].name
+                        / data_list[0].parents[0].name
+                    )
+                    print(f">>> save_dir: {self.save_dir_dataset}")
+                    os.makedirs(self.save_dir_dataset, exist_ok=True)
+                    os.makedirs(
+                        str(self.save_dir_dataset).replace("images", "masks"),
+                        exist_ok=True,
+                    )
+                    self._make_crop_dataset(data_list)
 
 
 if __name__ == "__main__":
