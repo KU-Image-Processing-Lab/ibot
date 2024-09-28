@@ -361,4 +361,5 @@ df = pd.DataFrame(
         "iou": iou_dict,
     }
 )
-df.to_csv(Path(opt.test_save_path) / f"{now_str}_result.csv")
+
+df.to_csv(Path(opt.test_save_path) / f"{now_str}_evaluation.csv")
