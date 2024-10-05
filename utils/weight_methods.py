@@ -229,15 +229,45 @@ class NashMTL(WeightMethod):
 
                 grads[i] = grad
 
-            G = torch.stack(tuple(v for v in grads.values()))
-            GTG = torch.mm(G, G.t())
+            ########## Exact ###########
+            g1_g1 = torch.dot(grads[0].t(), grads[0])
+            g2_g2 = torch.dot(grads[1].t(), grads[1])
+            g1_g2 = torch.dot(grads[0].t(), grads[1])
+            g2_g1 = torch.dot(grads[1].t(), grads[0])
 
-            self.normalization_factor = (
-                torch.norm(GTG).detach().cpu().numpy().reshape((1,))
+            alpha_1 = torch.sqrt(
+                torch.sqrt(g2_g2) / (g1_g1 * torch.sqrt(g2_g2) +
+                                     g1_g2 * torch.sqrt(g1_g1))
             )
-            GTG = GTG / self.normalization_factor.item()
-            alpha = self.solve_optimization(GTG.cpu().detach().numpy())
-            alpha = torch.from_numpy(alpha)
+            alpha_2 = torch.sqrt(
+                torch.sqrt(g1_g1) / (g2_g1 * torch.sqrt(g2_g2) +
+                                     g2_g2 * torch.sqrt(g1_g1))
+            )
+            alpha = torch.tensor([alpha_1, alpha_2])
+            #############################
+
+            ########### Simple ###########
+            #g1_g1 = torch.dot(grads[0].t(), grads[0])
+            #g2_g2 = torch.dot(grads[1].t(), grads[1])
+
+            #alpha_1 = torch.sqrt(
+            #    grads[0] / torch.sqrt(g1_g1)
+            #)
+            #alpha_2 = torch.sqrt(
+            #    grads[1] / torch.sqrt(g2_g2)
+            #)
+            #alpha = torch.tensor([alpha_1, alpha_2])
+            ##############################
+
+            # G = torch.stack(tuple(v for v in grads.values()))
+            # GTG = torch.mm(G, G.t())
+
+            # self.normalization_factor = (
+            #     torch.norm(GTG).detach().cpu().numpy().reshape((1,))
+            # )
+            # GTG = GTG / self.normalization_factor.item()
+            # alpha = self.solve_optimization(GTG.cpu().detach().numpy())
+            # alpha = torch.from_numpy(alpha)
 
         else:
             self.step += 1
