@@ -11,8 +11,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import torchinfo
 import torch.nn.functional as F
+import torchinfo
 from skimage import img_as_ubyte
 from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
                              precision_score, recall_score, roc_auc_score,

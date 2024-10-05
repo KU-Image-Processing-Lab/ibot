@@ -236,27 +236,27 @@ class NashMTL(WeightMethod):
             g2_g1 = torch.dot(grads[1].t(), grads[0])
 
             alpha_1 = torch.sqrt(
-                torch.sqrt(g2_g2) / (g1_g1 * torch.sqrt(g2_g2) +
-                                     g1_g2 * torch.sqrt(g1_g1))
+                torch.sqrt(g2_g2)
+                / (g1_g1 * torch.sqrt(g2_g2) + g1_g2 * torch.sqrt(g1_g1))
             )
             alpha_2 = torch.sqrt(
-                torch.sqrt(g1_g1) / (g2_g1 * torch.sqrt(g2_g2) +
-                                     g2_g2 * torch.sqrt(g1_g1))
+                torch.sqrt(g1_g1)
+                / (g2_g1 * torch.sqrt(g2_g2) + g2_g2 * torch.sqrt(g1_g1))
             )
             alpha = torch.tensor([alpha_1, alpha_2])
             #############################
 
             ########### Simple ###########
-            #g1_g1 = torch.dot(grads[0].t(), grads[0])
-            #g2_g2 = torch.dot(grads[1].t(), grads[1])
+            # g1_g1 = torch.dot(grads[0].t(), grads[0])
+            # g2_g2 = torch.dot(grads[1].t(), grads[1])
 
-            #alpha_1 = torch.sqrt(
+            # alpha_1 = torch.sqrt(
             #    grads[0] / torch.sqrt(g1_g1)
-            #)
-            #alpha_2 = torch.sqrt(
+            # )
+            # alpha_2 = torch.sqrt(
             #    grads[1] / torch.sqrt(g2_g2)
-            #)
-            #alpha = torch.tensor([alpha_1, alpha_2])
+            # )
+            # alpha = torch.tensor([alpha_1, alpha_2])
             ##############################
 
             # G = torch.stack(tuple(v for v in grads.values()))
