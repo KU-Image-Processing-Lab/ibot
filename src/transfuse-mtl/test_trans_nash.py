@@ -178,6 +178,8 @@ acc_bank = []
 dice_dict = {}
 iou_dict = {}
 acc_dict = {}
+pred_label_dict = {}
+true_label_dict = {}
 
 y_true = np.array([])
 y_score = np.array([])
@@ -227,6 +229,9 @@ for i in range(test_loader1.size):
         y_true = np.append(y_true, label)
         y_score = np.append(y_score, out[0][1] - out[0][0])
         y_pred = np.append(y_pred, predicted)
+
+        pred_label_dict[name] = predicted
+        true_label_dict[name] = label
 
     if label == 1:
         if predicted == 1:
@@ -359,6 +364,8 @@ df = pd.DataFrame(
         "acc": acc_dict,
         "dice": dice_dict,
         "iou": iou_dict,
+        "pred_label": pred_label_dict,
+        "true_label": true_label_dict,
     }
 )
 df.to_csv(Path(opt.test_save_path) / f"{now_str}_evaluation.csv")
