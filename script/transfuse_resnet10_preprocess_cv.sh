@@ -21,10 +21,11 @@ for i in {0..4}; do
 
     python3 ./utils/slack_bot.py --text "Cross Validation: ${i}"
     python3 ./src/${SCRIPT_DIR}/${TRAIN_SCRIPT_NAME} \
-        --epoch 200 \
+        --epoch 100 \
         --batchsize 4 \
         --trainsize 352 \
         --discriminator resnet10 \
+        --preprocess resnet10 \
         --log_iter 50 \
         --save_epoch 50 \
         --tuning \
@@ -40,6 +41,7 @@ for i in {0..4}; do
         python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
             --testsize 352 \
             --discriminator resnet10 \
+            --preprocess resnet10 \
             --pth_path0 ./snapshots/${TRAIN_SAVE}/Preprocess-${weight}.pth \
             --pth_path ./snapshots/${TRAIN_SAVE}/Transfuse-${weight}.pth \
             --pth_path2 ./snapshots/${TRAIN_SAVE}/Discriminator-${weight}.pth \

@@ -129,11 +129,11 @@ def arg_parse():
 
 
 def get_preprocess_model(opt: argparse.Namespace) -> torch.nn.Module:
-    if opt.discriminator == "resnet10":
+    if opt.preprocess == "resnet10":
         from lib.ResNet_10_preprocess import ResNet10
 
         return ResNet10()
-    elif opt.discriminator == "res2net":
+    elif opt.preprocess == "res2net":
         from lib.Discriminator_ResNet import Discriminator
 
         return Discriminator()
