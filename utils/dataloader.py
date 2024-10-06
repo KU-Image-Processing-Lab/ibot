@@ -42,12 +42,17 @@ class PolypDataset(data.Dataset):
 
     def __init__(self, image_root, gt_root, trainsize, phase="train"):
         self.trainsize = trainsize
+        if isinstance(image_root, str):
+            image_root = pathlib.Path(image_root)
+        if isinstance(gt_root, str):
+            gt_root = pathlib.Path(gt_root)
+
         self.images = [
-            image_root + f
+            image_root / f
             for f in os.listdir(image_root)
             if f.endswith(".jpg") or f.endswith(".png")
         ]
-        self.gts = [gt_root + f for f in os.listdir(gt_root) if f.endswith(".png")]
+        self.gts = [gt_root / f for f in os.listdir(gt_root) if f.endswith(".png")]
         self.images = sorted(self.images)
         self.gts = sorted(self.gts)
         self.filter_files()
@@ -191,7 +196,7 @@ class PolypDatasetPreprocess(PolypDataset):
     def __getitem__(self, index):
         image = self.rgb_loader(self.images[index])
         gt = self.binary_loader(self.gts[index])
-        name = self.images[index].split("/")[-1]
+        name = self.images[index].name
 
         if self.phase == "train":
 

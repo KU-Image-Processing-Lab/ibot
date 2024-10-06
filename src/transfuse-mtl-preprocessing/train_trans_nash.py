@@ -166,7 +166,7 @@ def train(input_dict: dict):
                     )
 
                     # ---- forward ----
-                    lateral_map_4, lateral_map_3, lateral_map_2 = models["Transfuse"](
+                    lateral_map_4, lateral_map_3, lateral_map_2 = models["TransFuse"](
                         cropped_images
                     )
 
@@ -229,7 +229,7 @@ def train(input_dict: dict):
                     models["Preprocess"].state_dict(), save_path + "Preprocess-best.pth"
                 )
                 torch.save(
-                    models["Transfuse"].state_dict(), save_path + "Transfuse-best.pth"
+                    models["TransFuse"].state_dict(), save_path + "TransFuse-best.pth"
                 )
                 torch.save(
                     models["Discriminator"].state_dict(),
@@ -244,7 +244,7 @@ def train(input_dict: dict):
                     save_path + "Preprocess-best2.pth",
                 )
                 torch.save(
-                    models["Transfuse"].state_dict(), save_path + "Transfuse-best2.pth"
+                    models["TransFuse"].state_dict(), save_path + "TransFuse-best2.pth"
                 )
                 torch.save(
                     models["Discriminator"].state_dict(),
@@ -258,14 +258,14 @@ def train(input_dict: dict):
             models["Preprocess"].state_dict(), save_path + "Preprocess-%d.pth" % epoch
         )
         torch.save(
-            models["Transfuse"].state_dict(), save_path + "Transfuse-%d.pth" % epoch
+            models["TransFuse"].state_dict(), save_path + "TransFuse-%d.pth" % epoch
         )
         torch.save(
             models["Discriminator"].state_dict(),
             save_path + "Discriminator-%d.pth" % epoch,
         )
 
-        print("[Saving Snapshot:]", save_path + "Transfuse-%d.pth" % epoch)
+        print("[Saving Snapshot:]", save_path + "TransFuse-%d.pth" % epoch)
     print("train_loss: {0:.4f}, val_loss: {1:.4f}".format(train_loss, val_loss))
     print("train_d_loss: {0:.4f}, val_d_loss: {1:.4f}".format(train_d_loss, val_d_loss))
 
@@ -418,7 +418,7 @@ def get_models(opt: argparse.Namespace, device: torch.device) -> dict:
     model1.to(device)
     model2.to(device)
 
-    models = {"Preprocess": model0, "Transfuse": model1, "Discriminator": model2}
+    models = {"Preprocess": model0, "TransFuse": model1, "Discriminator": model2}
 
     return models
 
