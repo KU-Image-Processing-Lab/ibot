@@ -1,5 +1,6 @@
 import os
 import pathlib
+from pdb import pm
 import random
 
 import albumentations as albu
@@ -42,21 +43,26 @@ class PolypDataset(data.Dataset):
 
     def __init__(self, image_root, gt_root, trainsize, phase="train"):
         self.trainsize = trainsize
-        if isinstance(image_root, str):
-            image_root = pathlib.Path(image_root)
-        if isinstance(gt_root, str):
-            gt_root = pathlib.Path(gt_root)
 
-        self.images = [
-            image_root / f
-            for f in os.listdir(image_root)
-            if f.endswith(".jpg") or f.endswith(".png")
-        ]
-        self.gts = [gt_root / f for f in os.listdir(gt_root) if f.endswith(".png")]
-        self.images = sorted(self.images)
-        self.gts = sorted(self.gts)
-        self.filter_files()
-        self.size = len(self.images)
+        if image_root == '' or gt_root == '':
+            # 継承したクラスがimage_root, gt_rootを指定しない場合
+            pass
+        else:
+            if isinstance(image_root, str):
+                image_root = pathlib.Path(image_root)
+            if isinstance(gt_root, str):
+                gt_root = pathlib.Path(gt_root)
+
+            self.images = [
+                image_root / f
+                for f in os.listdir(image_root)
+                if f.endswith(".jpg") or f.endswith(".png")
+            ]
+            self.gts = [gt_root / f for f in os.listdir(gt_root) if f.endswith(".png")]
+            self.images = sorted(self.images)
+            self.gts = sorted(self.gts)
+            self.filter_files()
+            self.size = len(self.images)
 
         self._alpha = 0.2
 
@@ -150,7 +156,10 @@ class PolypDataset(data.Dataset):
 
 
 class PolypDatasetPostprocess(PolypDataset):
-    def __init__(self, trainsize, phase="train"):
+    def __init__(self, image_root='', gt_root='', trainsize=352, phase="train"):
+        super(PolypDatasetPostprocess, self).__init__(
+            image_root, gt_root, trainsize, phase
+        )
         self.trainsize = trainsize
         self.phase = phase
 
@@ -158,27 +167,40 @@ class PolypDatasetPostprocess(PolypDataset):
         processed_images = []
         processed_gts = []
         for image, gt in zip(images, gts):
-            image = Image.fromarray(image).convert("RGB")
-            gt = Image.fromarray(gt)
+            image, gt = self.transform_process(image, gt)
 
-            image = image.convert("RGB")
-            gt = gt.convert("L")
-            if self.phase == "train":
-                image = np.array(image)
-                gt = np.array(gt)
+            processed_images.append(image.cuda())
+            processed_gts.append(gt.cuda())
 
-                augmented = self.transform3(image=image, mask=gt)
+        torch_images = torch.stack(processed_images, dim=0)
+        torch_gts = torch.stack(processed_gts, dim=0)
 
-                image, gt = augmented["image"], augmented["mask"]
-                image = Image.fromarray(image)
-                gt = Image.fromarray(gt)
-                image = image.convert("RGB")
-                gt = gt.convert("L")
+        return torch_images, torch_gts
 
-            processed_images.append(self.img_transform(image))
-            processed_gts.append(self.gt_transform(gt))
+    def transform_process(self, image, gt):
+        if isinstance(image, torch.Tensor):
+            image = image.cpu().detach().numpy()
+            gt = gt.cpu().detach().numpy()
 
-        return processed_images, processed_gts
+        image = Image.fromarray(np.transpose(image, (1, 2, 0)).astype(np.uint8))
+        gt = Image.fromarray(gt.squeeze().astype(np.uint8))
+
+        image_np = np.array(image)
+        gt_np = np.array(gt)
+
+        if self.phase == "train":
+            augmented = self.transform3(image=image_np, mask=gt_np)
+            image_np, gt_np = augmented["image"], augmented["mask"]
+
+        image = Image.fromarray(image_np)
+        gt = Image.fromarray(gt_np)
+
+        image = image.convert("RGB")
+        gt = gt.convert("L")
+
+        image = self.img_transform(image)
+        gt = self.gt_transform(gt)
+        return image, gt
 
 
 class PolypDatasetPreprocess(PolypDataset):
@@ -211,7 +233,6 @@ class PolypDatasetPreprocess(PolypDataset):
             image = image.convert("RGB")
             gt = gt.convert("L")
 
-        # image, gt = self.transform(image, gt, phase=self.phase)
         image = self.img_transform(image)
         gt = self.gt_transform(gt)
 

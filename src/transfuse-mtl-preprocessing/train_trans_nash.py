@@ -525,7 +525,7 @@ def main():
 
     dataloaders_dict = {"train": train_loader_preprocess, "val": val_loader_preprocess}
 
-    postprocess = PolypDatasetPostprocess(opt.trainsize, phase="train")
+    postprocess = PolypDatasetPostprocess(trainsize=opt.trainsize, phase="train")
 
     print("#" * 20, "Start Training", "#" * 20)
 
