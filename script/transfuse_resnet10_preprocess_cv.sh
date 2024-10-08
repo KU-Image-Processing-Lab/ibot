@@ -25,7 +25,7 @@ for i in {0..4}; do
         --batchsize 4 \
         --trainsize 352 \
         --discriminator resnet10 \
-        --log_iter 50 \
+        --log_epoch 50 \
         --save_epoch 50 \
         --tuning \
         --train_path ./dataset/CrossValidation_original/cv${i}_TrainDataset \
