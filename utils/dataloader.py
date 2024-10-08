@@ -1,7 +1,7 @@
 import os
 import pathlib
-from pdb import pm
 import random
+from pdb import pm
 
 import albumentations as albu
 import cv2
@@ -44,7 +44,7 @@ class PolypDataset(data.Dataset):
     def __init__(self, image_root, gt_root, trainsize, phase="train"):
         self.trainsize = trainsize
 
-        if image_root == '' or gt_root == '':
+        if image_root == "" or gt_root == "":
             # 継承したクラスがimage_root, gt_rootを指定しない場合
             pass
         else:
@@ -156,7 +156,7 @@ class PolypDataset(data.Dataset):
 
 
 class PolypDatasetPostprocess(PolypDataset):
-    def __init__(self, image_root='', gt_root='', trainsize=352, phase="train"):
+    def __init__(self, image_root="", gt_root="", trainsize=352, phase="train"):
         super(PolypDatasetPostprocess, self).__init__(
             image_root, gt_root, trainsize, phase
         )
