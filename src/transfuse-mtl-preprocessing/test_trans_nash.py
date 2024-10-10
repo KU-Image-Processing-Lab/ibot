@@ -18,8 +18,7 @@ from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
                              roc_curve)
 
 from lib.TransFuse_l import TransFuse_L
-from utils.dataloader import test_dataset as test_dataset_postprocess
-from utils.dataloader import test_dataset_preprocess as test_dataset
+from utils.dataloader import test_dataset_preprocess, test_dataset
 from utils.set_seed import seed_everything
 
 matplotlib.use("Agg")
@@ -198,7 +197,13 @@ def clean_save_dir(save_path: Path):
         os.remove(file)
 
 
-def get_test_loader(opt: argparse.Namespace, data_path: Path) -> test_dataset:
+def get_preprocess_loader(opt: argparse.Namespace, data_path: Path) -> test_dataset_preprocess:
+    image_root = data_path / "images"
+    gt_root = data_path / "masks"
+    return test_dataset_preprocess(image_root, gt_root, opt.testsize)
+
+
+def get_mtl_loader(opt: argparse.Namespace, data_path: Path) -> test_dataset:
     image_root = data_path / "images"
     gt_root = data_path / "masks"
     return test_dataset(image_root, gt_root, opt.testsize)
@@ -214,11 +219,11 @@ def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     models = get_models_for_test(opt, device)
 
-    test_loader1 = get_test_loader(opt, data_path1)
-    test_loader2 = get_test_loader(opt, data_path2)
+    preprocess_loader1 = get_preprocess_loader(opt, data_path1)
+    preprocess_loader2 = get_preprocess_loader(opt, data_path2)
 
-    test_loader1_postprocess = get_test_loader(opt, data_path1)
-    test_loader2_postprocess = get_test_loader(opt, data_path2)
+    mtl_loader1 = get_mtl_loader(opt, data_path1)
+    mtl_loader2 = get_mtl_loader(opt, data_path2)
 
     dice_bank = []
     iou_bank = []
@@ -231,8 +236,8 @@ def main():
     output_dict = {}
     param_list = []
 
-    for i in range(test_loader1.size):
-        image, gt, name = test_loader1.load_data()
+    for i in range(preprocess_loader1.size):
+        image, gt, name = preprocess_loader1.load_data()
         label = torch.einsum("ijk->i", gt) > 0
         label = torch.where(label > 0, torch.tensor(1), torch.tensor(0))
         gt = np.asarray(gt, np.float32)
@@ -291,7 +296,7 @@ def main():
             #     img_tensor = torch.from_numpy(img).unsqueeze(0).float()
             #     cropped_gt[j] = img_tensor
 
-            cropped_image, cropped_gt = test_loader1_postprocess(
+            cropped_image, cropped_gt = mtl_loader1.transform_data(
                 cropped_image, cropped_gt
             )
             _, _, res = models["Transfuse"](cropped_image)
@@ -339,8 +344,8 @@ def main():
     output_dict["param_d_mean"] = sum(param_list) / len(param_list)
     output_dict["param_d_median"] = sorted(param_list)[len(param_list) // 2]
 
-    for i in range(test_loader2.size):
-        image, gt, name = test_loader2.load_data()
+    for i in range(preprocess_loader2.size):
+        image, gt, name = preprocess_loader2.load_data()
         gt = np.asarray(gt, np.float32)
 
         gt = 1.0 * (gt > 0.5)  ########################
@@ -386,7 +391,7 @@ def main():
                 cropped_gt = torch.cat((cropped_gt, crop), dim=0)
 
             cropped_gt = cropped_gt.squeeze().cpu().numpy()
-            cropped_image, cropped_gt = test_loader2_postprocess(
+            cropped_image, cropped_gt = mtl_loader2.transform_data(
                 cropped_image, cropped_gt
             )
             _, _, res = models["Transfuse"](cropped_image)

@@ -307,6 +307,11 @@ class test_dataset:
         self.index += 1
         return image, gt, name
 
+    def transform_data(self, image, gt):
+        image = self.transform(image).unsqueeze(0)
+        gt = self.gt_transform(gt).unsqueeze(0)
+        return image, gt
+
     def rgb_loader(self, path):
         with open(path, "rb") as f:
             img = Image.open(f)
