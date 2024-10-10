@@ -18,7 +18,7 @@ from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
                              roc_curve)
 
 from lib.TransFuse_l import TransFuse_L
-from utils.dataloader import test_dataset_preprocess, test_dataset
+from utils.dataloader import test_dataset, test_dataset_preprocess
 from utils.set_seed import seed_everything
 
 matplotlib.use("Agg")
@@ -197,7 +197,9 @@ def clean_save_dir(save_path: Path):
         os.remove(file)
 
 
-def get_preprocess_loader(opt: argparse.Namespace, data_path: Path) -> test_dataset_preprocess:
+def get_preprocess_loader(
+    opt: argparse.Namespace, data_path: Path
+) -> test_dataset_preprocess:
     image_root = data_path / "images"
     gt_root = data_path / "masks"
     return test_dataset_preprocess(image_root, gt_root, opt.testsize)
