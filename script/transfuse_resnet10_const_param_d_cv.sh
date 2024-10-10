@@ -16,10 +16,10 @@ python3 ./utils/slack_bot.py --text "SCRIPT_DIR=${SCRIPT_DIR}${LF}TRAIN_SCRIPT_N
 # weightArray=("best" "best2" "99" "199")
 weightArray=("best" "best2" "99")
 # paramD=(0.625 0.615 0.62 0.63 0.635 0.55 0.575 0.6 0.65 0.675 0.7)
-paramD=(0.6 0.615 0.62 0.625 0.63 0.635 0.65 0.675)
+paramD=(0.61 0.595 0.59 0.585 0.58 0.575)
 
 for d in ${paramD[@]}; do
-    for i in {1..4}; do
+    for i in {0..4}; do
 
         TRAIN_SAVE="transfuse_resnet10_const_param_d_${d}_cv${i}"
 
