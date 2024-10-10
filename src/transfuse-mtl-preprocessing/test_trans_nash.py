@@ -296,7 +296,7 @@ def main():
             #     img_tensor = torch.from_numpy(img).unsqueeze(0).float()
             #     cropped_gt[j] = img_tensor
 
-            cropped_image, cropped_gt = mtl_loader1.transform_data(
+            cropped_image, cropped_gt = mtl_loader1.transform_process(
                 cropped_image, cropped_gt
             )
             _, _, res = models["Transfuse"](cropped_image)
@@ -391,7 +391,7 @@ def main():
                 cropped_gt = torch.cat((cropped_gt, crop), dim=0)
 
             cropped_gt = cropped_gt.squeeze().cpu().numpy()
-            cropped_image, cropped_gt = mtl_loader2.transform_data(
+            cropped_image, cropped_gt = mtl_loader2.transform_process(
                 cropped_image, cropped_gt
             )
             _, _, res = models["Transfuse"](cropped_image)

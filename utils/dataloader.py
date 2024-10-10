@@ -271,15 +271,15 @@ def get_loader(
 
 
 class test_dataset:
-    def __init__(self, image_root, gt_root, testsize):
+    def __init__(self, image_root: pathlib.Path, gt_root: pathlib.Path, testsize: int):
         self.testsize = testsize
         self.images = [
-            image_root + f
+            str(image_root / f)
             for f in os.listdir(image_root)
             if f.endswith(".jpg") or f.endswith(".png") or f.endswith(".tif")
         ]
         self.gts = [
-            gt_root + f
+            str(gt_root / f)
             for f in os.listdir(gt_root)
             if f.endswith(".tif") or f.endswith(".png") or f.endswith(".jpg")
         ]
@@ -307,9 +307,15 @@ class test_dataset:
         self.index += 1
         return image, gt, name
 
-    def transform_data(self, image, gt):
-        image = self.transform(image).unsqueeze(0)
-        gt = self.gt_transform(gt).unsqueeze(0)
+    def transform_process(self, image: torch.Tensor, gt: torch.Tensor):
+
+        if isinstance(image, torch.Tensor):
+            image = image.squeeze(0).cpu().detach().numpy()
+
+        image = Image.fromarray(np.transpose(image, (1, 2, 0)).astype(np.uint8))
+        image = image.convert("RGB")
+        image = self.transform(image)
+        image = image.unsqueeze(0).cuda()
         return image, gt
 
     def rgb_loader(self, path):
