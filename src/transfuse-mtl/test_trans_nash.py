@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn.functional as F
+import torchinfo
 from skimage import img_as_ubyte
 from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
                              precision_score, recall_score, roc_auc_score,
@@ -90,6 +91,10 @@ def imwrite(filename, img, params=None):
         return False
 
 
+def get_model_scale(model: torch.nn.Module) -> None:
+    torchinfo.summary(model, input_size=(1, 3, 352, 352))
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--testsize", type=int, default=352, help="testing size")
 parser.add_argument(
@@ -127,6 +132,9 @@ model.load_state_dict(torch.load(opt.pth_path))
 model.cuda()
 model.eval()
 
+print("model1")
+get_model_scale(model)
+
 # model2 = vit_large(pretrained=pretrained)
 
 # model2 = torch_model.vgg16(pretrained=True)
@@ -147,6 +155,9 @@ model2.load_state_dict(torch.load(opt.pth_path2))
 
 model2.cuda()
 model2.eval()
+
+print("model2")
+get_model_scale(model2)
 
 os.makedirs(save_path, exist_ok=True)
 for file in glob.glob(save_path + "/*.png"):
