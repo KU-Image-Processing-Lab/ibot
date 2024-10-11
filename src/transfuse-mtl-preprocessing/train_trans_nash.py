@@ -455,7 +455,7 @@ def set_mtl_parameters(
 ) -> dict:
     weight_methods_parameters = extract_weight_method_parameters_from_args()
     weight_method = WeightMethods(
-        opt.mtl, n_tasks=2, device=device, **weight_methods_parameters[opt.mtl]
+        opt.mtl, n_tasks=3, device=device, **weight_methods_parameters[opt.mtl]
     )
 
     params = [p for v in models.values() for p in list(v.parameters())]
