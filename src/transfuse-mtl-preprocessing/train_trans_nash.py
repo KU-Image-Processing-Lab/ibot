@@ -411,16 +411,10 @@ def arg_parser() -> argparse.Namespace:
         help="前処理に使用するモデル",
     )
     parser.add_argument(
-        "--lambda_d",
-        type=float,
-        default=0.01,
-        help="パラメータdの損失の係数"
+        "--lambda_d", type=float, default=0.01, help="パラメータdの損失の係数"
     )
     parser.add_argument(
-        "--d_init",
-        type=float,
-        default=0.600,
-        help="パラメータdの初期値"
+        "--d_init", type=float, default=0.600, help="パラメータdの初期値"
     )
     return parser.parse_args()
 
