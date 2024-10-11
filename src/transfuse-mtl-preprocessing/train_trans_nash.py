@@ -26,6 +26,12 @@ matplotlib.use("Agg")
 seed_everything(42)
 
 
+def paramd_d_loss(
+    d_predict: torch.Tensor, d_init: torch.Tensor, lambda_d: float
+) -> torch.Tensor:
+    return (lambda_d * (d_predict - d_init) ** 2).mean()
+
+
 def structure_loss(pred, mask):
     weit = 1 + 5 * torch.abs(
         F.avg_pool2d(mask, kernel_size=31, stride=1, padding=15) - mask
@@ -132,11 +138,20 @@ def train(input_dict: dict):
                         align_corners=True,
                     )
                 with torch.set_grad_enabled(phase == "train"):
-                    param_d = models["Preprocess"](images) * opt.trainsize
+                    d_predict = models["Preprocess"](images)
+
+                    p_loss = paramd_d_loss(
+                        d_predict=d_predict, d_init=opt.d_init, lambda_d=opt.lambda_d
+                    )
+
+                    crop_d = d_predict.clone()
+                    crop_d = crop_d * opt.trainsize
+
+                    print(crop_d, end="\r")
                     # ---- crop images ----
                     cropped_images = torch.Tensor().cuda()
                     for j in range(images.size(0)):
-                        crop = images[j, :, :, : int(param_d[j])]
+                        crop = images[j, :, :, : int(crop_d[j])]
                         crop = F.interpolate(
                             crop.unsqueeze(0),
                             size=(opt.trainsize, opt.trainsize),
@@ -150,7 +165,7 @@ def train(input_dict: dict):
                     # ---- crop gts ----
                     cropped_gts = torch.Tensor().cuda()
                     for j in range(gts.size(0)):
-                        crop = gts[j, :, :, : int(param_d[j])]
+                        crop = gts[j, :, :, : int(crop_d[j])]
                         crop = F.interpolate(
                             crop.unsqueeze(0),
                             size=(opt.trainsize, opt.trainsize),
@@ -182,7 +197,7 @@ def train(input_dict: dict):
 
                     d_out = models["Discriminator"](lateral_map_2)
                     d_loss = criterion(d_out, labels)
-                    losses = torch.stack((loss, d_loss))
+                    losses = torch.stack((loss, d_loss, p_loss))
                     # ---- backward ----
                     if phase == "train":
                         loss, extra_outputs = weight_method.backward(
@@ -395,6 +410,18 @@ def arg_parser() -> argparse.Namespace:
         default="resnet10",
         help="前処理に使用するモデル",
     )
+    parser.add_argument(
+        "--lambda_d",
+        type=float,
+        default=0.01,
+        help="パラメータdの損失の係数"
+    )
+    parser.add_argument(
+        "--d_init",
+        type=float,
+        default=0.600,
+        help="パラメータdの初期値"
+    )
     return parser.parse_args()
 
 
@@ -444,8 +471,8 @@ def set_mtl_parameters(
         if "final_x" in n or "final_1" in n or "cls" in n
     ]
 
-    for _, p in models["Preprocess"].named_parameters():
-        task_specific_parameters.append(p)
+    # for _, p in models["Preprocess"].named_parameters():
+    #     task_specific_parameters.append(p)
     for _, p in models["Discriminator"].named_parameters():
         task_specific_parameters.append(p)
 

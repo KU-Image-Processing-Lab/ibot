@@ -19,22 +19,24 @@ for i in {0..4}; do
 
     TRAIN_SAVE="transfuse_resnet10_preprocess_cv${i}"
 
-    # python3 ./utils/slack_bot.py --text "Cross Validation: ${i}"
-    # python3 ./src/${SCRIPT_DIR}/${TRAIN_SCRIPT_NAME} \
-    #     --epoch 100 \
-    #     --batchsize 4 \
-    #     --trainsize 352 \
-    #     --discriminator resnet10 \
-    #     --preprocess resnet10 \
-    #     --log_iter 50 \
-    #     --save_epoch 50 \
-    #     --tuning \
-    #     --train_path ./dataset/CrossValidation_original/cv${i}_TrainDataset \
-    #     --val_path ./dataset/CrossValidation_original/cv${i}_ValDataset \
-    #     --train_save ${TRAIN_SAVE} \
-    #     1> >(tee ./logs/${TRAIN_SCRIPT_NAME}_stdout.log >&1) \
-    #     2> >(tee ./logs/${TRAIN_SCRIPT_NAME}_stderr.log >&2)
-    # python3 ./utils/slack_bot.py --text "`cat ./logs/${TRAIN_SCRIPT_NAME}_stderr.log`"
+    python3 ./utils/slack_bot.py --text "Cross Validation: ${i}"
+    python3 ./src/${SCRIPT_DIR}/${TRAIN_SCRIPT_NAME} \
+        --epoch 100 \
+        --batchsize 4 \
+        --trainsize 352 \
+        --discriminator resnet10 \
+        --preprocess resnet10 \
+        --log_iter 50 \
+        --save_epoch 50 \
+        --tuning \
+        --lambda_d 0.01 \
+        --d_init 0.600 \
+        --train_path ./dataset/CrossValidation_original/cv${i}_TrainDataset \
+        --val_path ./dataset/CrossValidation_original/cv${i}_ValDataset \
+        --train_save ${TRAIN_SAVE} \
+        1> >(tee ./logs/${TRAIN_SCRIPT_NAME}_stdout.log >&1) \
+        2> >(tee ./logs/${TRAIN_SCRIPT_NAME}_stderr.log >&2)
+    python3 ./utils/slack_bot.py --text "`cat ./logs/${TRAIN_SCRIPT_NAME}_stderr.log`"
 
     for weight in ${weightArray[@]}; do
 
