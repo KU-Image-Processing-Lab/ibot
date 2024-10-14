@@ -31,6 +31,9 @@ for i in {0..4}; do
         --tuning \
         --lambda_d 0.01 \
         --d_init 0.600 \
+        --loss_dir ./results/${TRAIN_SAVE} \
+        --seg_loss_path ./results/${TRAIN_SAVE}/seg_loss.png \
+        --dis_loss_path ./results/${TRAIN_SAVE}/dis_loss.png \
         --train_path ./dataset/CrossValidation_original/cv${i}_TrainDataset \
         --val_path ./dataset/CrossValidation_original/cv${i}_ValDataset \
         --train_save ${TRAIN_SAVE} \

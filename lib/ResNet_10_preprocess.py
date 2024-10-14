@@ -104,7 +104,12 @@ class ResNet10(nn.Module):
 
         # 出力層の初期化
         d_init = 0.600
-        nn.init.zeros_(self.fc.weight)
+        # zero init
+        # nn.init.zeros_(self.fc.weight)
+
+        # random init
+        nn.init.normal_(self.fc.weight, mean=0, std=0.01)
+
         bias_init = math.log(d_init / (1 - d_init))
         nn.init.constant_(self.fc.bias, bias_init)
 

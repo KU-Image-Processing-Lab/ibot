@@ -238,8 +238,8 @@ def main():
     output_dict = {}
     param_list = []
 
-    for i in range(preprocess_loader1.size):
-        image, gt, name = preprocess_loader1.load_data()
+    for _ in range(preprocess_loader1.size):
+        image, gt, name, image_width = preprocess_loader1.load_data()
         label = torch.einsum("ijk->i", gt) > 0
         label = torch.where(label > 0, torch.tensor(1), torch.tensor(0))
         gt = np.asarray(gt, np.float32)
@@ -250,14 +250,16 @@ def main():
             image = image.unsqueeze(0)
 
         with torch.no_grad():
-            param_d = models["Preprocess"](image) * opt.testsize
-            print(f"{int(param_d)}", end=" ")
-            param_list.append(int(param_d))
+            d_predict = models["Preprocess"](image)
+            param_list.append(float(d_predict))
+            print(f"{float(d_predict) = }")
+
+            crop_d = d_predict * image_width
 
             # ---- crop image ----
             cropped_image = torch.Tensor().cuda()
             for j in range(image.size(0)):
-                crop = image[j, :, :, : int(param_d[j])]
+                crop = image[j, :, :, : int(crop_d[j])]
                 crop = F.interpolate(
                     crop.unsqueeze(0),
                     size=(opt.testsize, opt.testsize),
@@ -276,7 +278,7 @@ def main():
             cropped_gt = torch.Tensor()
             gt = torch.Tensor(gt)
             for j in range(gt.size(0)):
-                crop = gt[j, :, : int(param_d[j])]
+                crop = gt[j, :, : int(crop_d[j])]
                 crop = F.interpolate(
                     crop.unsqueeze(0).unsqueeze(0),
                     size=(opt.testsize, opt.testsize),
@@ -346,8 +348,8 @@ def main():
     output_dict["param_d_mean"] = sum(param_list) / len(param_list)
     output_dict["param_d_median"] = sorted(param_list)[len(param_list) // 2]
 
-    for i in range(preprocess_loader2.size):
-        image, gt, name = preprocess_loader2.load_data()
+    for _ in range(preprocess_loader2.size):
+        image, gt, name, image_width = preprocess_loader2.load_data()
         gt = np.asarray(gt, np.float32)
 
         gt = 1.0 * (gt > 0.5)  ########################
@@ -358,19 +360,21 @@ def main():
             image = image.unsqueeze(0)
 
         with torch.no_grad():
-            param_d = models["Preprocess"](image) * opt.testsize
-            # print(f"{int(param_d) = }")
+            d_predict = models["Preprocess"](image)
+            print(f"{float(d_predict) = }")
 
-            # cropped_image = crop_image_func.crop(param_d, image, name)
+            crop_d = d_predict * image_width
+
+            # cropped_image = crop_image_func.crop(crop_d, image, name)
             # crop_image_func.save()
 
-            # cropped_gt = crop_gt_func.crop(param_d, gt, name)
+            # cropped_gt = crop_gt_func.crop(crop_d, gt, name)
             # crop_gt_func.save()
 
             # ---- crop image ----
             cropped_image = torch.Tensor().cuda()
             for j in range(image.size(0)):
-                crop = image[j, :, :, : int(param_d[j])]
+                crop = image[j, :, :, : int(crop_d[j])]
                 crop = F.interpolate(
                     crop.unsqueeze(0),
                     size=(opt.testsize, opt.testsize),
@@ -383,7 +387,7 @@ def main():
             cropped_gt = torch.Tensor()
             gt = torch.Tensor(gt)
             for j in range(gt.size(0)):
-                crop = gt[j, :, : int(param_d[j])]
+                crop = gt[j, :, : int(crop_d[j])]
                 crop = F.interpolate(
                     crop.unsqueeze(0).unsqueeze(0),
                     size=(opt.testsize, opt.testsize),

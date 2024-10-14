@@ -235,8 +235,9 @@ class PolypDatasetPreprocess(PolypDataset):
 
         image = self.img_transform(image)
         gt = self.gt_transform(gt)
+        image_width = image.size(2)
 
-        return image, gt, name
+        return image, gt, name, image_width
 
 
 def get_loader(
@@ -377,7 +378,8 @@ class test_dataset_preprocess(test_dataset):
 
         image = self.img_transform(image)
         gt = self.gt_transform(gt)
+        image_width = image.size(2)
 
         self.index += 1
 
-        return image, gt, name
+        return image, gt, name, image_width

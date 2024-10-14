@@ -114,7 +114,7 @@ def train(input_dict: dict):
         for i, pack in enumerate(dataloaders_dict[phase], start=1):
             for rate in size_rates:
                 optimizer.zero_grad()
-                images, gts, _ = pack
+                images, gts, _, image_width = pack
                 labels = torch.einsum("ijkl->i", gts) > 0
 
                 labels = torch.where(labels > 0, torch.tensor(1), torch.tensor(0))
@@ -122,32 +122,34 @@ def train(input_dict: dict):
                 images = Variable(images).to(device)
                 gts = Variable(gts).to(device)
                 labels = Variable(labels).to(device)
+
                 # ---- rescale ----
-                trainsize = int(round(opt.trainsize * rate / 32) * 32)
-                if rate != 1:
-                    images = F.upsample(
-                        images,
-                        size=(trainsize, trainsize),
-                        mode="bilinear",
-                        align_corners=True,
-                    )
-                    gts = F.upsample(
-                        gts,
-                        size=(trainsize, trainsize),
-                        mode="bilinear",
-                        align_corners=True,
-                    )
+                # trainsize = int(round(opt.trainsize * rate / 32) * 32)
+                # if rate != 1:
+                #     images = F.upsample(
+                #         images,
+                #         size=(trainsize, trainsize),
+                #         mode="bilinear",
+                #         align_corners=True,
+                #     )
+                #     gts = F.upsample(
+                #         gts,
+                #         size=(trainsize, trainsize),
+                #         mode="bilinear",
+                #         align_corners=True,
+                #     )
+
                 with torch.set_grad_enabled(phase == "train"):
                     d_predict = models["Preprocess"](images)
+                    print(f"{float(d_predict) = }")
 
                     p_loss = paramd_d_loss(
                         d_predict=d_predict, d_init=opt.d_init, lambda_d=opt.lambda_d
                     )
 
                     crop_d = d_predict.clone()
-                    crop_d = crop_d * opt.trainsize
+                    crop_d = crop_d * image_width
 
-                    print(crop_d, end="\r")
                     # ---- crop images ----
                     cropped_images = torch.Tensor().cuda()
                     for j in range(images.size(0)):
