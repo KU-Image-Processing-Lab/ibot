@@ -101,17 +101,18 @@ class ResNet10(nn.Module):
         # self.fc = nn.Linear(2048*11*11, num_classes)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(512, 1)
+        self.output = nn.ReLU(inplace=True)
 
         # 出力層の初期化
-        d_init = 0.600
+        # d_init = 0.600
+
         # zero init
         # nn.init.zeros_(self.fc.weight)
-
         # random init
-        nn.init.normal_(self.fc.weight, mean=0, std=0.01)
+        # nn.init.normal_(self.fc.weight, mean=0, std=0.01)
 
-        bias_init = math.log(d_init / (1 - d_init))
-        nn.init.constant_(self.fc.bias, bias_init)
+        # bias_init = math.log(d_init / (1 - d_init))
+        # nn.init.constant_(self.fc.bias, bias_init)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -156,8 +157,11 @@ class ResNet10(nn.Module):
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
         x = self.fc(x)
+        # ---- ReLU ----
+        x = self.output(x)
+
         # ---- sigmoid ----
-        x = torch.sigmoid(x)
+        # x = torch.sigmoid(x)
 
         # ---- tanh ----
         # x = torch.tanh(x)

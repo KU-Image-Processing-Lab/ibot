@@ -29,7 +29,7 @@ seed_everything(42)
 def paramd_d_loss(
     d_predict: torch.Tensor, d_init: torch.Tensor, lambda_d: float
 ) -> torch.Tensor:
-    return (lambda_d * (d_predict - d_init) ** 2).mean()
+    return (lambda_d * ((d_predict - d_init) ** 2)).mean()
 
 
 def structure_loss(pred, mask):
@@ -104,7 +104,8 @@ def train(input_dict: dict):
 
         # ---- multi-scale training ----
         size_rates = [1]
-        loss_record2, loss_record3, loss_record4, d_loss_record = (
+        loss_record2, loss_record3, loss_record4, d_loss_record, p_loss_record = (
+            AvgMeter(),
             AvgMeter(),
             AvgMeter(),
             AvgMeter(),
@@ -122,6 +123,7 @@ def train(input_dict: dict):
                 images = Variable(images).to(device)
                 gts = Variable(gts).to(device)
                 labels = Variable(labels).to(device)
+                image_width = image_width.to(device)
 
                 # ---- rescale ----
                 # trainsize = int(round(opt.trainsize * rate / 32) * 32)
@@ -141,14 +143,12 @@ def train(input_dict: dict):
 
                 with torch.set_grad_enabled(phase == "train"):
                     d_predict = models["Preprocess"](images)
-                    print(f"{float(d_predict) = }")
 
                     p_loss = paramd_d_loss(
                         d_predict=d_predict, d_init=opt.d_init, lambda_d=opt.lambda_d
                     )
 
-                    crop_d = d_predict.clone()
-                    crop_d = crop_d * image_width
+                    crop_d = d_predict * image_width.unsqueeze(1)
 
                     # ---- crop images ----
                     cropped_images = torch.Tensor().cuda()
@@ -214,6 +214,7 @@ def train(input_dict: dict):
 
                         # ---- recording loss ----
                 if rate == 1:
+                    p_loss_record.update(p_loss.data, opt.batchsize)
                     d_loss_record.update(d_loss.data, opt.batchsize)
                     loss_record2.update(loss2.data, opt.batchsize)
                     loss_record3.update(loss3.data, opt.batchsize)
@@ -221,7 +222,7 @@ def train(input_dict: dict):
             if (i % opt.log_iter == 0 or i == total_step) and phase == "train":
                 print(
                     "{} Epoch [{:03d}/{:03d}], Step [{:04d}/{:04d}], "
-                    "[lateral-2: {:.4f}, lateral-3: {:0.4f}, lateral-4: {:0.4f}, d_loss: {:0.4f}".format(
+                    "[lateral-2: {:.4f}, lateral-3: {:0.4f}, lateral-4: {:0.4f}, d_loss: {:0.4f}, p_loss: {:0.4f}".format(
                         datetime.now(),
                         epoch,
                         opt.epoch,
@@ -231,14 +232,18 @@ def train(input_dict: dict):
                         loss_record3.show(),
                         loss_record4.show(),
                         d_loss_record.show(),
+                        p_loss_record.show(),
                     )
                 )
+                print("mean d: {:.4f}".format(d_predict.mean().cpu().data.numpy()))
         if phase == "train":
             train_loss = loss_record2.show() + loss_record3.show() + loss_record4.show()
             train_d_loss = d_loss_record.show()
+            train_p_loss = p_loss_record.show()
         elif phase == "val":
             val_loss = loss_record2.show() + loss_record3.show() + loss_record4.show()
             val_d_loss = d_loss_record.show()
+            val_p_loss = p_loss_record.show()
             if val_loss < best_loss:
                 best_loss = val_loss
                 save_path = "snapshots/{}/".format(opt.train_save)
@@ -285,6 +290,7 @@ def train(input_dict: dict):
         print("[Saving Snapshot:]", save_path + "TransFuse-%d.pth" % epoch)
     print("train_loss: {0:.4f}, val_loss: {1:.4f}".format(train_loss, val_loss))
     print("train_d_loss: {0:.4f}, val_d_loss: {1:.4f}".format(train_d_loss, val_d_loss))
+    print("train_p_loss: {0:.4f}, val_p_loss: {1:.4f}".format(train_p_loss, val_p_loss))
 
     output_dict = {
         "epoch": epoch,
@@ -292,6 +298,8 @@ def train(input_dict: dict):
         "val_loss": val_loss,
         "train_d_loss": train_d_loss,
         "val_d_loss": val_d_loss,
+        "train_p_loss": train_p_loss,
+        "val_p_loss": val_p_loss,
         "best_loss": best_loss,
         "best2_loss": best2_loss,
     }
@@ -374,6 +382,12 @@ def arg_parser() -> argparse.Namespace:
         type=str,
         default="./fig/dis_loss_img.png",
         help="path to Discriminator loss img",
+    )
+    parser.add_argument(
+        "--pre_loss_path",
+        type=str,
+        default="./fig/pre_loss_img.png",
+        help="path to Preprocessing loss img",
     )
     parser.add_argument("--train_save", type=str, default="Transfuse_S")
     parser.add_argument(
@@ -482,7 +496,10 @@ def set_mtl_parameters(
 
 
 def plot_loss(
-    epoch_list, train_loss_list, val_loss_list, train_d_loss_list, val_d_loss_list, opt
+    epoch_list, train_loss_list, val_loss_list,
+    train_d_loss_list, val_d_loss_list,
+    train_p_loss_list, val_p_loss_list,
+    opt
 ):
     fig = plt.figure()
     plt.plot(epoch_list, train_loss_list, label="train_loss")
@@ -499,10 +516,20 @@ def plot_loss(
     plt.ylabel("loss")
     plt.xlim(left=0)
     plt.legend(loc="upper right")
+
+    fig3 = plt.figure()
+    plt.plot(epoch_list, train_p_loss_list, label="train_p_loss", linestyle=":")
+    plt.plot(epoch_list, val_p_loss_list, label="val_p_loss", linestyle="-.")
+    plt.xlabel("epochs")
+    plt.ylabel("loss")
+    plt.xlim(left=0)
+    plt.legend(loc="upper right")
+
     # 保存先ディレクトリを作成
     os.makedirs(opt.loss_dir, exist_ok=True)
     fig.savefig(opt.seg_loss_path)
     fig2.savefig(opt.dis_loss_path)
+    fig3.savefig(opt.pre_loss_path)
 
 
 def main():
@@ -557,6 +584,8 @@ def main():
     val_loss_list = []
     train_d_loss_list = []
     val_d_loss_list = []
+    train_p_loss_list = []
+    val_p_loss_list = []
     best_loss = 100000
     best2_loss = 100000
 
@@ -588,6 +617,8 @@ def main():
         val_loss = output["val_loss"]
         train_d_loss = output["train_d_loss"]
         val_d_loss = output["val_d_loss"]
+        train_p_loss = output["train_p_loss"]
+        val_p_loss = output["val_p_loss"]
 
         epoch_list.append(epoch)
         train_loss = train_loss.cpu().data.numpy()
@@ -598,6 +629,10 @@ def main():
         train_d_loss_list.append(train_d_loss)
         val_d_loss = val_d_loss.cpu().data.numpy()
         val_d_loss_list.append(val_d_loss)
+        train_p_loss = train_p_loss.cpu().data.numpy()
+        train_p_loss_list.append(train_p_loss)
+        val_p_loss = val_p_loss.cpu().data.numpy()
+        val_p_loss_list.append(val_p_loss)
 
     # 学習終了時間の記録
     end_time = time.time()
@@ -612,6 +647,8 @@ def main():
         val_loss_list,
         train_d_loss_list,
         val_d_loss_list,
+        train_p_loss_list,
+        val_p_loss_list,
         opt,
     )
 

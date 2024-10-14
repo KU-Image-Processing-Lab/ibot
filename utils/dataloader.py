@@ -214,6 +214,20 @@ class PolypDatasetPreprocess(PolypDataset):
                 albu.ColorJitter(),
             ]
         )
+        self.img_transform = transforms.Compose(
+            [
+                transforms.Resize((1430, 384)),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+            ]
+        )
+        self.gt_transform = transforms.Compose(
+            [
+                transforms.Resize((1430, 384)),
+                transforms.ToTensor(),
+            ]
+        )
+
 
     def __getitem__(self, index):
         image = self.rgb_loader(self.images[index])
@@ -349,14 +363,14 @@ class test_dataset_preprocess(test_dataset):
 
         self.img_transform = transforms.Compose(
             [
-                transforms.Resize((self.testsize, self.testsize)),
+                transforms.Resize((1430, 384)),
                 transforms.ToTensor(),
                 transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
             ]
         )
         self.gt_transform = transforms.Compose(
             [
-                transforms.Resize((self.testsize, self.testsize)),
+                transforms.Resize((1430, 384)),
                 transforms.ToTensor(),
             ]
         )

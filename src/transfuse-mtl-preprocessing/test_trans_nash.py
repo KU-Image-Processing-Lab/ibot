@@ -217,6 +217,11 @@ def main():
     data_path1 = Path(opt.test_data_path1)
     data_path2 = Path(opt.test_data_path2)
     save_path = Path(opt.save_path)
+    os.makedirs(save_path, exist_ok=True)
+    os.makedirs(save_path / "TP", exist_ok=True)
+    os.makedirs(save_path / "FN", exist_ok=True)
+    os.makedirs(save_path / "FP", exist_ok=True)
+    os.makedirs(save_path / "TN", exist_ok=True)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     models = get_models_for_test(opt, device)
@@ -245,6 +250,7 @@ def main():
         gt = np.asarray(gt, np.float32)
 
         image = image.cuda()
+        # image_width = image_width.cuda()
 
         if image.dim() == 3:
             image = image.unsqueeze(0)
