@@ -216,14 +216,14 @@ class PolypDatasetPreprocess(PolypDataset):
         )
         self.img_transform = transforms.Compose(
             [
-                transforms.Resize((1430, 384)),
+                transforms.Resize((384, 1430)),
                 transforms.ToTensor(),
                 transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
             ]
         )
         self.gt_transform = transforms.Compose(
             [
-                transforms.Resize((1430, 384)),
+                transforms.Resize((384, 1430)),
                 transforms.ToTensor(),
             ]
         )
@@ -363,14 +363,14 @@ class test_dataset_preprocess(test_dataset):
 
         self.img_transform = transforms.Compose(
             [
-                transforms.Resize((1430, 384)),
+                transforms.Resize((384, 1430)),
                 transforms.ToTensor(),
                 transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
             ]
         )
         self.gt_transform = transforms.Compose(
             [
-                transforms.Resize((1430, 384)),
+                transforms.Resize((384, 1430)),
                 transforms.ToTensor(),
             ]
         )
