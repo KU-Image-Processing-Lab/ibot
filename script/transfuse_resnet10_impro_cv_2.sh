@@ -3,7 +3,7 @@ export PYTHONPATH=/home/student/Git/medical-image-processing:$PYTHONPATH
 
 # --------------------------------------------------------------
 
-SCRIPT_DIR='impro-dis'
+SCRIPT_DIR='improvement-discriminator'
 TRAIN_SCRIPT_NAME='train_trans_nash_bicu.py'
 TEST_SCRIPT_NAME='test_trans_nash.py'
 
