@@ -3,8 +3,8 @@ import datetime
 import glob
 import os
 import sys
-from pathlib import Path
 import time
+from pathlib import Path
 
 import cv2
 import imageio
@@ -123,7 +123,7 @@ data_path2 = opt.test_data_path2
 save_path = opt.test_save_path
 
 model = TransFuse_L()
-model.load_state_dict(torch.load(opt.pth_path,map_location=torch.device('cpu')))
+model.load_state_dict(torch.load(opt.pth_path, map_location=torch.device("cpu")))
 model.cpu()
 model.eval()
 
@@ -143,11 +143,11 @@ if opt.discriminator == "res2net":
 
     model2 = Discriminator()
 
-model2.load_state_dict(torch.load(opt.pth_path2,map_location=torch.device('cpu')))
+model2.load_state_dict(torch.load(opt.pth_path2, map_location=torch.device("cpu")))
 model2.cpu()
 model2.eval()
 
-#timer start
+# timer start
 start_time = time.time()
 
 os.makedirs(save_path, exist_ok=True)
@@ -336,7 +336,7 @@ if TP != 0:
     output_dict["recall_cutoff"] = recall
     output_dict["specificity_cutoff"] = specificity
 
-end_time = time.time() 
+end_time = time.time()
 
 test_time = end_time - start_time
 print("Test Time: ", test_time)

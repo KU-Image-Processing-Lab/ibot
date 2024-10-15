@@ -116,14 +116,13 @@ parser.add_argument("--test_save_path", type=str, default="./results/Transfuse_S
 parser.add_argument("--test_roc_save", type=str, default="./fig/results/Transfuse_S/")
 
 
-
 opt = parser.parse_args()
 # for ep in range(opt.epoch):
 
 data_path1 = opt.test_data_path1
 data_path2 = opt.test_data_path2
 save_path = opt.test_save_path
-roc_save=opt.test_roc_save
+roc_save = opt.test_roc_save
 
 model = TransFuse_L()
 model.load_state_dict(torch.load(opt.pth_path))
@@ -305,7 +304,7 @@ plt.plot(fpr, tpr)
 plt.xlabel("FPR: False positive rate")
 plt.ylabel("TPR: True positive rate")
 plt.grid()
-plt.savefig(roc_save+"/roc_curve.png")
+plt.savefig(roc_save + "/roc_curve.png")
 
 AUC = roc_auc_score(y_true, y_score)
 output_dict["AUC"] = AUC
