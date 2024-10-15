@@ -37,7 +37,17 @@ def structure_loss(pred, mask):
     return (wbce + wiou).mean()
 
 
-def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best2_loss, best_epoch,best_epoch2):
+def train(
+    dataloaders_dict,
+    models,
+    optimizer,
+    criterion,
+    epoch,
+    best_loss,
+    best2_loss,
+    best_epoch,
+    best_epoch2,
+):
     val_loss = 0
     for phase in ["train", "val"]:
         if phase == "train":
@@ -98,9 +108,14 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
 
                     lateral_map_2 = lateral_map_2.repeat(1, 3, 1, 1)
                     # バイキュービック補間でリサイズ
-                    lateral_map_2 = F.interpolate(lateral_map_2, size=(224, 224), mode='bicubic', align_corners=False)
+                    lateral_map_2 = F.interpolate(
+                        lateral_map_2,
+                        size=(224, 224),
+                        mode="bicubic",
+                        align_corners=False,
+                    )
                     # print(lateral_map_2.shape)
-                    
+
                     d_out = models["Discriminator"](lateral_map_2)
                     d_loss = criterion(d_out, labels)
                     losses = torch.stack((loss, d_loss))
@@ -181,7 +196,17 @@ def train(dataloaders_dict, models, optimizer, criterion, epoch, best_loss, best
         print("[Saving Snapshot:]", save_path + "Transfuse-%d.pth" % epoch)
     print("train_loss: {0:.4f}, val_loss: {1:.4f}".format(train_loss, val_loss))
     print("train_d_loss: {0:.4f}, val_d_loss: {1:.4f}".format(train_d_loss, val_d_loss))
-    return epoch, train_loss, val_loss, train_d_loss, val_d_loss, best_loss, best2_loss,best_epoch,best_epoch2
+    return (
+        epoch,
+        train_loss,
+        val_loss,
+        train_d_loss,
+        val_d_loss,
+        best_loss,
+        best2_loss,
+        best_epoch,
+        best_epoch2,
+    )
 
 
 if __name__ == "__main__":
@@ -387,7 +412,7 @@ if __name__ == "__main__":
             best_loss,
             best2_loss,
             best_epoch,
-            best_epoch2
+            best_epoch2,
         )
         epoch_list.append(epoch)
         train_loss = train_loss.cpu().data.numpy()
@@ -405,8 +430,8 @@ if __name__ == "__main__":
     # 学習にかかった時間の計算
     training_time = end_time - start_time
     print(f"学習にかかった時間:{training_time}秒")
-    print('best epoch:', best_epoch)
-    print('best epoch2:', best_epoch2)
+    print("best epoch:", best_epoch)
+    print("best epoch2:", best_epoch2)
     fig = plt.figure()
     plt.plot(epoch_list, train_loss_list, label="train_loss")
     plt.plot(epoch_list, val_loss_list, label="val_loss", linestyle="--")
