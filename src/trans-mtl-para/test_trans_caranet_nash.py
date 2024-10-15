@@ -152,8 +152,17 @@ if opt.discriminator == "res2net":
 # model2.eval()
 
 from torchinfo import summary
-summary(model,input_size=(16, 3, 352, 352),col_names=["output_size", "num_params"],)
-summary(model2,input_size=(16, 3, 352, 352),col_names=["output_size", "num_params"],)
+
+summary(
+    model,
+    input_size=(16, 3, 352, 352),
+    col_names=["output_size", "num_params"],
+)
+summary(
+    model2,
+    input_size=(16, 3, 352, 352),
+    col_names=["output_size", "num_params"],
+)
 
 # os.makedirs(save_path, exist_ok=True)
 # for file in glob.glob(save_path + "/*.png"):

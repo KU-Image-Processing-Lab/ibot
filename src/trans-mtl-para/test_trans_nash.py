@@ -3,8 +3,8 @@ import datetime
 import glob
 import os
 import sys
-from pathlib import Path
 import time
+from pathlib import Path
 
 import cv2
 import imageio
@@ -148,8 +148,17 @@ if opt.discriminator == "res2net":
 # model2.eval()
 
 from torchinfo import summary
-summary(model,input_size=(16, 3, 352, 352),col_names=["output_size", "num_params"],)
-summary(model2,input_size=(16, 3, 352, 352),col_names=["output_size", "num_params"],)
+
+summary(
+    model,
+    input_size=(16, 3, 352, 352),
+    col_names=["output_size", "num_params"],
+)
+summary(
+    model2,
+    input_size=(16, 3, 352, 352),
+    col_names=["output_size", "num_params"],
+)
 
 # #timer start
 # start_time = time.time()
@@ -340,7 +349,7 @@ summary(model2,input_size=(16, 3, 352, 352),col_names=["output_size", "num_param
 #     output_dict["recall_cutoff"] = recall
 #     output_dict["specificity_cutoff"] = specificity
 
-# end_time = time.time() 
+# end_time = time.time()
 
 # test_time = end_time - start_time
 # print("Test Time: ", test_time)
