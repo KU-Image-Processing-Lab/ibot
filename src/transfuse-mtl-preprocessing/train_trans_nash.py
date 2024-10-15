@@ -496,10 +496,14 @@ def set_mtl_parameters(
 
 
 def plot_loss(
-    epoch_list, train_loss_list, val_loss_list,
-    train_d_loss_list, val_d_loss_list,
-    train_p_loss_list, val_p_loss_list,
-    opt
+    epoch_list,
+    train_loss_list,
+    val_loss_list,
+    train_d_loss_list,
+    val_d_loss_list,
+    train_p_loss_list,
+    val_p_loss_list,
+    opt,
 ):
     fig = plt.figure()
     plt.plot(epoch_list, train_loss_list, label="train_loss")

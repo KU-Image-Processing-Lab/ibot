@@ -228,7 +228,6 @@ class PolypDatasetPreprocess(PolypDataset):
             ]
         )
 
-
     def __getitem__(self, index):
         image = self.rgb_loader(self.images[index])
         gt = self.binary_loader(self.gts[index])
