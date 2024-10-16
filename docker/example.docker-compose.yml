@@ -1,6 +1,7 @@
 version: '2.3'
 services:
   dev:
+    build: .
     container_name: TODO
     image: TODO
     # command: /bin/bash
@@ -8,7 +9,8 @@ services:
     working_dir: TODO
     volumes:
         - /tmp/.X11-unix:/tmp/.X11-unix
-        - TODO
+        # ↓ここを自分の環境に合わせて変更してください↓
+        - /home/student/git/medical-image-processing/:/home/student/git/medical-image-processing/
     environment:
         - DISPLAY=unix$DISPLAY
         - TERM=xterm-256color
