@@ -395,6 +395,9 @@ class CropConstParamD:
         image = cv2.imread(str(image_path))
         mask = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
 
+        # resize image
+        image = cv2.resize(image, (1430, 384))
+        mask = cv2.resize(mask, (1430, 384))
         height, width = image.shape[:2]
 
         # w-0.375(w-h) = 0.625w + 0.375h
