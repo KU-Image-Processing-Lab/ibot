@@ -3,11 +3,11 @@ import os
 import sys
 import time
 from datetime import datetime
-import torch.nn as nn
 
 import matplotlib
 import matplotlib.pyplot as plt
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
@@ -286,15 +286,9 @@ if __name__ == "__main__":
         default="./weights/修論/segmentation/TransFuse-L+MAE/vit-l_352/石灰化ありのみ/Transfuse-best.pth",
         help="MAEの重み(TransFuse)",
     )
-    parser.add_argument(
-        "--kernel_size", type=int, default=2, help="kernel size"
-    )
-    parser.add_argument(
-        "--stride", type=int, default=2, help="stride"
-    )
-    parser.add_argument(
-        "--pool", type=str, default="max", help="pooling method"
-    )
+    parser.add_argument("--kernel_size", type=int, default=2, help="kernel size")
+    parser.add_argument("--stride", type=int, default=2, help="stride")
+    parser.add_argument("--pool", type=str, default="max", help="pooling method")
 
     opt = parser.parse_args()
 
@@ -323,7 +317,6 @@ if __name__ == "__main__":
         pool = nn.MaxPool2d(kernel_size=opt.kernel_size, stride=opt.stride)
     elif opt.pool == "avg":
         pool = nn.AvgPool2d(kernel_size=opt.kernel_size, stride=opt.stride)
-    
 
     model1.cuda()
     model2 = model2.cuda()
@@ -392,8 +385,8 @@ if __name__ == "__main__":
     best_loss = 100000
     best2_loss = 100000
     best_epoch = 0
-    kernel_size=opt.kernel_size
-    stride=opt.stride
+    kernel_size = opt.kernel_size
+    stride = opt.stride
 
     # 学習開始時間の記録
     start_time = time.time()
