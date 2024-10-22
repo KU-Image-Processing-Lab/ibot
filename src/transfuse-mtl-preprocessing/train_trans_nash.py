@@ -29,7 +29,7 @@ seed_everything(42)
 def paramd_d_loss(
     d_predict: torch.Tensor, d_init: torch.Tensor, lambda_d: float
 ) -> torch.Tensor:
-    return (lambda_d * ((d_predict - d_init) ** 2)).mean()
+    return (lambda_d * torch.abs(d_predict - d_init)).mean()
 
 
 def structure_loss(pred, mask):
@@ -148,7 +148,8 @@ def train(input_dict: dict):
                         d_predict=d_predict, d_init=opt.d_init, lambda_d=opt.lambda_d
                     )
 
-                    crop_d = d_predict * image_width.unsqueeze(1)
+                    height, width = images.shape[2:]
+                    crop_d = (d_predict.unsqueeze(1) * width + (1 - d_predict.unsqueeze(1)) * height).long()
 
                     # ---- crop images ----
                     cropped_images = torch.Tensor().cuda()

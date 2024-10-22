@@ -158,10 +158,10 @@ class ResNet10(nn.Module):
         x = torch.flatten(x, 1)
         x = self.fc(x)
         # ---- ReLU ----
-        x = self.output(x)
+        # x = self.output(x)
 
         # ---- sigmoid ----
-        # x = torch.sigmoid(x)
+        x = torch.sigmoid(x)
 
         # ---- tanh ----
         # x = torch.tanh(x)

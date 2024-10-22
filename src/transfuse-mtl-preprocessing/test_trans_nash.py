@@ -260,7 +260,8 @@ def main():
             param_list.append(float(d_predict))
             print(f"{float(d_predict) = }")
 
-            crop_d = d_predict * image_width
+            height, width = image.shape[2:]
+            crop_d = int(d_predict * width + (1 - d_predict) * height)
 
             # ---- crop image ----
             cropped_image = torch.Tensor().cuda()
