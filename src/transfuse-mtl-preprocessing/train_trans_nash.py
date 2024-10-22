@@ -149,7 +149,10 @@ def train(input_dict: dict):
                     )
 
                     height, width = images.shape[2:]
-                    crop_d = (d_predict.unsqueeze(1) * width + (1 - d_predict.unsqueeze(1)) * height).long()
+                    crop_d = (
+                        d_predict.unsqueeze(1) * width
+                        + (1 - d_predict.unsqueeze(1)) * height
+                    ).long()
 
                     # ---- crop images ----
                     cropped_images = torch.Tensor().cuda()
