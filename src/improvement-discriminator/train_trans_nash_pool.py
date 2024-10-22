@@ -7,6 +7,7 @@ from datetime import datetime
 import matplotlib
 import matplotlib.pyplot as plt
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
@@ -46,6 +47,7 @@ def train(
     best_loss,
     best2_loss,
     best_epoch,
+    pool,
 ):
     val_loss = 0
     for phase in ["train", "val"]:
@@ -106,14 +108,9 @@ def train(
                     )  # TODO: try different weights for loss
 
                     lateral_map_2 = lateral_map_2.repeat(1, 3, 1, 1)
-                    # バイリニア補間でリサイズ
-                    lateral_map_2 = F.interpolate(
-                        lateral_map_2,
-                        size=(224, 224),
-                        mode="bilinear",
-                        align_corners=False,
-                    )
-                    print(lateral_map_2.shape)
+                    # リサイズ
+                    lateral_map_2 = pool(lateral_map_2)
+                    # print(lateral_map_2.shape)
 
                     d_out = models["Discriminator"](lateral_map_2)
                     d_loss = criterion(d_out, labels)
@@ -129,7 +126,6 @@ def train(
                         )
                         clip_gradient(optimizer, opt.clip)
                         optimizer.step()
-
                         # ---- recording loss ----
                 if rate == 1:
                     d_loss_record.update(d_loss.data, opt.batchsize)
@@ -290,6 +286,9 @@ if __name__ == "__main__":
         default="./weights/修論/segmentation/TransFuse-L+MAE/vit-l_352/石灰化ありのみ/Transfuse-best.pth",
         help="MAEの重み(TransFuse)",
     )
+    parser.add_argument("--kernel_size", type=int, default=2, help="kernel size")
+    parser.add_argument("--stride", type=int, default=2, help="stride")
+    parser.add_argument("--pool", type=str, default="max", help="pooling method")
 
     opt = parser.parse_args()
 
@@ -313,6 +312,11 @@ if __name__ == "__main__":
     if opt.tuning and opt.mtl == "stl":
         for param in model1.parameters():
             param.requires_grad = False
+
+    if opt.pool == "max":
+        pool = nn.MaxPool2d(kernel_size=opt.kernel_size, stride=opt.stride)
+    elif opt.pool == "avg":
+        pool = nn.AvgPool2d(kernel_size=opt.kernel_size, stride=opt.stride)
 
     model1.cuda()
     model2 = model2.cuda()
@@ -381,6 +385,8 @@ if __name__ == "__main__":
     best_loss = 100000
     best2_loss = 100000
     best_epoch = 0
+    kernel_size = opt.kernel_size
+    stride = opt.stride
 
     # 学習開始時間の記録
     start_time = time.time()
@@ -407,6 +413,7 @@ if __name__ == "__main__":
             best_loss,
             best2_loss,
             best_epoch,
+            pool,
         )
         epoch_list.append(epoch)
         train_loss = train_loss.cpu().data.numpy()
