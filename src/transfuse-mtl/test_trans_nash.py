@@ -117,6 +117,7 @@ parser.add_argument(
     "--test_data_path2", type=str, default="./dataset/sekkai_TestDataset/"
 )
 parser.add_argument("--test_save_path", type=str, default="./results/Transfuse_S/")
+parser.add_argument("--model_summary", action="store_true")
 
 
 opt = parser.parse_args()
@@ -132,8 +133,9 @@ model.load_state_dict(torch.load(opt.pth_path))
 model.cuda()
 model.eval()
 
-print("model1")
-get_model_scale(model)
+if opt.model_summary:
+    print("model1")
+    get_model_scale(model)
 
 # model2 = vit_large(pretrained=pretrained)
 
@@ -156,8 +158,9 @@ model2.load_state_dict(torch.load(opt.pth_path2))
 model2.cuda()
 model2.eval()
 
-print("model2")
-get_model_scale(model2)
+if opt.model_summary:
+    print("model2")
+    get_model_scale(model2)
 
 os.makedirs(save_path, exist_ok=True)
 for file in glob.glob(save_path + "/*.png"):
@@ -174,12 +177,13 @@ for file in glob.glob(save_path + "/FP/*.png"):
 os.makedirs(save_path + "/TN", exist_ok=True)
 for file in glob.glob(save_path + "/TN/*.png"):
     os.remove(file)
-image_root1 = "{}/images/".format(data_path1)
-gt_root1 = "{}/masks/".format(data_path1)
+
+image_root1 = Path(data_path1) / "images"
+gt_root1 = Path(data_path1) / "masks"
 test_loader1 = test_dataset(image_root1, gt_root1, opt.testsize)
 
-image_root2 = "{}/images/".format(data_path2)
-gt_root2 = "{}/masks/".format(data_path2)
+image_root2 = Path(data_path2) / "images"
+gt_root2 = Path(data_path2) / "masks"
 test_loader2 = test_dataset(image_root2, gt_root2, opt.testsize)
 
 dice_bank = []
