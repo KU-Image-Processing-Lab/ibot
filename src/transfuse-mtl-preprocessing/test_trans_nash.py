@@ -249,6 +249,12 @@ def main():
         label = torch.where(label > 0, torch.tensor(1), torch.tensor(0))
         gt = np.asarray(gt, np.float32)
 
+        # save image
+        os.makedirs("./fig/source", exist_ok=True)
+        img = image.mul(255).byte()
+        img = img.permute(1, 2, 0).cpu().numpy()
+        cv2.imwrite(f"./fig/source/{name.replace('.png', '')}_image.png", img)
+
         image = image.cuda()
         # image_width = image_width.cuda()
 
@@ -269,17 +275,20 @@ def main():
                 crop = image[j, :, :, : int(crop_d)]
                 crop = F.interpolate(
                     crop.unsqueeze(0),
-                    size=(opt.testsize, opt.testsize),
+                    size=(height, width),
                     mode="bilinear",
                     align_corners=True,
                 )
                 cropped_image = torch.cat((cropped_image, crop), dim=0)
 
             # ---- save image ----
+            os.makedirs("./fig/cropped", exist_ok=True)
             for j in range(cropped_image.size(0)):
                 img = cropped_image[j].mul(255).byte()
                 img = img.permute(1, 2, 0).cpu().numpy()
-                cv2.imwrite(f"./fig/{name.replace('.png', '')}_image.png", img)
+                cv2.imwrite(
+                    f"./fig/cropped/{name.replace('.png', '')}_image_{j}.png", img
+                )
 
             # ---- crop gt ----
             cropped_gt = torch.Tensor()
@@ -288,7 +297,7 @@ def main():
                 crop = gt[j, :, : int(crop_d)]
                 crop = F.interpolate(
                     crop.unsqueeze(0).unsqueeze(0),
-                    size=(opt.testsize, opt.testsize),
+                    size=(height, width),
                     mode="bilinear",
                     align_corners=True,
                 )
@@ -310,11 +319,22 @@ def main():
             cropped_image, cropped_gt = mtl_loader1.transform_process(
                 cropped_image, cropped_gt
             )
+            cropped_image = cropped_image.unsqueeze(0)
+
+            # ---- save image ----
+            os.makedirs("./fig/end", exist_ok=True)
+            for j in range(cropped_image.size(0)):
+                img = cropped_image[j].mul(255).byte()
+                img = img.permute(1, 2, 0).cpu().numpy()
+                cv2.imwrite(
+                    f"./fig/end/{name.replace('.png', '')}_image_{j}.png", img
+                )
+
             _, _, res = models["Transfuse"](cropped_image)
 
             res1 = F.upsample(
                 res,
-                size=(opt.testsize, opt.testsize),
+                size=(height, width),
                 mode="bilinear",
                 align_corners=False,
             )
@@ -370,7 +390,8 @@ def main():
             d_predict = models["Preprocess"](image)
             print(f"{float(d_predict) = }")
 
-            crop_d = d_predict * image_width
+            height, width = image.shape[2:]
+            crop_d = int(d_predict * width + (1 - d_predict) * height)
 
             # cropped_image = crop_image_func.crop(crop_d, image, name)
             # crop_image_func.save()
@@ -384,7 +405,7 @@ def main():
                 crop = image[j, :, :, : int(crop_d)]
                 crop = F.interpolate(
                     crop.unsqueeze(0),
-                    size=(opt.testsize, opt.testsize),
+                    size=(height, width),
                     mode="bilinear",
                     align_corners=True,
                 )
@@ -397,16 +418,16 @@ def main():
                 crop = gt[j, :, : int(crop_d)]
                 crop = F.interpolate(
                     crop.unsqueeze(0).unsqueeze(0),
-                    size=(opt.testsize, opt.testsize),
+                    size=(height, width),
                     mode="bilinear",
                     align_corners=True,
                 )
                 cropped_gt = torch.cat((cropped_gt, crop), dim=0)
 
-            cropped_gt = cropped_gt.squeeze().cpu().numpy()
             cropped_image, cropped_gt = mtl_loader2.transform_process(
                 cropped_image, cropped_gt
             )
+            cropped_image = cropped_image.unsqueeze(0)
             _, _, res = models["Transfuse"](cropped_image)
 
         res = F.upsample(
@@ -416,6 +437,7 @@ def main():
         # res = (res - res.min()) / (res.max() - res.min() + 1e-8)  ############################
         res = 1.0 * (res > 0.5)  ############################
 
+        cropped_gt = cropped_gt.cpu().numpy()
         dice = mean_dice_np(cropped_gt, res)
         iou = mean_iou_np(cropped_gt, res)
         acc = np.sum(res == cropped_gt) / (res.shape[0] * res.shape[1])

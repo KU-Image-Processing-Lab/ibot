@@ -115,7 +115,7 @@ def train(input_dict: dict):
         for i, pack in enumerate(dataloaders_dict[phase], start=1):
             for rate in size_rates:
                 optimizer.zero_grad()
-                images, gts, _, image_width = pack
+                images, gts, name, image_width = pack
                 labels = torch.einsum("ijkl->i", gts) > 0
 
                 labels = torch.where(labels > 0, torch.tensor(1), torch.tensor(0))
@@ -160,7 +160,7 @@ def train(input_dict: dict):
                         crop = images[j, :, :, : int(crop_d[j])]
                         crop = F.interpolate(
                             crop.unsqueeze(0),
-                            size=(opt.trainsize, opt.trainsize),
+                            size=(height, width),
                             mode="bilinear",
                             align_corners=True,
                         )
@@ -174,7 +174,7 @@ def train(input_dict: dict):
                         crop = gts[j, :, :, : int(crop_d[j])]
                         crop = F.interpolate(
                             crop.unsqueeze(0),
-                            size=(opt.trainsize, opt.trainsize),
+                            size=(height, width),
                             mode="bilinear",
                             align_corners=True,
                         )
@@ -185,6 +185,26 @@ def train(input_dict: dict):
                     cropped_images, cropped_gts = postprocess(
                         cropped_images, cropped_gts
                     )
+
+                    # # ---- save image ----
+                    # os.makedirs("./fig/train_start", exist_ok=True)
+                    # for j in range(images.size(0)):
+                    #     img = images[j].mul(255).byte()
+                    #     img = img.permute(1, 2, 0).cpu().numpy()
+                    #     cv2.imwrite(
+                    #         f"./fig/train_start/{name[j].replace('.png', '')}_image.png",
+                    #         img,
+                    #     )
+
+                    # # ---- save image ----
+                    # os.makedirs("./fig/train_end", exist_ok=True)
+                    # for j in range(cropped_images.size(0)):
+                    #     img = cropped_images[j].mul(255).byte()
+                    #     img = img.permute(1, 2, 0).cpu().numpy()
+                    #     cv2.imwrite(
+                    #         f"./fig/train_end/{name[j].replace('.png', '')}_image.png",
+                    #         img,
+                    #     )
 
                     # ---- forward ----
                     lateral_map_4, lateral_map_3, lateral_map_2 = models["TransFuse"](
@@ -434,7 +454,7 @@ def arg_parser() -> argparse.Namespace:
         "--lambda_d", type=float, default=0.01, help="パラメータdの損失の係数"
     )
     parser.add_argument(
-        "--d_init", type=float, default=0.600, help="パラメータdの初期値"
+        "--d_init", type=float, default=0.625, help="パラメータdの初期値"
     )
     return parser.parse_args()
 

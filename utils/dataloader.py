@@ -163,6 +163,17 @@ class PolypDatasetPostprocess(PolypDataset):
         self.trainsize = trainsize
         self.phase = phase
 
+        self.img_transform = transforms.Compose(
+            [
+                transforms.Resize((self.trainsize, self.trainsize)),
+            ]
+        )
+        self.gt_transform = transforms.Compose(
+            [
+                transforms.Resize((self.trainsize, self.trainsize)),
+            ]
+        )
+
     def __call__(self, images, gts):
         processed_images = []
         processed_gts = []
@@ -179,24 +190,18 @@ class PolypDatasetPostprocess(PolypDataset):
 
     def transform_process(self, image, gt):
         if isinstance(image, torch.Tensor):
-            image = image.cpu().detach().numpy()
-            gt = gt.cpu().detach().numpy()
-
-        image = Image.fromarray(np.transpose(image, (1, 2, 0)).astype(np.uint8))
-        gt = Image.fromarray(gt.squeeze().astype(np.uint8))
-
-        image_np = np.array(image)
-        gt_np = np.array(gt)
+            image = image.cpu().numpy()
+        if isinstance(gt, torch.Tensor):
+            gt = gt.cpu().numpy()
 
         if self.phase == "train":
-            augmented = self.transform3(image=image_np, mask=gt_np)
-            image_np, gt_np = augmented["image"], augmented["mask"]
+            image = np.transpose(image, (1, 2, 0))
+            gt = np.transpose(gt, (1, 2, 0))
+            augmented = self.transform3(image=image, mask=gt)
+            image, gt = augmented["image"], augmented["mask"]
 
-        image = Image.fromarray(image_np)
-        gt = Image.fromarray(gt_np)
-
-        image = image.convert("RGB")
-        gt = gt.convert("L")
+        image = torch.from_numpy(np.transpose(image, (2, 0, 1)))
+        gt = torch.from_numpy(np.transpose(gt, (2, 0, 1)))
 
         image = self.img_transform(image)
         gt = self.gt_transform(gt)
@@ -306,7 +311,19 @@ class test_dataset:
                 transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
             ]
         )
-        self.gt_transform = transforms.ToTensor()
+        self.img_transform = transforms.Compose(
+            [
+                transforms.Resize((self.testsize, self.testsize)),
+                # transforms.ToTensor(),
+                # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+            ]
+        )
+        self.gt_transform = transforms.Compose(
+            [
+                transforms.Resize((self.testsize, self.testsize)),
+                # transforms.ToTensor(),
+            ]
+        )
         self.size = len(self.images)
         self.index = 0
 
@@ -322,15 +339,14 @@ class test_dataset:
         return image, gt, name
 
     def transform_process(self, image: torch.Tensor, gt: torch.Tensor):
+        if image.dim() == 4 and gt.dim() == 4:
+            image = image.squeeze(0)
+            gt = gt.squeeze(0)
 
-        if isinstance(image, torch.Tensor):
-            image = image.squeeze(0).cpu().detach().numpy()
+        image = self.img_transform(image)
+        gt = self.gt_transform(gt)
 
-        image = Image.fromarray(np.transpose(image, (1, 2, 0)).astype(np.uint8))
-        image = image.convert("RGB")
-        image = self.transform(image)
-        image = image.unsqueeze(0).cuda()
-        return image, gt
+        return image.cuda(), gt.cuda()
 
     def rgb_loader(self, path):
         with open(path, "rb") as f:
