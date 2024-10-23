@@ -266,7 +266,7 @@ def main():
             # ---- crop image ----
             cropped_image = torch.Tensor().cuda()
             for j in range(image.size(0)):
-                crop = image[j, :, :, : int(crop_d[j])]
+                crop = image[j, :, :, : int(crop_d)]
                 crop = F.interpolate(
                     crop.unsqueeze(0),
                     size=(opt.testsize, opt.testsize),
@@ -285,7 +285,7 @@ def main():
             cropped_gt = torch.Tensor()
             gt = torch.Tensor(gt)
             for j in range(gt.size(0)):
-                crop = gt[j, :, : int(crop_d[j])]
+                crop = gt[j, :, : int(crop_d)]
                 crop = F.interpolate(
                     crop.unsqueeze(0).unsqueeze(0),
                     size=(opt.testsize, opt.testsize),
@@ -381,7 +381,7 @@ def main():
             # ---- crop image ----
             cropped_image = torch.Tensor().cuda()
             for j in range(image.size(0)):
-                crop = image[j, :, :, : int(crop_d[j])]
+                crop = image[j, :, :, : int(crop_d)]
                 crop = F.interpolate(
                     crop.unsqueeze(0),
                     size=(opt.testsize, opt.testsize),
@@ -394,7 +394,7 @@ def main():
             cropped_gt = torch.Tensor()
             gt = torch.Tensor(gt)
             for j in range(gt.size(0)):
-                crop = gt[j, :, : int(crop_d[j])]
+                crop = gt[j, :, : int(crop_d)]
                 crop = F.interpolate(
                     crop.unsqueeze(0).unsqueeze(0),
                     size=(opt.testsize, opt.testsize),
