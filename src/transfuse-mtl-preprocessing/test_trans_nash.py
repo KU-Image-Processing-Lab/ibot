@@ -326,9 +326,7 @@ def main():
             for j in range(cropped_image.size(0)):
                 img = cropped_image[j].mul(255).byte()
                 img = img.permute(1, 2, 0).cpu().numpy()
-                cv2.imwrite(
-                    f"./fig/end/{name.replace('.png', '')}_image_{j}.png", img
-                )
+                cv2.imwrite(f"./fig/end/{name.replace('.png', '')}_image_{j}.png", img)
 
             _, _, res = models["Transfuse"](cropped_image)
 
