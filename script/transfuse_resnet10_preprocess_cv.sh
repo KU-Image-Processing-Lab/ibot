@@ -38,7 +38,7 @@ for i in {0..4}; do
         --save_epoch 50 \
         --tuning \
         --lambda_d 0.1 \
-        --d_init 0.600 \
+        --d_init 0.625 \
         --loss_dir ./results/${TRAIN_SAVE} \
         --seg_loss_path ./results/${TRAIN_SAVE}/seg_loss.png \
         --dis_loss_path ./results/${TRAIN_SAVE}/dis_loss.png \
