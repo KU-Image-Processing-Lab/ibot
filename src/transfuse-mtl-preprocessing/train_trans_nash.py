@@ -75,22 +75,22 @@ def binary_mask(cropped_gts: torch.Tensor, name: list, epoch: int) -> torch.Tens
     return cropped_gts
 
 
-def train(input_dict: dict):
-    dataloaders_dict = input_dict["dataloaders_dict"]
-    models = input_dict["models"]
-    optimizer = input_dict["optimizer"]
-    criterion = input_dict["criterion"]
-    epoch = input_dict["epoch"]
-    best_loss = input_dict["best_loss"]
-    best2_loss = input_dict["best2_loss"]
-    device = input_dict["device"]
-    opt = input_dict["opt"]
-    total_step = input_dict["total_step"]
-    weight_method = input_dict["weight_method"]
-    shared_parameters = input_dict["shared_parameters"]
-    task_specific_parameters = input_dict["task_specific_parameters"]
-    postprocess = input_dict["postprocess"]
-    del input_dict
+def train(**kwargs):
+    dataloaders_dict = kwargs["dataloaders_dict"]
+    models = kwargs["models"]
+    optimizer = kwargs["optimizer"]
+    criterion = kwargs["criterion"]
+    epoch = kwargs["epoch"]
+    best_loss = kwargs["best_loss"]
+    best2_loss = kwargs["best2_loss"]
+    device = kwargs["device"]
+    opt = kwargs["opt"]
+    total_step = kwargs["total_step"]
+    weight_method = kwargs["weight_method"]
+    shared_parameters = kwargs["shared_parameters"]
+    task_specific_parameters = kwargs["task_specific_parameters"]
+    postprocess = kwargs["postprocess"]
+    del kwargs
 
     val_loss = 0
 
@@ -627,7 +627,7 @@ def main():
             "task_specific_parameters": task_specific_parameters,
             "postprocess": postprocess,
         }
-        output = train(input_dict)
+        output = train(**input_dict)
         best_loss = output["best_loss"]
         best2_loss = output["best2_loss"]
         train_loss = output["train_loss"]

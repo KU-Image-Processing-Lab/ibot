@@ -386,7 +386,6 @@ def main():
 
         with torch.no_grad():
             d_predict = models["Preprocess"](image)
-            print(f"{float(d_predict) = }")
 
             height, width = image.shape[2:]
             crop_d = int(d_predict * width + (1 - d_predict) * height)
