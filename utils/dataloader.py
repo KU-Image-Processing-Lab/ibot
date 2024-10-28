@@ -163,6 +163,22 @@ class PolypDatasetPostprocess(PolypDataset):
         self.trainsize = trainsize
         self.phase = phase
 
+        self.transform = albu.Compose(
+            [
+                albu.ShiftScaleRotate(
+                    shift_limit=0.15,
+                    scale_limit=0.15,
+                    rotate_limit=25,
+                    p=0.5,
+                    border_mode=0,
+                ),
+                # albu.RandomSizedCrop(),
+                # albu.ColorJitter(),
+                albu.HorizontalFlip(),
+                # albu.VerticalFlip()
+            ]
+        )
+
         self.img_transform = transforms.Compose(
             [
                 transforms.Resize((self.trainsize, self.trainsize)),
@@ -197,11 +213,14 @@ class PolypDatasetPostprocess(PolypDataset):
         if self.phase == "train":
             image = np.transpose(image, (1, 2, 0))
             gt = np.transpose(gt, (1, 2, 0))
-            augmented = self.transform3(image=image, mask=gt)
+            augmented = self.transform(image=image, mask=gt)
             image, gt = augmented["image"], augmented["mask"]
 
-        image = torch.from_numpy(np.transpose(image, (2, 0, 1)))
-        gt = torch.from_numpy(np.transpose(gt, (2, 0, 1)))
+            image = torch.from_numpy(np.transpose(image, (2, 0, 1)))
+            gt = torch.from_numpy(np.transpose(gt, (2, 0, 1)))
+        else:
+            image = torch.from_numpy(image)
+            gt = torch.from_numpy(gt)
 
         image = self.img_transform(image)
         gt = self.gt_transform(gt)
