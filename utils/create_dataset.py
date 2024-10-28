@@ -474,21 +474,23 @@ class CrossValidationDatasetMAE:
 
     def _get_mae_dataset(self, index: int = 0) -> tuple[list[Path], list[str]]:
 
-        mae_list = list(
-            self.mae_path.glob(f"{index}/*.png")
-        )
+        mae_list = list(self.mae_path.glob(f"{index}/*.png"))
         assert len(mae_list) == 1141, f"mae dataset is not 1141, but {len(mae_list)}"
 
-        train_list = list(
-            self.root_path.glob(f"cv{index}_TrainDataset/images/*.png")
-        )
-        assert len(train_list) == 831, f"train dataset is not 831, but {len(train_list)}"
+        train_list = list(self.root_path.glob(f"cv{index}_TrainDataset/images/*.png"))
+        assert (
+            len(train_list) == 831
+        ), f"train dataset is not 831, but {len(train_list)}"
 
         mae_filename_list = [f.stem for f in mae_list]
         train_filename_list = [f.stem for f in train_list]
 
-        not_train_file_name_list = list(set(mae_filename_list) - set(train_filename_list))
-        assert len(not_train_file_name_list) == 310, f"not mae dataset is not 310, but {len(not_train_file_name_list)}"
+        not_train_file_name_list = list(
+            set(mae_filename_list) - set(train_filename_list)
+        )
+        assert (
+            len(not_train_file_name_list) == 310
+        ), f"not mae dataset is not 310, but {len(not_train_file_name_list)}"
 
         return mae_list, not_train_file_name_list
 
@@ -497,18 +499,12 @@ class CrossValidationDatasetMAE:
         for image_path in data_list:
             image_path = Path(image_path)
 
-            save_file_path = (
-                self.save_dir / f"{index}" / f"{image_path.stem}.png"
-            )
+            save_file_path = self.save_dir / f"{index}" / f"{image_path.stem}.png"
             os.system(f"cp {image_path} {save_file_path}")
 
         for file_name in not_train_file_name_list:
-            save_file_path = (
-                self.save_dir / f"{index}" / f"{file_name}.png"
-            )
-            os.system(
-                f"cp {self.mae_path / '0' / f'{file_name}.png'} {save_file_path}"
-            )
+            save_file_path = self.save_dir / f"{index}" / f"{file_name}.png"
+            os.system(f"cp {self.mae_path / '0' / f'{file_name}.png'} {save_file_path}")
 
     def __call__(self) -> None:
         _, not_train_file_name_list = self._get_mae_dataset(0)
