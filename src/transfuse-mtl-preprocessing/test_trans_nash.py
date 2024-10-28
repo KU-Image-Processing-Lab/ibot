@@ -236,6 +236,12 @@ def main():
     iou_bank = []
     acc_bank = []
 
+    dice_dict = {}
+    iou_dict = {}
+    acc_dict = {}
+    pred_label_dict = {}
+    true_label_dict = {}
+
     y_true = np.array([])
     y_score = np.array([])
     y_pred = np.array([])
@@ -250,10 +256,10 @@ def main():
         gt = np.asarray(gt, np.float32)
 
         # save image
-        os.makedirs("./fig/source", exist_ok=True)
+        os.makedirs("./fig/test_source", exist_ok=True)
         img = image.mul(255).byte()
         img = img.permute(1, 2, 0).cpu().numpy()
-        cv2.imwrite(f"./fig/source/{name.replace('.png', '')}_image.png", img)
+        cv2.imwrite(f"./fig/test_source/{name.replace('.png', '')}_image.png", img)
 
         image = image.cuda()
         # image_width = image_width.cuda()
@@ -282,12 +288,12 @@ def main():
                 cropped_image = torch.cat((cropped_image, crop), dim=0)
 
             # ---- save image ----
-            os.makedirs("./fig/cropped", exist_ok=True)
+            os.makedirs("./fig/test_cropped", exist_ok=True)
             for j in range(cropped_image.size(0)):
                 img = cropped_image[j].mul(255).byte()
                 img = img.permute(1, 2, 0).cpu().numpy()
                 cv2.imwrite(
-                    f"./fig/cropped/{name.replace('.png', '')}_image_{j}.png", img
+                    f"./fig/test_cropped/{name.replace('.png', '')}_image_{j}.png", img
                 )
 
             # ---- crop gt ----
@@ -322,17 +328,17 @@ def main():
             cropped_image = cropped_image.unsqueeze(0)
 
             # ---- save image ----
-            os.makedirs("./fig/end", exist_ok=True)
+            os.makedirs("./fig/test_end", exist_ok=True)
             for j in range(cropped_image.size(0)):
                 img = cropped_image[j].mul(255).byte()
                 img = img.permute(1, 2, 0).cpu().numpy()
-                cv2.imwrite(f"./fig/end/{name.replace('.png', '')}_image_{j}.png", img)
+                cv2.imwrite(f"./fig/test_end/{name.replace('.png', '')}_image_{j}.png", img)
 
             _, _, res = models["Transfuse"](cropped_image)
 
             res1 = F.upsample(
                 res,
-                size=(height, width),
+                size=(opt.testsize, opt.testsize),
                 mode="bilinear",
                 align_corners=False,
             )
@@ -353,6 +359,9 @@ def main():
             y_true = np.append(y_true, label)
             y_score = np.append(y_score, out[0][1] - out[0][0])
             y_pred = np.append(y_pred, predicted)
+
+            pred_label_dict[name] = predicted
+            true_label_dict[name] = label
 
         if label == 1:
             if predicted == 1:
@@ -443,6 +452,10 @@ def main():
         dice_bank.append(dice)
         iou_bank.append(iou)
 
+        acc_dict[name] = acc
+        dice_dict[name] = dice
+        iou_dict[name] = iou
+
     # ---- calculate the confusion matrix ----
     cm = confusion_matrix(y_true, y_pred)
     TN, FP, FN, TP = cm.flatten()
@@ -527,6 +540,30 @@ def main():
         f.write("columns,values\n")
         for k, v in output_dict.items():
             f.write(f"{k},{v}\n")
+
+    # ---- print the results ----
+    now = datetime.datetime.now()
+    now_str = now.strftime("%Y-%m-%d_%H-%M-%S")
+    with open(Path(opt.test_save_path) / f"{now_str}_result.csv", "w") as f:
+        f.write("name, value\n")
+        for k, v in output_dict.items():
+            print(k, v)
+            f.write(f"{k},{v}\n")
+
+    # ---- save the acc, dice, iou as datframe ----
+    import pandas as pd
+
+    df = pd.DataFrame(
+        {
+            "acc": acc_dict,
+            "dice": dice_dict,
+            "iou": iou_dict,
+            "pred_label": pred_label_dict,
+            "true_label": true_label_dict,
+        }
+    )
+
+    df.to_csv(Path(opt.test_save_path) / f"{now_str}_evaluation.csv")
 
 
 if __name__ == "__main__":
