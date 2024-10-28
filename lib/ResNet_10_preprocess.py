@@ -109,7 +109,7 @@ class ResNet10(nn.Module):
         # zero init
         # nn.init.zeros_(self.fc.weight)
         # random init
-        nn.init.normal_(self.fc.weight, mean=0, std=0.01)
+        nn.init.normal_(self.fc.weight, mean=0, std=0.001)
 
         bias_init = math.log(d_init / (1 - d_init))
         nn.init.constant_(self.fc.bias, bias_init)
