@@ -457,6 +457,67 @@ class CropConstParamD:
                     self._make_crop_dataset(data_list)
 
 
+class CrossValidationDatasetMAE:
+    def __init__(
+        self,
+        root_dir: str = "CrossValidation",
+        save_dir: str = "mae/dataset/TrainDataset/images",
+    ):
+        self.root_path = Path(f"dataset/{root_dir}")
+        self.mae_path = Path("dataset/mae/dataset/TrainDataset/images/")
+        self.save_dir = Path(f"dataset/{save_dir}")
+
+    def _get_dataset_list_cv(self, index) -> None:
+        self.train_list = list(
+            self.root_path.glob(f"cv{index}_TrainDataset/images/*.png")
+        )
+
+    def _get_mae_dataset(self, index: int = 0) -> tuple[list[Path], list[str]]:
+
+        mae_list = list(
+            self.mae_path.glob(f"{index}/*.png")
+        )
+        assert len(mae_list) == 1141, f"mae dataset is not 1141, but {len(mae_list)}"
+
+        train_list = list(
+            self.root_path.glob(f"cv{index}_TrainDataset/images/*.png")
+        )
+        assert len(train_list) == 831, f"train dataset is not 831, but {len(train_list)}"
+
+        mae_filename_list = [f.stem for f in mae_list]
+        train_filename_list = [f.stem for f in train_list]
+
+        not_train_file_name_list = list(set(mae_filename_list) - set(train_filename_list))
+        assert len(not_train_file_name_list) == 310, f"not mae dataset is not 310, but {len(not_train_file_name_list)}"
+
+        return mae_list, not_train_file_name_list
+
+    def _make_mae_dataset(self, index, data_list, not_train_file_name_list) -> None:
+        os.makedirs(self.save_dir / f"{index}", exist_ok=True)
+        for image_path in data_list:
+            image_path = Path(image_path)
+
+            save_file_path = (
+                self.save_dir / f"{index}" / f"{image_path.stem}.png"
+            )
+            os.system(f"cp {image_path} {save_file_path}")
+
+        for file_name in not_train_file_name_list:
+            save_file_path = (
+                self.save_dir / f"{index}" / f"{file_name}.png"
+            )
+            os.system(
+                f"cp {self.mae_path / '0' / f'{file_name}.png'} {save_file_path}"
+            )
+
+    def __call__(self) -> None:
+        _, not_train_file_name_list = self._get_mae_dataset(0)
+
+        for index in range(1, 5):
+            self._get_dataset_list_cv(index)
+            self._make_mae_dataset(index, self.train_list, not_train_file_name_list)
+
+
 def arg_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -486,6 +547,10 @@ if __name__ == "__main__":
                 print(f">>> cv{index}")
                 cv_original(index=index)
                 print("-" * 50)
+
+    elif data_type == "mae":
+        mae = CrossValidationDatasetMAE()
+        mae()
 
     elif data_type == "original":
         for index, seed in enumerate([31, 42, 71, 91], start=1):
