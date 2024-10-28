@@ -667,5 +667,6 @@ def main():
     training_time = end_time - start_time
     print(f"学習にかかった時間:{training_time}秒")
 
+
 if __name__ == "__main__":
     main()
