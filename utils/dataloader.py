@@ -1,6 +1,6 @@
 import os
-from pathlib import Path
 import random
+from pathlib import Path
 
 import albumentations as albu
 import cv2
@@ -350,9 +350,11 @@ class test_dataset:
         return image, gt, name
 
     def transform_process(self, image: torch.Tensor, gt: torch.Tensor):
-        transform = transforms.Compose([
+        transform = transforms.Compose(
+            [
                 transforms.Resize((self.testsize, self.testsize)),
-        ])
+            ]
+        )
         if image.dim() == 4 and gt.dim() == 4:
             image = image.squeeze(0)
             gt = gt.squeeze(0)
