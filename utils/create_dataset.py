@@ -4,6 +4,7 @@ import random
 from pathlib import Path
 
 import cv2
+import numpy as np
 
 
 class CrossValidationDataset:
@@ -370,6 +371,8 @@ class CropConstParamD:
 
         os.makedirs(self.save_dir, exist_ok=True)
 
+        self.label_count = 0
+
     def _get_dataset_list_cv(self) -> None:
         self.train_list = list(
             self.root_path.glob(f"cv{self.index}_TrainDataset/images/*.png")
@@ -408,6 +411,7 @@ class CropConstParamD:
         # resize original size
         crop_image = cv2.resize(crop_image, (self.image_size, self.image_size))
         crop_mask = cv2.resize(crop_mask, (self.image_size, self.image_size))
+        self.label_count += 1 if np.sum(crop_mask) > 0 else 0
 
         cv2.imwrite(str(self.save_dir_dataset / image_path.name), crop_image)
         cv2.imwrite(
@@ -455,6 +459,8 @@ class CropConstParamD:
                         exist_ok=True,
                     )
                     self._make_crop_dataset(data_list)
+                    print(f">>> label_count: {self.label_count}")
+                    self.label_count = 0
 
 
 def arg_parser():
