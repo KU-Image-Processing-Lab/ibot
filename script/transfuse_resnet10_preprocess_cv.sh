@@ -39,6 +39,8 @@ for i in {0..4}; do
         --tuning \
         --lambda_d 0.001 \
         --d_init 0.625 \
+        --mean 0 \
+        --std 0.001 \
         --loss_dir ./results/${TRAIN_SAVE} \
         --seg_loss_path ./results/${TRAIN_SAVE}/seg_loss.png \
         --dis_loss_path ./results/${TRAIN_SAVE}/dis_loss.png \

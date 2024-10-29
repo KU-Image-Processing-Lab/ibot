@@ -85,7 +85,7 @@ class Bottleneck(nn.Module):
 
 class ResNet10(nn.Module):
     # ResNet10
-    def __init__(self):
+    def __init__(self, d_init: float, mean: float, std: float):
         # self.inplanes = 128
         self.inplanes = 64
         super(ResNet10, self).__init__()
@@ -104,12 +104,12 @@ class ResNet10(nn.Module):
         self.output = nn.ReLU(inplace=True)
 
         # 出力層の初期化
-        d_init = 0.625
+        d_init = d_init
 
         # zero init
         # nn.init.zeros_(self.fc.weight)
         # random init
-        nn.init.normal_(self.fc.weight, mean=0, std=0.001)
+        nn.init.normal_(self.fc.weight, mean=mean, std=std)
 
         bias_init = math.log(d_init / (1 - d_init))
         nn.init.constant_(self.fc.bias, bias_init)
