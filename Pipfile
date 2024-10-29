@@ -16,6 +16,7 @@ imageio = "*"
 scikit-image = "*"
 pre-commit = "*"
 scikit-learn = "*"
+pandas = "*"
 
 [dev-packages]
 
