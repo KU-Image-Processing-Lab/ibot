@@ -117,7 +117,6 @@ parser.add_argument(
     "--test_data_path2", type=str, default="./dataset/sekkai_TestDataset/"
 )
 parser.add_argument("--test_save_path", type=str, default="./results/Transfuse_S/")
-parser.add_argument("--model_summary", action="store_true")
 
 
 opt = parser.parse_args()
@@ -175,7 +174,6 @@ for file in glob.glob(save_path + "/FP/*.png"):
 os.makedirs(save_path + "/TN", exist_ok=True)
 for file in glob.glob(save_path + "/TN/*.png"):
     os.remove(file)
-
 image_root1 = "{}/images/".format(data_path1)
 gt_root1 = "{}/masks/".format(data_path1)
 test_loader1 = test_dataset(image_root1, gt_root1, opt.testsize)

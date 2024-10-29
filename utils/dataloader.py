@@ -1,7 +1,6 @@
 import os
-import pathlib
+from pathlib import Path
 import random
-from pdb import pm
 
 import albumentations as albu
 import cv2
@@ -49,9 +48,9 @@ class PolypDataset(data.Dataset):
             pass
         else:
             if isinstance(image_root, str):
-                image_root = pathlib.Path(image_root)
+                image_root = Path(image_root)
             if isinstance(gt_root, str):
-                gt_root = pathlib.Path(gt_root)
+                gt_root = Path(gt_root)
 
             self.images = [
                 image_root / f
@@ -278,8 +277,8 @@ class PolypDatasetPreprocess(PolypDataset):
 
 
 def get_loader(
-    image_root: pathlib.Path,
-    gt_root: pathlib.Path,
+    image_root: Path,
+    gt_root: Path,
     batchsize: int,
     trainsize: int,
     shuffle: bool = True,
@@ -309,12 +308,12 @@ def get_loader(
 
 
 class test_dataset:
-    def __init__(self, image_root: pathlib.Path, gt_root: pathlib.Path, testsize: int):
+    def __init__(self, image_root: Path, gt_root: Path, testsize: int):
         self.testsize = testsize
         if isinstance(image_root, str):
-            image_root = pathlib.Path(image_root)
+            image_root = Path(image_root)
         if isinstance(gt_root, str):
-            gt_root = pathlib.Path(gt_root)
+            gt_root = Path(gt_root)
 
         self.images = [
             str(image_root / f)
@@ -351,22 +350,15 @@ class test_dataset:
         return image, gt, name
 
     def transform_process(self, image: torch.Tensor, gt: torch.Tensor):
-        img_transform = transforms.Compose(
-            [
+        transform = transforms.Compose([
                 transforms.Resize((self.testsize, self.testsize)),
-            ]
-        )
-        gt_transform = transforms.Compose(
-            [
-                transforms.Resize((self.testsize, self.testsize)),
-            ]
-        )
+        ])
         if image.dim() == 4 and gt.dim() == 4:
             image = image.squeeze(0)
             gt = gt.squeeze(0)
 
-        image = img_transform(image)
-        gt = gt_transform(gt)
+        image = transform(image)
+        gt = transform(gt)
 
         return image.cuda(), gt.cuda()
 
