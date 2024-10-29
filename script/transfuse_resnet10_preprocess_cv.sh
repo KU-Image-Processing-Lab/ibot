@@ -38,7 +38,7 @@ for i in {0..4}; do
         --save_epoch 50 \
         --tuning \
         --lambda_d 0.001 \
-        --d_init 0.625 \
+        --d_init 0.400 \
         --mean 0 \
         --std 0.001 \
         --loss_dir ./results/${TRAIN_SAVE} \
