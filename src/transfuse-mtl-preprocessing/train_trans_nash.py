@@ -460,7 +460,10 @@ def arg_parser() -> argparse.Namespace:
         "--mean", type=float, default=0, help="ResNet10_preprocessの出力層の重みの平均"
     )
     parser.add_argument(
-        "--std", type=float, default=0.001, help="ResNet10_preprocessの出力層の重みの標準偏差"
+        "--std",
+        type=float,
+        default=0.001,
+        help="ResNet10_preprocessの出力層の重みの標準偏差",
     )
     return parser.parse_args()
 
