@@ -7,6 +7,12 @@ LF='
 SCRIPT_DIR='transfuse-mtl'
 TRAIN_SCRIPT_NAME='train_trans_nash.py'
 TEST_SCRIPT_NAME='test_trans_nash.py'
+DATE=`date '+%Y-%m-%d'`
+
+echo "Date:                 ${DATE}"
+echo "Script directory:     ${SCRIPT_DIR}"
+echo "Training script path: ${SCRIPT_DIR}/${TRAIN_SCRIPT_NAME}"
+echo "Testing script path:  ${SCRIPT_DIR}/${TEST_SCRIPT_NAME}"
 
 mkdir -p ./logs
 
@@ -15,13 +21,18 @@ python3 ./utils/slack_bot.py --text "SCRIPT_DIR=${SCRIPT_DIR}${LF}TRAIN_SCRIPT_N
 
 # weightArray=("best" "best2" "99" "199")
 weightArray=("best" "best2" "99")
-# paramD=(0.625 0.615 0.62 0.63 0.635 0.55 0.575 0.6 0.65 0.675 0.7)
-paramD=(0.61 0.595 0.59 0.585 0.58 0.575)
+echo "weightArray:          ${weightArray[@]}"
+
+paramD=(0.625 0.615 0.62 0.63 0.635 0.55 0.575 0.6 0.65 0.675 0.7)
+# paramD=(0.61 0.595 0.59 0.585 0.58 0.575)
+echo "paramD:               ${paramD[@]}"
 
 for d in ${paramD[@]}; do
     for i in {0..4}; do
 
-        TRAIN_SAVE="transfuse_resnet10_const_param_d_${d}_cv${i}"
+        TRAIN_SAVE="transfuse_resnet10_preprocess_cv${i}_${DATE}"
+        echo "TRAIN_SAVE:           ${TRAIN_SAVE}"
+        echo "------------------------------------------"
 
         python3 ./utils/slack_bot.py --text "Param D: ${d}"
         python3 ./src/${SCRIPT_DIR}/${TRAIN_SCRIPT_NAME} \
@@ -29,17 +40,17 @@ for d in ${paramD[@]}; do
             --batchsize 4 \
             --trainsize 352 \
             --discriminator resnet10 \
-            --seg_loss_path ./fig/seg_loss_img_${d}.png \
-            --dis_loss_path ./fig/dis_loss_img_${d}.png \
-            --log_iter 50 \
+            --seg_loss_path ./results/${TRAIN_SAVE}/seg_loss.png \
+            --dis_loss_path ./results/${TRAIN_SAVE}/dis_loss.png \
+            --log_iter 20 \
             --save_epoch 50 \
             --tuning \
             --train_path ./dataset/CrossValidation_original_crop_${d}/cv${i}_TrainDataset \
             --val_path ./dataset/CrossValidation_original_crop_${d}/cv${i}_ValDataset \
             --train_save ${TRAIN_SAVE} \
-            1> >(tee ./logs/${TRAIN_SCRIPT_NAME}_stdout.log >&1) \
-            2> >(tee ./logs/${TRAIN_SCRIPT_NAME}_stderr.log >&2)
-        python3 ./utils/slack_bot.py --text "`cat ./logs/${TRAIN_SCRIPT_NAME}_stderr.log`"
+            1> >(tee ./logs/${TRAIN_SCRIPT_NAME}_stdout_${DATE}.log >&1) \
+            2> >(tee ./logs/${TRAIN_SCRIPT_NAME}_stderr_${DATE}.log >&2)
+        python3 ./utils/slack_bot.py --text "`cat ./logs/${TRAIN_SCRIPT_NAME}_stderr_${DATE}.log`"
 
         for weight in ${weightArray[@]}; do
 
@@ -51,10 +62,10 @@ for d in ${paramD[@]}; do
                 --test_data_path1 ./dataset/CrossValidation_original_crop_${d}/cv${i}_TestDataset \
                 --test_data_path2 ./dataset/CrossValidation_original_crop_${d}/cv${i}_sekkai_TestDataset \
                 --test_save_path ./results/${TRAIN_SAVE}/cv${i}/ \
-                1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout.log >&1) \
-                2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr.log >&2)
-            python3 ./utils/slack_bot.py --text "`cat ./logs/${TEST_SCRIPT_NAME}_stdout.log`"
-            # python3 ./utils/slack_bot.py --text "`cat ./logs/${TEST_SCRIPT_NAME}_stderr.log`"
+                1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout_${DATE}.log >&1) \
+                2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr_${DATE}.log >&2)
+            python3 ./utils/slack_bot.py --text "`cat ./logs/${TEST_SCRIPT_NAME}_stdout_${DATE}.log`"
+            # python3 ./utils/slack_bot.py --text "`cat ./logs/${TEST_SCRIPT_NAME}_stderr_${DATE}.log`"
 
         done
     done

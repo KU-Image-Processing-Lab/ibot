@@ -1,5 +1,6 @@
 import os
 import random
+from pathlib import Path
 
 import albumentations as albu
 import cv2
@@ -41,16 +42,26 @@ class PolypDataset(data.Dataset):
 
     def __init__(self, image_root, gt_root, trainsize, phase="train"):
         self.trainsize = trainsize
-        self.images = [
-            image_root + f
-            for f in os.listdir(image_root)
-            if f.endswith(".jpg") or f.endswith(".png")
-        ]
-        self.gts = [gt_root + f for f in os.listdir(gt_root) if f.endswith(".png")]
-        self.images = sorted(self.images)
-        self.gts = sorted(self.gts)
-        self.filter_files()
-        self.size = len(self.images)
+
+        if image_root == "" or gt_root == "":
+            # 継承したクラスがimage_root, gt_rootを指定しない場合
+            pass
+        else:
+            if isinstance(image_root, str):
+                image_root = Path(image_root)
+            if isinstance(gt_root, str):
+                gt_root = Path(gt_root)
+
+            self.images = [
+                image_root / f
+                for f in os.listdir(image_root)
+                if f.endswith(".jpg") or f.endswith(".png")
+            ]
+            self.gts = [gt_root / f for f in os.listdir(gt_root) if f.endswith(".png")]
+            self.images = sorted(self.images)
+            self.gts = sorted(self.gts)
+            self.filter_files()
+            self.size = len(self.images)
 
         self._alpha = 0.2
 
@@ -143,6 +154,78 @@ class PolypDataset(data.Dataset):
         return self.size
 
 
+class PolypDatasetPostprocess(PolypDataset):
+    def __init__(self, image_root="", gt_root="", trainsize=352, phase="train"):
+        super(PolypDatasetPostprocess, self).__init__(
+            image_root, gt_root, trainsize, phase
+        )
+        self.trainsize = trainsize
+        self.phase = phase
+
+        self.transform = albu.Compose(
+            [
+                albu.ShiftScaleRotate(
+                    shift_limit=0.15,
+                    scale_limit=0.15,
+                    rotate_limit=25,
+                    p=0.5,
+                    border_mode=0,
+                ),
+                # albu.RandomSizedCrop(),
+                # albu.ColorJitter(),
+                albu.HorizontalFlip(),
+                # albu.VerticalFlip()
+            ]
+        )
+
+        self.img_transform = transforms.Compose(
+            [
+                transforms.Resize((self.trainsize, self.trainsize)),
+            ]
+        )
+        self.gt_transform = transforms.Compose(
+            [
+                transforms.Resize((self.trainsize, self.trainsize)),
+            ]
+        )
+
+    def __call__(self, images, gts):
+        processed_images = []
+        processed_gts = []
+        for image, gt in zip(images, gts):
+            image, gt = self.transform_process(image, gt)
+
+            processed_images.append(image.cuda())
+            processed_gts.append(gt.cuda())
+
+        torch_images = torch.stack(processed_images, dim=0)
+        torch_gts = torch.stack(processed_gts, dim=0)
+
+        return torch_images, torch_gts
+
+    def transform_process(self, image, gt):
+        if isinstance(image, torch.Tensor):
+            image = image.cpu().numpy()
+        if isinstance(gt, torch.Tensor):
+            gt = gt.cpu().numpy()
+
+        if self.phase == "train":
+            image = np.transpose(image, (1, 2, 0))
+            gt = np.transpose(gt, (1, 2, 0))
+            augmented = self.transform(image=image, mask=gt)
+            image, gt = augmented["image"], augmented["mask"]
+
+            image = torch.from_numpy(np.transpose(image, (2, 0, 1)))
+            gt = torch.from_numpy(np.transpose(gt, (2, 0, 1)))
+        else:
+            image = torch.from_numpy(image)
+            gt = torch.from_numpy(gt)
+
+        image = self.img_transform(image)
+        gt = self.gt_transform(gt)
+        return image, gt
+
+
 class PolypDatasetPreprocess(PolypDataset):
     def __init__(self, image_root, gt_root, trainsize, phase="train"):
         super(PolypDatasetPreprocess, self).__init__(
@@ -154,11 +237,24 @@ class PolypDatasetPreprocess(PolypDataset):
                 albu.ColorJitter(),
             ]
         )
+        self.img_transform = transforms.Compose(
+            [
+                transforms.Resize((384, 1430)),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+            ]
+        )
+        self.gt_transform = transforms.Compose(
+            [
+                transforms.Resize((384, 1430)),
+                transforms.ToTensor(),
+            ]
+        )
 
     def __getitem__(self, index):
         image = self.rgb_loader(self.images[index])
         gt = self.binary_loader(self.gts[index])
-        name = self.images[index].split("/")[-1]
+        name = self.images[index].name
 
         if self.phase == "train":
 
@@ -173,24 +269,24 @@ class PolypDatasetPreprocess(PolypDataset):
             image = image.convert("RGB")
             gt = gt.convert("L")
 
-        # image, gt = self.transform(image, gt, phase=self.phase)
         image = self.img_transform(image)
         gt = self.gt_transform(gt)
+        image_width = image.size(2)
 
-        return image, gt, name
+        return image, gt, name, image_width
 
 
 def get_loader(
-    image_root,
-    gt_root,
-    batchsize,
-    trainsize,
-    shuffle=True,
-    num_workers=4,
-    pin_memory=True,
-    phase="train",
-    droplast=False,
-    dataset="default",
+    image_root: Path,
+    gt_root: Path,
+    batchsize: int,
+    trainsize: int,
+    shuffle: bool = True,
+    num_workers: int = 4,
+    pin_memory: bool = True,
+    phase: str = "train",
+    droplast: bool = False,
+    dataset: str = "default",
 ):
     if dataset == "default":
         dataset = PolypDataset(image_root, gt_root, trainsize, phase=phase)
@@ -212,15 +308,20 @@ def get_loader(
 
 
 class test_dataset:
-    def __init__(self, image_root, gt_root, testsize):
+    def __init__(self, image_root: Path, gt_root: Path, testsize: int):
         self.testsize = testsize
+        if isinstance(image_root, str):
+            image_root = Path(image_root)
+        if isinstance(gt_root, str):
+            gt_root = Path(gt_root)
+
         self.images = [
-            image_root + f
+            str(image_root / f)
             for f in os.listdir(image_root)
             if f.endswith(".jpg") or f.endswith(".png") or f.endswith(".tif")
         ]
         self.gts = [
-            gt_root + f
+            str(gt_root / f)
             for f in os.listdir(gt_root)
             if f.endswith(".tif") or f.endswith(".png") or f.endswith(".jpg")
         ]
@@ -247,6 +348,21 @@ class test_dataset:
             name = name.split(".jpg")[0] + ".png"
         self.index += 1
         return image, gt, name
+
+    def transform_process(self, image: torch.Tensor, gt: torch.Tensor):
+        transform = transforms.Compose(
+            [
+                transforms.Resize((self.testsize, self.testsize)),
+            ]
+        )
+        if image.dim() == 4 and gt.dim() == 4:
+            image = image.squeeze(0)
+            gt = gt.squeeze(0)
+
+        image = transform(image)
+        gt = transform(gt)
+
+        return image.cuda(), gt.cuda()
 
     def rgb_loader(self, path):
         with open(path, "rb") as f:
@@ -278,14 +394,14 @@ class test_dataset_preprocess(test_dataset):
 
         self.img_transform = transforms.Compose(
             [
-                transforms.Resize((self.testsize, self.testsize)),
+                transforms.Resize((384, 1430)),
                 transforms.ToTensor(),
                 transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
             ]
         )
         self.gt_transform = transforms.Compose(
             [
-                transforms.Resize((self.testsize, self.testsize)),
+                transforms.Resize((384, 1430)),
                 transforms.ToTensor(),
             ]
         )
@@ -307,7 +423,8 @@ class test_dataset_preprocess(test_dataset):
 
         image = self.img_transform(image)
         gt = self.gt_transform(gt)
+        image_width = image.size(2)
 
         self.index += 1
 
-        return image, gt, name
+        return image, gt, name, image_width
