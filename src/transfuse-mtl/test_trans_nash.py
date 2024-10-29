@@ -133,9 +133,8 @@ model.load_state_dict(torch.load(opt.pth_path))
 model.cuda()
 model.eval()
 
-if opt.model_summary:
-    print("model1")
-    get_model_scale(model)
+print("model1")
+get_model_scale(model)
 
 # model2 = vit_large(pretrained=pretrained)
 
@@ -158,9 +157,8 @@ model2.load_state_dict(torch.load(opt.pth_path2))
 model2.cuda()
 model2.eval()
 
-if opt.model_summary:
-    print("model2")
-    get_model_scale(model2)
+print("model2")
+get_model_scale(model2)
 
 os.makedirs(save_path, exist_ok=True)
 for file in glob.glob(save_path + "/*.png"):
@@ -178,12 +176,12 @@ os.makedirs(save_path + "/TN", exist_ok=True)
 for file in glob.glob(save_path + "/TN/*.png"):
     os.remove(file)
 
-image_root1 = Path(data_path1) / "images"
-gt_root1 = Path(data_path1) / "masks"
+image_root1 = "{}/images/".format(data_path1)
+gt_root1 = "{}/masks/".format(data_path1)
 test_loader1 = test_dataset(image_root1, gt_root1, opt.testsize)
 
-image_root2 = Path(data_path2) / "images"
-gt_root2 = Path(data_path2) / "masks"
+image_root2 = "{}/images/".format(data_path2)
+gt_root2 = "{}/masks/".format(data_path2)
 test_loader2 = test_dataset(image_root2, gt_root2, opt.testsize)
 
 dice_bank = []
@@ -383,5 +381,4 @@ df = pd.DataFrame(
         "true_label": true_label_dict,
     }
 )
-
 df.to_csv(Path(opt.test_save_path) / f"{now_str}_evaluation.csv")

@@ -311,6 +311,11 @@ def get_loader(
 class test_dataset:
     def __init__(self, image_root: pathlib.Path, gt_root: pathlib.Path, testsize: int):
         self.testsize = testsize
+        if isinstance(image_root, str):
+            image_root = pathlib.Path(image_root)
+        if isinstance(gt_root, str):
+            gt_root = pathlib.Path(gt_root)
+
         self.images = [
             str(image_root / f)
             for f in os.listdir(image_root)
@@ -330,19 +335,7 @@ class test_dataset:
                 transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
             ]
         )
-        self.img_transform = transforms.Compose(
-            [
-                transforms.Resize((self.testsize, self.testsize)),
-                # transforms.ToTensor(),
-                # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-            ]
-        )
-        self.gt_transform = transforms.Compose(
-            [
-                transforms.Resize((self.testsize, self.testsize)),
-                # transforms.ToTensor(),
-            ]
-        )
+        self.gt_transform = transforms.ToTensor()
         self.size = len(self.images)
         self.index = 0
 
@@ -358,12 +351,22 @@ class test_dataset:
         return image, gt, name
 
     def transform_process(self, image: torch.Tensor, gt: torch.Tensor):
+        img_transform = transforms.Compose(
+            [
+                transforms.Resize((self.testsize, self.testsize)),
+            ]
+        )
+        gt_transform = transforms.Compose(
+            [
+                transforms.Resize((self.testsize, self.testsize)),
+            ]
+        )
         if image.dim() == 4 and gt.dim() == 4:
             image = image.squeeze(0)
             gt = gt.squeeze(0)
 
-        image = self.img_transform(image)
-        gt = self.gt_transform(gt)
+        image = img_transform(image)
+        gt = gt_transform(gt)
 
         return image.cuda(), gt.cuda()
 
