@@ -312,7 +312,7 @@ def main():
             #     cv2.imwrite(f"./fig/{name.replace('.png', '')}_mask.png", img)
             #     img_tensor = torch.from_numpy(img).unsqueeze(0).float()
             #     cropped_gt[j] = img_tensor
-                
+
             # ---- save image ----
             os.makedirs("./fig/test_cropped", exist_ok=True)
             for j in range(cropped_image.size(0)):
@@ -360,7 +360,7 @@ def main():
 
             _, predicted = torch.max(out, dim=1)
             predicted = torch.Tensor.cpu(predicted).detach().numpy()
-            
+
             label = torch.Tensor.cpu(label).detach().numpy()
             out = torch.Tensor.cpu(out).detach().numpy()
             y_true = np.append(y_true, label)
