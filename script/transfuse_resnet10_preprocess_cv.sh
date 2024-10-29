@@ -37,7 +37,7 @@ for i in {0..4}; do
         --log_iter 20 \
         --save_epoch 50 \
         --tuning \
-        --lambda_d 0.1 \
+        --lambda_d 0.001 \
         --d_init 0.625 \
         --loss_dir ./results/${TRAIN_SAVE} \
         --seg_loss_path ./results/${TRAIN_SAVE}/seg_loss.png \
@@ -61,7 +61,7 @@ for i in {0..4}; do
             --pth_path2 ./snapshots/${TRAIN_SAVE}/Discriminator-${weight}.pth \
             --test_data_path1 ./dataset/CrossValidation_original/cv${i}_TestDataset \
             --test_data_path2 ./dataset/CrossValidation_original/cv${i}_sekkai_TestDataset \
-            --save_path ./results/${TRAIN_SAVE}/cv${i} \
+            --test_save_path ./results/${TRAIN_SAVE}/cv${i} \
             1> >(tee ./logs/${TEST_SCRIPT_NAME}_stdout_${DATE}.log >&1) \
             2> >(tee ./logs/${TEST_SCRIPT_NAME}_stderr_${DATE}.log >&2)
         python3 ./utils/slack_bot.py --text "`cat ./logs/${TEST_SCRIPT_NAME}_stdout_${DATE}.log`"

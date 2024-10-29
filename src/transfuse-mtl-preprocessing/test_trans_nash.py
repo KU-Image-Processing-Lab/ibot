@@ -122,7 +122,7 @@ def arg_parse():
         type=str,
         default="./dataset/original_dataset_only_left/sekkai_TestDataset/",
     )
-    parser.add_argument("--save_path", type=str, default="./results/Transfuse_S/")
+    parser.add_argument("--test_save_path", type=str, default="./results/Transfuse_S/")
 
     return parser.parse_args()
 
@@ -216,7 +216,7 @@ def main():
 
     data_path1 = Path(opt.test_data_path1)
     data_path2 = Path(opt.test_data_path2)
-    save_path = Path(opt.save_path)
+    save_path = Path(opt.test_save_path)
     os.makedirs(save_path, exist_ok=True)
     os.makedirs(save_path / "TP", exist_ok=True)
     os.makedirs(save_path / "FN", exist_ok=True)
@@ -270,7 +270,7 @@ def main():
         with torch.no_grad():
             d_predict = models["Preprocess"](image)
             param_list.append(float(d_predict))
-            print(f"{float(d_predict) = }")
+            # print(f"{float(d_predict) = }")
 
             height, width = image.shape[2:]
             crop_d = int(d_predict * width + (1 - d_predict) * height)
@@ -286,15 +286,6 @@ def main():
                     align_corners=True,
                 )
                 cropped_image = torch.cat((cropped_image, crop), dim=0)
-
-            # ---- save image ----
-            os.makedirs("./fig/test_cropped", exist_ok=True)
-            for j in range(cropped_image.size(0)):
-                img = cropped_image[j].mul(255).byte()
-                img = img.permute(1, 2, 0).cpu().numpy()
-                cv2.imwrite(
-                    f"./fig/test_cropped/{name.replace('.png', '')}_image_{j}.png", img
-                )
 
             # ---- crop gt ----
             cropped_gt = torch.Tensor()
@@ -321,6 +312,15 @@ def main():
             #     cv2.imwrite(f"./fig/{name.replace('.png', '')}_mask.png", img)
             #     img_tensor = torch.from_numpy(img).unsqueeze(0).float()
             #     cropped_gt[j] = img_tensor
+                
+            # ---- save image ----
+            os.makedirs("./fig/test_cropped", exist_ok=True)
+            for j in range(cropped_image.size(0)):
+                img = cropped_image[j].mul(255).byte()
+                img = img.permute(1, 2, 0).cpu().numpy()
+                cv2.imwrite(
+                    f"./fig/test_cropped/{name.replace('.png', '')}_image_{j}.png", img
+                )
 
             cropped_image, cropped_gt = mtl_loader1.transform_process(
                 cropped_image, cropped_gt
@@ -335,6 +335,11 @@ def main():
                 cv2.imwrite(
                     f"./fig/test_end/{name.replace('.png', '')}_image_{j}.png", img
                 )
+
+            # ---- save gt ----
+            img = cropped_gt.mul(255).byte()
+            img = img.permute(1, 2, 0).cpu().numpy()
+            cv2.imwrite(f"{save_path / name.replace('.png', '')}_mask.png", img)
 
             _, _, res = models["Transfuse"](cropped_image)
 
@@ -355,7 +360,7 @@ def main():
 
             _, predicted = torch.max(out, dim=1)
             predicted = torch.Tensor.cpu(predicted).detach().numpy()
-
+            
             label = torch.Tensor.cpu(label).detach().numpy()
             out = torch.Tensor.cpu(out).detach().numpy()
             y_true = np.append(y_true, label)
@@ -445,7 +450,7 @@ def main():
         # res = (res - res.min()) / (res.max() - res.min() + 1e-8)  ############################
         res = 1.0 * (res > 0.5)  ############################
 
-        cropped_gt = cropped_gt.cpu().numpy()
+        cropped_gt = cropped_gt.cpu().numpy().squeeze()
         dice = mean_dice_np(cropped_gt, res)
         iou = mean_iou_np(cropped_gt, res)
         acc = np.sum(res == cropped_gt) / (res.shape[0] * res.shape[1])
@@ -538,7 +543,7 @@ def main():
     now = datetime.datetime.now()
     now = now.strftime("%Y-%m-%d_%H-%M-%S")
     # columns, valuesの2列にしてcsvに保存
-    with open(Path(save_path).joinpath(f"result_{now}.csv"), "a") as f:
+    with open(Path(opt.test_save_path).joinpath(f"result_{now}.csv"), "a") as f:
         f.write("columns,values\n")
         for k, v in output_dict.items():
             f.write(f"{k},{v}\n")
