@@ -229,7 +229,8 @@ def save_on_master(*args, **kwargs):
 
 
 def init_distributed_mode(args):
-    if args.dist_on_itp:
+    if "OMPI_COMM_WORLD_RANK" in os.environ:
+        # OpenMPI環境の場合
         args.rank = int(os.environ["OMPI_COMM_WORLD_RANK"])
         args.world_size = int(os.environ["OMPI_COMM_WORLD_SIZE"])
         args.gpu = int(os.environ["OMPI_COMM_WORLD_LOCAL_RANK"])
@@ -240,22 +241,29 @@ def init_distributed_mode(args):
         os.environ["LOCAL_RANK"] = str(args.gpu)
         os.environ["RANK"] = str(args.rank)
         os.environ["WORLD_SIZE"] = str(args.world_size)
-        # ["RANK", "WORLD_SIZE", "MASTER_ADDR", "MASTER_PORT", "LOCAL_RANK"]
+        args.distributed = True
     elif "RANK" in os.environ and "WORLD_SIZE" in os.environ:
+        # PyTorchの標準的な分散環境の場合
         args.rank = int(os.environ["RANK"])
         args.world_size = int(os.environ["WORLD_SIZE"])
         args.gpu = int(os.environ["LOCAL_RANK"])
+        args.distributed = True
     elif "SLURM_PROCID" in os.environ:
+        # SLURM環境の場合
         args.rank = int(os.environ["SLURM_PROCID"])
         args.gpu = args.rank % torch.cuda.device_count()
+        args.distributed = True
     else:
+        # 分散モードが利用できない場合、シングルプロセスモードに設定
         print("Not using distributed mode")
-        setup_for_distributed(is_master=True)  # hack
+        args.rank = 0
+        args.world_size = 1
+        args.gpu = 0
         args.distributed = False
+        setup_for_distributed(is_master=True)  # マスタープロセスと見なす
         return
 
-    args.distributed = True
-
+    # 分散モードが有効な場合、デバイス設定やプロセスグループを初期化
     torch.cuda.set_device(args.gpu)
     args.dist_backend = "nccl"
     print(
