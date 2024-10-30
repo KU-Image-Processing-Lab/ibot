@@ -16,6 +16,10 @@ echo "Testing script path:  ${SCRIPT_DIR}/${TEST_SCRIPT_NAME}"
 
 mkdir -p ./logs
 
+D_INIT=0.400
+MEAN=0
+STD=0.001
+
 # --------------------------------------------------------------
 python3 ./utils/slack_bot.py --text "SCRIPT_DIR=${SCRIPT_DIR}${LF}TRAIN_SCRIPT_NAME=${TRAIN_SCRIPT_NAME}${LF}TEST_SCRIPT_NAME=${TEST_SCRIPT_NAME}"
 
@@ -38,9 +42,9 @@ for i in {0..4}; do
         --save_epoch 50 \
         --tuning \
         --lambda_d 0.001 \
-        --d_init 0.400 \
-        --mean 0 \
-        --std 0.001 \
+        --d_init ${D_INIT} \
+        --mean ${MEAN} \
+        --std ${STD} \
         --loss_dir ./results/${TRAIN_SAVE} \
         --seg_loss_path ./results/${TRAIN_SAVE}/seg_loss.png \
         --dis_loss_path ./results/${TRAIN_SAVE}/dis_loss.png \
@@ -58,6 +62,9 @@ for i in {0..4}; do
             --testsize 352 \
             --discriminator resnet10 \
             --preprocess resnet10 \
+            --d_init ${D_INIT} \
+            --mean ${MEAN} \
+            --std ${STD} \
             --pth_path0 ./snapshots/${TRAIN_SAVE}/Preprocess-${weight}.pth \
             --pth_path ./snapshots/${TRAIN_SAVE}/TransFuse-${weight}.pth \
             --pth_path2 ./snapshots/${TRAIN_SAVE}/Discriminator-${weight}.pth \

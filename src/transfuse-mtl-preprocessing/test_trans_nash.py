@@ -123,6 +123,18 @@ def arg_parse():
         default="./dataset/original_dataset_only_left/sekkai_TestDataset/",
     )
     parser.add_argument("--test_save_path", type=str, default="./results/Transfuse_S/")
+    parser.add_argument(
+        "--d_init", type=float, default=0.625, help="パラメータdの初期値"
+    )
+    parser.add_argument(
+        "--mean", type=float, default=0, help="ResNet10_preprocessの出力層の重みの平均"
+    )
+    parser.add_argument(
+        "--std",
+        type=float,
+        default=0.001,
+        help="ResNet10_preprocessの出力層の重みの標準偏差",
+    )
 
     return parser.parse_args()
 
@@ -131,7 +143,7 @@ def get_preprocess_model(opt: argparse.Namespace) -> torch.nn.Module:
     if opt.preprocess == "resnet10":
         from lib.ResNet_10_preprocess import ResNet10
 
-        return ResNet10()
+        return ResNet10(d_init=opt.d_init, mean=opt.mean, std=opt.std)
     elif opt.preprocess == "res2net":
         from lib.Discriminator_ResNet import Discriminator
 
