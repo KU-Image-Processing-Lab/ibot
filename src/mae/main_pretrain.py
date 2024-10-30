@@ -23,8 +23,7 @@ import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 from torch.utils.tensorboard import SummaryWriter
 
-assert timm.__version__ == "0.3.2"  # version check
-import models_mae
+import models_mae_fuse_L
 import timm.optim.optim_factory as optim_factory
 import util.misc as misc
 from engine_pretrain import train_one_epoch
@@ -214,7 +213,7 @@ def main(args):
     )
 
     # define the model
-    model = models_mae.__dict__[args.model](norm_pix_loss=args.norm_pix_loss)
+    model = models_mae_fuse_L.__dict__[args.model](norm_pix_loss=args.norm_pix_loss)
 
     model.to(device)
 
@@ -266,7 +265,7 @@ def main(args):
             log_writer=log_writer,
             args=args,
         )
-        if args.output_dir and (epoch % 20 == 0 or epoch + 1 == args.epochs):
+        if args.output_dir and (epoch % 100 == 0 or epoch + 1 == args.epochs):
             misc.save_model(
                 args=args,
                 model=model,

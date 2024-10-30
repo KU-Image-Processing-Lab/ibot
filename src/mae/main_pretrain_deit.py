@@ -22,9 +22,7 @@ import torch.backends.cudnn as cudnn
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 from torch.utils.tensorboard import SummaryWriter
-
-assert timm.__version__ == "0.3.2"  # version check
-import models_mae_deit
+import models_mae_fuse_min
 import timm.optim.optim_factory as optim_factory
 import util.misc as misc
 from engine_pretrain import train_one_epoch
@@ -206,7 +204,7 @@ def main(args):
     )
 
     # define the model
-    model = models_mae_deit.__dict__[args.model](norm_pix_loss=args.norm_pix_loss)
+    model = models_mae_fuse_min.__dict__[args.model](norm_pix_loss=args.norm_pix_loss)
 
     model.to(device)
 
