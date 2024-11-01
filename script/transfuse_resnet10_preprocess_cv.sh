@@ -43,7 +43,6 @@ for i in {0..4}; do
         --discriminator ${DISCRIMINATOR} \
         --preprocess resnet10 \
         --resnet_init_type ${RESNET_INIT_TYPE} \
-        --preprocess_contain_task_specific_parameters \
         --log_iter 20 \
         --save_epoch 50 \
         --tuning \
