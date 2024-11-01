@@ -18,10 +18,10 @@ from utils.dataloader import PolypDatasetPostprocess, get_loader
 from utils.mtl import extract_weight_method_parameters_from_args
 from utils.save_parameter import save_parameter
 from utils.set_seed import seed_everything
+from utils.slack_bot import Slack_bot
 from utils.smooth_cross_entropy import SmoothCrossEntropy
 from utils.utils import AvgMeter, adjust_lr, clip_gradient
 from utils.weight_methods import WeightMethods
-from utils.slack_bot import Slack_bot
 
 matplotlib.use("Agg")
 seed_everything(42)
@@ -682,7 +682,8 @@ def main():
             except Exception as e:
                 print(f"Error in plot_loss: {e}")
 
-            slack_bot(f""" epoch: {epoch}\n===============
+            slack_bot(
+                f""" epoch: {epoch}\n===============
                 >>> train_loss: {train_loss}
                 >>> val_loss: {val_loss}
                 ---------------
@@ -691,8 +692,8 @@ def main():
                 ---------------
                 >>> best_loss: {best_loss}
                 >>> best2_loss: {best2_loss}
-            """)
-
+            """
+            )
 
     # 学習終了時間の記録
     end_time = time.time()
