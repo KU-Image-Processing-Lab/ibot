@@ -21,9 +21,11 @@ from utils.set_seed import seed_everything
 from utils.smooth_cross_entropy import SmoothCrossEntropy
 from utils.utils import AvgMeter, adjust_lr, clip_gradient
 from utils.weight_methods import WeightMethods
+from utils.slack_bot import Slack_bot
 
 matplotlib.use("Agg")
 seed_everything(42)
+slack_bot = Slack_bot()
 
 
 # def paramd_d_loss(
@@ -352,7 +354,7 @@ def get_preprocess_model(opt: argparse.Namespace) -> torch.nn.Module:
             d_init=opt.d_init,
             mean=opt.mean,
             std=opt.std,
-            resnet_init_type=opt.resnet_init_type,
+            init_type=opt.resnet_init_type,
         )
     elif opt.preprocess == "res2net":
         from lib.Discriminator_ResNet import Discriminator
@@ -473,6 +475,11 @@ def arg_parser() -> argparse.Namespace:
     parser.add_argument(
         "--resnet_init_type", type=str, default="default", help="出力層の初期化の種類"
     )
+    parser.add_argument(
+        "--preprocess_contain_task_specific_parameters",
+        action="store_true",
+        help="前処理にタスク特有のパラメータを含めるかどうか",
+    )
     return parser.parse_args()
 
 
@@ -522,8 +529,10 @@ def set_mtl_parameters(
         if "final_x" in n or "final_1" in n or "cls" in n
     ]
 
-    for _, p in models["Preprocess"].named_parameters():
-        task_specific_parameters.append(p)
+    if opt.preprocess_contain_task_specific_parameters:
+        for _, p in models["Preprocess"].named_parameters():
+            task_specific_parameters.append(p)
+
     for _, p in models["Discriminator"].named_parameters():
         task_specific_parameters.append(p)
 
@@ -617,12 +626,11 @@ def main():
     val_loss_list = []
     train_d_loss_list = []
     val_d_loss_list = []
-    train_p_loss_list = []
-    val_p_loss_list = []
     best_loss = 100000
     best2_loss = 100000
 
     # 学習開始時間の記録
+    slack_bot(">>> 学習開始します")
     start_time = time.time()
 
     for epoch in range(1, opt.epoch):
@@ -650,8 +658,6 @@ def main():
         val_loss = output["val_loss"]
         train_d_loss = output["train_d_loss"]
         val_d_loss = output["val_d_loss"]
-        # train_p_loss = output["train_p_loss"]
-        # val_p_loss = output["val_p_loss"]
 
         epoch_list.append(epoch)
         train_loss = train_loss.cpu().data.numpy()
@@ -663,7 +669,7 @@ def main():
         val_d_loss = val_d_loss.cpu().data.numpy()
         val_d_loss_list.append(val_d_loss)
 
-        if epoch % 10 == 0:
+        if epoch % 10 == 1:
             try:
                 plot_loss(
                     epoch_list,
@@ -675,6 +681,18 @@ def main():
                 )
             except Exception as e:
                 print(f"Error in plot_loss: {e}")
+
+            slack_bot(f""" epoch: {epoch}\n===============
+                >>> train_loss: {train_loss}
+                >>> val_loss: {val_loss}
+                ---------------
+                >>> train_d_loss: {train_d_loss}
+                >>> val_d_loss: {val_d_loss}
+                ---------------
+                >>> best_loss: {best_loss}
+                >>> best2_loss: {best2_loss}
+            """)
+
 
     # 学習終了時間の記録
     end_time = time.time()

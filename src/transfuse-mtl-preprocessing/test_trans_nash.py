@@ -150,7 +150,7 @@ def get_preprocess_model(opt: argparse.Namespace) -> torch.nn.Module:
             d_init=opt.d_init,
             mean=opt.mean,
             std=opt.std,
-            resnet_init_type=opt.resnet_init_type,
+            init_type=opt.resnet_init_type,
         )
     elif opt.preprocess == "res2net":
         from lib.Discriminator_ResNet import Discriminator
