@@ -85,7 +85,13 @@ class Bottleneck(nn.Module):
 
 class ResNet10(nn.Module):
     # ResNet10
-    def __init__(self, d_init: float, mean: float, std: float):
+    def __init__(
+        self,
+        d_init: float = 0.625,
+        mean: float = 0.0,
+        std: float = 0.001,
+        init_type: str = "default",
+    ):
         # self.inplanes = 128
         self.inplanes = 64
         super(ResNet10, self).__init__()
@@ -101,18 +107,18 @@ class ResNet10(nn.Module):
         # self.fc = nn.Linear(2048*11*11, num_classes)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(512, 1)
-        self.output = nn.ReLU(inplace=True)
+        # self.output = nn.ReLU(inplace=True)
 
-        # 出力層の初期化
-        d_init = d_init
-
-        # zero init
-        # nn.init.zeros_(self.fc.weight)
-        # random init
-        nn.init.normal_(self.fc.weight, mean=mean, std=std)
-
-        bias_init = math.log(d_init / (1 - d_init))
-        nn.init.constant_(self.fc.bias, bias_init)
+        if init_type == "default":
+            pass
+        elif init_type == "zero":
+            nn.init.zeros_(self.fc.weight)
+            bias_init = math.log(d_init / (1 - d_init))
+            nn.init.constant_(self.fc.bias, bias_init)
+        elif init_type == "random":
+            nn.init.normal_(self.fc.weight, mean=mean, std=std)
+            bias_init = math.log(d_init / (1 - d_init))
+            nn.init.constant_(self.fc.bias, bias_init)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
