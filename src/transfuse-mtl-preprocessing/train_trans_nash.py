@@ -349,7 +349,7 @@ def get_preprocess_model(opt: argparse.Namespace) -> torch.nn.Module:
         from lib.ResNet_10_preprocess import ResNet10
 
         return ResNet10(
-            d_init=opt.d_init, mean=opt.mean, std=opt.std, init_type=opt.init_type
+            d_init=opt.d_init, mean=opt.mean, std=opt.std, resnet_init_type=opt.resnet_init_type
         )
     elif opt.preprocess == "res2net":
         from lib.Discriminator_ResNet import Discriminator
@@ -468,7 +468,7 @@ def arg_parser() -> argparse.Namespace:
         help="ResNet10_preprocessの出力層の重みの標準偏差",
     )
     parser.add_argument(
-        "--init_type", type=str, default="default", help="出力層の初期化の種類"
+        "--resnet_init_type", type=str, default="default", help="出力層の初期化の種類"
     )
     return parser.parse_args()
 
