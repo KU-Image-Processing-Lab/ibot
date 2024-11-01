@@ -348,7 +348,12 @@ def get_preprocess_model(opt: argparse.Namespace) -> torch.nn.Module:
     if opt.preprocess == "resnet10":
         from lib.ResNet_10_preprocess import ResNet10
 
-        return ResNet10(d_init=opt.d_init, mean=opt.mean, std=opt.std)
+        return ResNet10(
+            d_init=opt.d_init,
+            mean=opt.mean,
+            std=opt.std,
+            resnet_init_type=opt.resnet_init_type,
+        )
     elif opt.preprocess == "res2net":
         from lib.Discriminator_ResNet import Discriminator
 
@@ -465,6 +470,9 @@ def arg_parser() -> argparse.Namespace:
         default=0.001,
         help="ResNet10_preprocessの出力層の重みの標準偏差",
     )
+    parser.add_argument(
+        "--resnet_init_type", type=str, default="default", help="出力層の初期化の種類"
+    )
     return parser.parse_args()
 
 
@@ -514,18 +522,17 @@ def set_mtl_parameters(
         if "final_x" in n or "final_1" in n or "cls" in n
     ]
 
-    # for _, p in models["Preprocess"].named_parameters():
-    #     task_specific_parameters.append(p)
+    for _, p in models["Preprocess"].named_parameters():
+        task_specific_parameters.append(p)
     for _, p in models["Discriminator"].named_parameters():
         task_specific_parameters.append(p)
 
-    output_dict = {
+    return {
         "weight_method": weight_method,
         "params": params,
         "shared_parameters": shared_parameters,
         "task_specific_parameters": task_specific_parameters,
     }
-    return output_dict
 
 
 def plot_loss(

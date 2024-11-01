@@ -16,15 +16,24 @@ echo "Testing script path:  ${SCRIPT_DIR}/${TEST_SCRIPT_NAME}"
 
 mkdir -p ./logs
 
+# default parameters
+D_INIT=0.625
+MEAN=0
+STD=0.01
+
 # --------------------------------------------------------------
 python3 ./utils/slack_bot.py --text "SCRIPT_DIR=${SCRIPT_DIR}${LF}TRAIN_SCRIPT_NAME=${TRAIN_SCRIPT_NAME}${LF}TEST_SCRIPT_NAME=${TEST_SCRIPT_NAME}"
 
 weightArray=("best" "best2" "99")
 echo "weightArray:          ${weightArray[@]}"
 
-for i in {0..4}; do
 
-    TRAIN_SAVE="transfuse_resnet10_preprocess_cv${i}_${DATE}"
+RESNET_INIT_TYPE="default"
+DISCRIMINATOR="resnet10"
+
+for i in {0..0}; do
+
+    TRAIN_SAVE="transfuse_resnet10_preprocess_cv${i}_${DATE}_${RESNET_INIT_TYPE}_dinit${D_INIT}_std${STD}"
     echo "TRAIN_SAVE:           ${TRAIN_SAVE}"
 
     python3 ./utils/slack_bot.py --text "Cross Validation: ${i}${LF}TRAIN_SAVE=${TRAIN_SAVE}"
@@ -32,15 +41,16 @@ for i in {0..4}; do
         --epoch 100 \
         --batchsize 4 \
         --trainsize 352 \
-        --discriminator resnet10 \
+        --discriminator ${DISCRIMINATOR} \
         --preprocess resnet10 \
+        --resnet_init_type ${RESNET_INIT_TYPE} \
         --log_iter 20 \
         --save_epoch 50 \
         --tuning \
         --lambda_d 0.001 \
-        --d_init 0.625 \
-        --mean 0 \
-        --std 0.001 \
+        --d_init ${D_INIT} \
+        --mean ${MEAN} \
+        --std ${STD} \
         --loss_dir ./results/${TRAIN_SAVE} \
         --seg_loss_path ./results/${TRAIN_SAVE}/seg_loss.png \
         --dis_loss_path ./results/${TRAIN_SAVE}/dis_loss.png \
@@ -56,8 +66,12 @@ for i in {0..4}; do
 
         python3 ./src/${SCRIPT_DIR}/${TEST_SCRIPT_NAME} \
             --testsize 352 \
-            --discriminator resnet10 \
+            --discriminator ${DISCRIMINATOR} \
             --preprocess resnet10 \
+            --resnet_init_type ${RESNET_INIT_TYPE} \
+            --d_init ${D_INIT} \
+            --mean ${MEAN} \
+            --std ${STD} \
             --pth_path0 ./snapshots/${TRAIN_SAVE}/Preprocess-${weight}.pth \
             --pth_path ./snapshots/${TRAIN_SAVE}/TransFuse-${weight}.pth \
             --pth_path2 ./snapshots/${TRAIN_SAVE}/Discriminator-${weight}.pth \
