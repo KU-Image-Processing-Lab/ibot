@@ -514,18 +514,17 @@ def set_mtl_parameters(
         if "final_x" in n or "final_1" in n or "cls" in n
     ]
 
-    # for _, p in models["Preprocess"].named_parameters():
-    #     task_specific_parameters.append(p)
+    for _, p in models["Preprocess"].named_parameters():
+        task_specific_parameters.append(p)
     for _, p in models["Discriminator"].named_parameters():
         task_specific_parameters.append(p)
 
-    output_dict = {
+    return {
         "weight_method": weight_method,
         "params": params,
         "shared_parameters": shared_parameters,
         "task_specific_parameters": task_specific_parameters,
     }
-    return output_dict
 
 
 def plot_loss(
