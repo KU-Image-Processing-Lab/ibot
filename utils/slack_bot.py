@@ -14,18 +14,20 @@ class Slack_bot:
         self.icon = icon
 
     def __call__(self, msg):
-        WEB_HOOK_URL = os.environ.get("SLACK_WEB_HOOK_URL")
-
-        requests.post(
-            WEB_HOOK_URL,
-            data=json.dumps(
-                {
-                    "text": msg,
-                    "icon_emoji": self.icon,
-                    "username": self.icon[1:-1],
-                }
-            ),
-        )
+        try:
+            WEB_HOOK_URL = os.environ.get("SLACK_WEB_HOOK_URL")
+            requests.post(
+                WEB_HOOK_URL,
+                data=json.dumps(
+                    {
+                        "text": msg,
+                        "icon_emoji": self.icon,
+                        "username": self.icon[1:-1],
+                    }
+                ),
+            )
+        except:
+            pass
 
 
 if __name__ == "__main__":

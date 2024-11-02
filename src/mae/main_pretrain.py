@@ -15,18 +15,17 @@ import os
 import time
 from pathlib import Path
 
+import models_mae_fuse_L
 import numpy as np
 import timm
+import timm.optim.optim_factory as optim_factory
 import torch
 import torch.backends.cudnn as cudnn
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
-from torch.utils.tensorboard import SummaryWriter
-
-import models_mae_fuse_L
-import timm.optim.optim_factory as optim_factory
 import util.misc as misc
 from engine_pretrain import train_one_epoch
+from torch.utils.tensorboard import SummaryWriter
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
 
 
