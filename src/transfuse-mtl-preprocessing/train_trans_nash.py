@@ -475,11 +475,6 @@ def arg_parser() -> argparse.Namespace:
     parser.add_argument(
         "--resnet_init_type", type=str, default="default", help="出力層の初期化の種類"
     )
-    parser.add_argument(
-        "--preprocess_contain_task_specific_parameters",
-        action="store_true",
-        help="前処理にタスク特有のパラメータを含めるかどうか",
-    )
     return parser.parse_args()
 
 
@@ -528,10 +523,6 @@ def set_mtl_parameters(
         for n, p in models["TransFuse"].named_parameters()
         if "final_x" in n or "final_1" in n or "cls" in n
     ]
-
-    if opt.preprocess_contain_task_specific_parameters:
-        for _, p in models["Preprocess"].named_parameters():
-            task_specific_parameters.append(p)
 
     for _, p in models["Discriminator"].named_parameters():
         task_specific_parameters.append(p)
