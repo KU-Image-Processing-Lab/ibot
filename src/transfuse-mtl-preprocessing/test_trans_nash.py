@@ -333,14 +333,14 @@ def main():
             #     img_tensor = torch.from_numpy(img).unsqueeze(0).float()
             #     cropped_gt[j] = img_tensor
 
-            # ---- save image ----
-            os.makedirs("./fig/test_cropped", exist_ok=True)
-            for j in range(cropped_image.size(0)):
-                img = cropped_image[j].mul(255).byte()
-                img = img.permute(1, 2, 0).cpu().numpy()
-                cv2.imwrite(
-                    f"./fig/test_cropped/{name.replace('.png', '')}_image_{j}.png", img
-                )
+            # # ---- save image ----
+            # os.makedirs("./fig/test_cropped", exist_ok=True)
+            # for j in range(cropped_image.size(0)):
+            #     img = cropped_image[j].mul(255).byte()
+            #     img = img.permute(1, 2, 0).cpu().numpy()
+            #     cv2.imwrite(
+            #         f"./fig/test_cropped/{name.replace('.png', '')}_image_{j}.png", img
+            #     )
 
             cropped_image, cropped_gt = mtl_loader1.transform_process(
                 cropped_image, cropped_gt
@@ -348,13 +348,14 @@ def main():
             cropped_image = cropped_image.unsqueeze(0)
 
             # ---- save image ----
-            os.makedirs("./fig/test_end", exist_ok=True)
             for j in range(cropped_image.size(0)):
-                img = cropped_image[j].mul(255).byte()
+                # 画像の正規化を戻す
+                mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1).cuda()
+                std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1).cuda()
+                img = cropped_image[j] * std + mean
+                img = img.mul(255).byte()
                 img = img.permute(1, 2, 0).cpu().numpy()
-                cv2.imwrite(
-                    f"./fig/test_end/{name.replace('.png', '')}_image_{j}.png", img
-                )
+                cv2.imwrite(f"{save_path / name.replace('.png', '')}_image.png", img)
 
             # ---- save gt ----
             img = cropped_gt.mul(255).byte()
@@ -554,19 +555,6 @@ def main():
         output_dict["precision_cutoff"] = precision
         output_dict["recall_cutoff"] = recall
         output_dict["specificity_cutoff"] = specificity
-
-    # ---- print the results ----
-    for k, v in output_dict.items():
-        print(k, v)
-
-    # ---- save the results ----
-    now = datetime.datetime.now()
-    now = now.strftime("%Y-%m-%d_%H-%M-%S")
-    # columns, valuesの2列にしてcsvに保存
-    with open(Path(opt.test_save_path).joinpath(f"result_{now}.csv"), "a") as f:
-        f.write("columns,values\n")
-        for k, v in output_dict.items():
-            f.write(f"{k},{v}\n")
 
     # ---- print the results ----
     now = datetime.datetime.now()

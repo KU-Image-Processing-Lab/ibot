@@ -568,6 +568,7 @@ def plot_loss(
 def main():
     opt = arg_parser()
     save_parameter(opt)
+    os.makedirs(opt.train_save, exist_ok=True)
 
     device = set_device()
     models = get_models(opt, device)

@@ -16,11 +16,6 @@ echo "Testing script path:  ${SCRIPT_DIR}/${TEST_SCRIPT_NAME}"
 
 mkdir -p ./logs
 
-# default parameters
-D_INIT=0.625
-MEAN=0
-STD=0.01
-
 # --------------------------------------------------------------
 python3 ./utils/slack_bot.py --text "SCRIPT_DIR=${SCRIPT_DIR}${LF}TRAIN_SCRIPT_NAME=${TRAIN_SCRIPT_NAME}${LF}TEST_SCRIPT_NAME=${TEST_SCRIPT_NAME}"
 
@@ -32,7 +27,7 @@ DISCRIMINATOR="resnet10"
 
 for i in {0..4}; do
 
-    TRAIN_SAVE="transfuse_resnet10_preprocess_cv${i}_${DATE}_${RESNET_INIT_TYPE}_dinit${D_INIT}_std${STD}"
+    TRAIN_SAVE="transfuse_resnet10_preprocess_${DATE}_${RESNET_INIT_TYPE}_main"
     echo "TRAIN_SAVE:           ${TRAIN_SAVE}"
 
     python3 ./utils/slack_bot.py --text "Cross Validation: ${i}${LF}TRAIN_SAVE=${TRAIN_SAVE}"
@@ -47,12 +42,12 @@ for i in {0..4}; do
         --save_epoch 50 \
         --tuning \
         --loss_dir ./results/${TRAIN_SAVE} \
-        --seg_loss_path ./results/${TRAIN_SAVE}/seg_loss.png \
-        --dis_loss_path ./results/${TRAIN_SAVE}/dis_loss.png \
-        --pre_loss_path ./results/${TRAIN_SAVE}/pre_loss.png \
+        --seg_loss_path ./results/${TRAIN_SAVE}/cv${i}/seg_loss.png \
+        --dis_loss_path ./results/${TRAIN_SAVE}/cv${i}/dis_loss.png \
+        --pre_loss_path ./results/${TRAIN_SAVE}/cv${i}/pre_loss.png \
         --train_path ./dataset/CrossValidation_original/cv${i}_TrainDataset \
         --val_path ./dataset/CrossValidation_original/cv${i}_ValDataset \
-        --train_save ${TRAIN_SAVE} \
+        --train_save ${TRAIN_SAVE}/cv${i} \
         1> >(tee ./logs/${TRAIN_SCRIPT_NAME}_stdout_${DATE}.log >&1) \
         2> >(tee ./logs/${TRAIN_SCRIPT_NAME}_stderr_${DATE}.log >&2)
     python3 ./utils/slack_bot.py --text "`cat ./logs/${TRAIN_SCRIPT_NAME}_stderr_${DATE}.log`"
@@ -64,9 +59,9 @@ for i in {0..4}; do
             --discriminator ${DISCRIMINATOR} \
             --preprocess resnet10 \
             --resnet_init_type ${RESNET_INIT_TYPE} \
-            --pth_path0 ./snapshots/${TRAIN_SAVE}/Preprocess-${weight}.pth \
-            --pth_path ./snapshots/${TRAIN_SAVE}/TransFuse-${weight}.pth \
-            --pth_path2 ./snapshots/${TRAIN_SAVE}/Discriminator-${weight}.pth \
+            --pth_path0 ./snapshots/${TRAIN_SAVE}/cv${i}/Preprocess-${weight}.pth \
+            --pth_path ./snapshots/${TRAIN_SAVE}/cv${i}/TransFuse-${weight}.pth \
+            --pth_path2 ./snapshots/${TRAIN_SAVE}/cv${i}/Discriminator-${weight}.pth \
             --test_data_path1 ./dataset/CrossValidation_original/cv${i}_TestDataset \
             --test_data_path2 ./dataset/CrossValidation_original/cv${i}_sekkai_TestDataset \
             --test_save_path ./results/${TRAIN_SAVE}/cv${i} \
