@@ -337,14 +337,12 @@ def main():
             # ---- save image ----
             for j in range(cropped_image.size(0)):
                 # 画像の正規化を戻す
-                mean = torch.tensor([0.485, 0.456, 0.406]).view(3,1,1).cuda()
-                std = torch.tensor([0.229, 0.224, 0.225]).view(3,1,1).cuda()
+                mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1).cuda()
+                std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1).cuda()
                 img = cropped_image[j] * std + mean
                 img = img.mul(255).byte()
                 img = img.permute(1, 2, 0).cpu().numpy()
-                cv2.imwrite(
-                    f"{save_path / name.replace('.png', '')}_image.png", img
-                )
+                cv2.imwrite(f"{save_path / name.replace('.png', '')}_image.png", img)
 
             _, _, res = models["Transfuse"](cropped_image)
 
