@@ -320,19 +320,6 @@ def main():
                 )
                 cropped_gt = torch.cat((cropped_gt, crop), dim=0)
 
-            # # ---- binarization gt ----
-            # lower = np.array([0, 0, 0], dtype="uint8")
-            # upper = np.array([255, 50, 255], dtype="uint8")
-            # for j in range(cropped_gt.size(0)):
-            #     img = cropped_gt[j].mul(255).byte()
-            #     img = img.permute(1, 2, 0).cpu().numpy()
-            #     img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-            #     img = cv2.inRange(img, lower, upper)
-            #     img = cv2.bitwise_not(img)
-            #     cv2.imwrite(f"./fig/{name.replace('.png', '')}_mask.png", img)
-            #     img_tensor = torch.from_numpy(img).unsqueeze(0).float()
-            #     cropped_gt[j] = img_tensor
-
             # # ---- save image ----
             # os.makedirs("./fig/test_cropped", exist_ok=True)
             # for j in range(cropped_image.size(0)):
@@ -358,11 +345,6 @@ def main():
                 cv2.imwrite(
                     f"{save_path / name.replace('.png', '')}_image.png", img
                 )
-
-            # ---- save gt ----
-            img = cropped_gt.mul(255).byte()
-            img = img.permute(1, 2, 0).cpu().numpy()
-            cv2.imwrite(f"{save_path / name.replace('.png', '')}_mask.png", img)
 
             _, _, res = models["Transfuse"](cropped_image)
 
@@ -463,6 +445,21 @@ def main():
             cropped_image, cropped_gt = mtl_loader2.transform_process(
                 cropped_image, cropped_gt
             )
+
+            # ---- binarization gt ----
+            lower = np.array([0, 0, 0], dtype="uint8")
+            upper = np.array([255, 50, 255], dtype="uint8")
+            img = cropped_gt.mul(255).byte()
+            img = img.permute(1, 2, 0).cpu().numpy()
+            img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+            img = cv2.inRange(img, lower, upper)
+            img = cv2.bitwise_not(img)
+            cv2.imwrite(f"{save_path / name.replace('.png', '')}_mask.png", img)
+            img = 1.0 * (img > 0.5)
+
+            img_tensor = torch.from_numpy(img).unsqueeze(0).float()
+            cropped_gt = img_tensor
+
             cropped_image = cropped_image.unsqueeze(0)
             _, _, res = models["Transfuse"](cropped_image)
 
@@ -474,6 +471,7 @@ def main():
         res = 1.0 * (res > 0.5)  ############################
 
         cropped_gt = cropped_gt.cpu().numpy().squeeze()
+
         dice = mean_dice_np(cropped_gt, res)
         iou = mean_iou_np(cropped_gt, res)
         acc = np.sum(res == cropped_gt) / (res.shape[0] * res.shape[1])
