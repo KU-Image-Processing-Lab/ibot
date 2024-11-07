@@ -2,6 +2,9 @@
 .DS_Store
 .env
 *.pth
+tags
+lazygit
+*.code-workspace
 
 # directories
 **/__pycache__/**
