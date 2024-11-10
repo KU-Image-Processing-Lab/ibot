@@ -9,20 +9,21 @@ Copy-paste from DINO library:
 https://github.com/facebookresearch/dino
 """
 
-import os
-import glob
-import sys
 import argparse
+import glob
+import os
+import sys
+
 import cv2
 import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
-import models
-
-from tqdm import tqdm
-from torchvision import transforms as pth_transforms
 from PIL import Image
+from torchvision import transforms as pth_transforms
+from tqdm import tqdm
+
+import models
 
 FOURCC = {
     "mp4": cv2.VideoWriter_fourcc(*"MP4V"),
@@ -305,7 +306,7 @@ def parse_args():
         default="",
         type=str,
         help="""Path to pretrained weights to evaluate. Set to `download` to automatically load 
-            the pretrained DINO from url. Otherwise the model is randomly initialized"""
+            the pretrained DINO from url. Otherwise the model is randomly initialized""",
     )
     parser.add_argument(
         "--checkpoint_key",

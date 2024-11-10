@@ -9,28 +9,29 @@ Copy-paste from DINO library:
 https://github.com/facebookresearch/dino
 """
 
-import os
 import argparse
-import torch
-import torch.distributed as dist
-import torch.backends.cudnn as cudnn
-import numpy as np
-import utils
-import models
+import os
 
+import numpy as np
+import torch
+import torch.backends.cudnn as cudnn
+import torch.distributed as dist
 from PIL import Image
 from torch import nn
 from torchvision import transforms as pth_transforms
 
-class CopydaysDataset():
+import models
+import utils
+
+
+class CopydaysDataset:
     def __init__(self, basedir):
         self.basedir = basedir
         self.block_names = (
-            ['original', 'strong'] +
-            ['jpegqual/%d' % i for i in
-             [3, 5, 8, 10, 15, 20, 30, 50, 75]] +
-            ['crops/%d' % i for i in
-             [10, 15, 20, 30, 40, 50, 60, 70, 80]])
+            ["original", "strong"]
+            + ["jpegqual/%d" % i for i in [3, 5, 8, 10, 15, 20, 30, 50, 75]]
+            + ["crops/%d" % i for i in [10, 15, 20, 30, 40, 50, 60, 70, 80]]
+        )
         self.nblocks = len(self.block_names)
 
         self.query_blocks = range(self.nblocks)
@@ -40,37 +41,39 @@ class CopydaysDataset():
         self.database_blocks = [0]
 
     def get_block(self, i):
-        dirname = self.basedir + '/' + self.block_names[i]
-        fnames = [dirname + '/' + fname
-                  for fname in sorted(os.listdir(dirname))
-                  if fname.endswith('.jpg')]
+        dirname = self.basedir + "/" + self.block_names[i]
+        fnames = [
+            dirname + "/" + fname
+            for fname in sorted(os.listdir(dirname))
+            if fname.endswith(".jpg")
+        ]
         return fnames
 
     def get_block_filenames(self, subdir_name):
-        dirname = self.basedir + '/' + subdir_name
-        return [fname
-                for fname in sorted(os.listdir(dirname))
-                if fname.endswith('.jpg')]
+        dirname = self.basedir + "/" + subdir_name
+        return [
+            fname for fname in sorted(os.listdir(dirname)) if fname.endswith(".jpg")
+        ]
 
     def eval_result(self, ids, distances):
         j0 = 0
         for i in range(self.nblocks):
             j1 = j0 + self.q_block_sizes[i]
             block_name = self.block_names[i]
-            I = ids[j0:j1]   # block size
+            I = ids[j0:j1]  # block size
             sum_AP = 0
-            if block_name != 'strong':
+            if block_name != "strong":
                 # 1:1 mapping of files to names
                 positives_per_query = [[i] for i in range(j1 - j0)]
             else:
-                originals = self.get_block_filenames('original')
-                strongs = self.get_block_filenames('strong')
+                originals = self.get_block_filenames("original")
+                strongs = self.get_block_filenames("strong")
 
                 # check if prefixes match
                 positives_per_query = [
-                    [j for j, bname in enumerate(originals)
-                     if bname[:4] == qname[:4]]
-                    for qname in strongs]
+                    [j for j, bname in enumerate(originals) if bname[:4] == qname[:4]]
+                    for qname in strongs
+                ]
 
             for qno, Iline in enumerate(I):
                 positives = positives_per_query[qno]
@@ -80,14 +83,13 @@ class CopydaysDataset():
                         ranks.append(rank)
                 sum_AP += score_ap_from_ranks_1(ranks, len(positives))
 
-            print("eval on %s mAP=%.3f" % (
-                block_name, sum_AP / (j1 - j0)))
+            print("eval on %s mAP=%.3f" % (block_name, sum_AP / (j1 - j0)))
             j0 = j1
 
 
 # from the Holidays evaluation package
 def score_ap_from_ranks_1(ranks, nres):
-    """ Compute the average precision of one search.
+    """Compute the average precision of one search.
     ranks = ordered list of ranks of true positives
     nres  = total number of positives in dataset
     """
@@ -123,9 +125,9 @@ class ImgListDataset(torch.utils.data.Dataset):
         self.transform = transform
 
     def __getitem__(self, i):
-        with open(self.samples[i], 'rb') as f:
+        with open(self.samples[i], "rb") as f:
             img = Image.open(f)
-            img = img.convert('RGB')
+            img = img.convert("RGB")
         if self.transform is not None:
             img = self.transform(img)
         return img, i
@@ -136,22 +138,28 @@ class ImgListDataset(torch.utils.data.Dataset):
 
 def is_image_file(s):
     ext = s.split(".")[-1]
-    if ext in ['jpg', 'jpeg', 'png', 'ppm', 'bmp', 'pgm', 'tif', 'tiff', 'webp']:
+    if ext in ["jpg", "jpeg", "png", "ppm", "bmp", "pgm", "tif", "tiff", "webp"]:
         return True
     return False
 
 
 @torch.no_grad()
 def extract_features(image_list, model, args):
-    transform = pth_transforms.Compose([
-        pth_transforms.Resize((args.imsize, args.imsize), interpolation=3),
-        pth_transforms.ToTensor(),
-        pth_transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-    ])
+    transform = pth_transforms.Compose(
+        [
+            pth_transforms.Resize((args.imsize, args.imsize), interpolation=3),
+            pth_transforms.ToTensor(),
+            pth_transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+        ]
+    )
     tempdataset = ImgListDataset(image_list, transform=transform)
-    data_loader = torch.utils.data.DataLoader(tempdataset, batch_size=args.batch_size_per_gpu,
-        num_workers=args.num_workers, drop_last=False,
-        sampler=torch.utils.data.DistributedSampler(tempdataset, shuffle=False))
+    data_loader = torch.utils.data.DataLoader(
+        tempdataset,
+        batch_size=args.batch_size_per_gpu,
+        num_workers=args.num_workers,
+        drop_last=False,
+        sampler=torch.utils.data.DistributedSampler(tempdataset, shuffle=False),
+    )
     features = None
     for samples, index in utils.MetricLogger(delimiter="  ").log_every(data_loader, 10):
         samples, index = samples.cuda(non_blocking=True), index.cuda(non_blocking=True)
@@ -159,10 +167,17 @@ def extract_features(image_list, model, args):
 
         cls_output_token = feats[:, 0, :]  #  [CLS] token
         # GeM with exponent 4 for output patch tokens
-        b, h, w, d = len(samples), int(samples.shape[-2] / model.patch_embed.patch_size), int(samples.shape[-1] / model.patch_embed.patch_size), feats.shape[-1]
+        b, h, w, d = (
+            len(samples),
+            int(samples.shape[-2] / model.patch_embed.patch_size),
+            int(samples.shape[-1] / model.patch_embed.patch_size),
+            feats.shape[-1],
+        )
         feats = feats[:, 1:, :].reshape(b, h, w, d)
         feats = feats.clamp(min=1e-6).permute(0, 3, 1, 2)
-        feats = nn.functional.avg_pool2d(feats.pow(4), (h, w)).pow(1. / 4).reshape(b, -1)
+        feats = (
+            nn.functional.avg_pool2d(feats.pow(4), (h, w)).pow(1.0 / 4).reshape(b, -1)
+        )
         # concatenate [CLS] token and GeM pooled patch tokens
         feats = torch.cat((cls_output_token, feats), dim=1)
 
@@ -173,15 +188,22 @@ def extract_features(image_list, model, args):
                 features = features.cuda(non_blocking=True)
 
         # get indexes from all processes
-        y_all = torch.empty(dist.get_world_size(), index.size(0), dtype=index.dtype, device=index.device)
+        y_all = torch.empty(
+            dist.get_world_size(), index.size(0), dtype=index.dtype, device=index.device
+        )
         y_l = list(y_all.unbind(0))
         y_all_reduce = torch.distributed.all_gather(y_l, index, async_op=True)
         y_all_reduce.wait()
         index_all = torch.cat(y_l)
 
         # share features between processes
-        feats_all = torch.empty(dist.get_world_size(), feats.size(0), feats.size(1),
-                                dtype=feats.dtype, device=feats.device)
+        feats_all = torch.empty(
+            dist.get_world_size(),
+            feats.size(0),
+            feats.size(1),
+            dtype=feats.dtype,
+            device=feats.device,
+        )
         output_l = list(feats_all.unbind(0))
         output_all_reduce = torch.distributed.all_gather(output_l, feats, async_op=True)
         output_all_reduce.wait()
@@ -195,44 +217,93 @@ def extract_features(image_list, model, args):
     return features  # features is still None for every rank which is not 0 (main)
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser('Copy detection on Copydays')
-    parser.add_argument('--data_path', default='/path/to/copydays/', type=str,
-        help="See https://lear.inrialpes.fr/~jegou/data.php#copydays")
-    parser.add_argument('--whitening_path', default='/path/to/whitening_data/', type=str,
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser("Copy detection on Copydays")
+    parser.add_argument(
+        "--data_path",
+        default="/path/to/copydays/",
+        type=str,
+        help="See https://lear.inrialpes.fr/~jegou/data.php#copydays",
+    )
+    parser.add_argument(
+        "--whitening_path",
+        default="/path/to/whitening_data/",
+        type=str,
         help="""Path to directory with images used for computing the whitening operator.
-        In our paper, we use 20k random images from YFCC100M.""")
-    parser.add_argument('--distractors_path', default='/path/to/distractors/', type=str,
-        help="Path to directory with distractors images. In our paper, we use 10k random images from YFCC100M.")
-    parser.add_argument('--imsize', default=224, type=int, help='Image size (square image)')
-    parser.add_argument('--batch_size_per_gpu', default=16, type=int, help='Per-GPU batch-size')
-    parser.add_argument('--pretrained_weights', default='', type=str, help="Path to pretrained weights to evaluate.")
-    parser.add_argument('--use_cuda', default=True, type=utils.bool_flag)
-    parser.add_argument('--arch', default='vit_small', type=str, choices=['vit_tiny', 'vit_small', 'vit_base', 
-        'vit_large'], help='Architecture.')
-    parser.add_argument('--patch_size', default=16, type=int, help='Patch resolution of the model.')
-    parser.add_argument("--checkpoint_key", default="teacher", type=str,
-        help='Key to use in the checkpoint (example: "teacher")')
-    parser.add_argument('--num_workers', default=10, type=int, help='Number of data loading workers per GPU.')
-    parser.add_argument("--dist_url", default="env://", type=str, help="""url used to set up
-        distributed training; see https://pytorch.org/docs/stable/distributed.html""")
-    parser.add_argument("--local_rank", default=0, type=int, help="Please ignore and do not set this argument.")
+        In our paper, we use 20k random images from YFCC100M.""",
+    )
+    parser.add_argument(
+        "--distractors_path",
+        default="/path/to/distractors/",
+        type=str,
+        help="Path to directory with distractors images. In our paper, we use 10k random images from YFCC100M.",
+    )
+    parser.add_argument(
+        "--imsize", default=224, type=int, help="Image size (square image)"
+    )
+    parser.add_argument(
+        "--batch_size_per_gpu", default=16, type=int, help="Per-GPU batch-size"
+    )
+    parser.add_argument(
+        "--pretrained_weights",
+        default="",
+        type=str,
+        help="Path to pretrained weights to evaluate.",
+    )
+    parser.add_argument("--use_cuda", default=True, type=utils.bool_flag)
+    parser.add_argument(
+        "--arch",
+        default="vit_small",
+        type=str,
+        choices=["vit_tiny", "vit_small", "vit_base", "vit_large"],
+        help="Architecture.",
+    )
+    parser.add_argument(
+        "--patch_size", default=16, type=int, help="Patch resolution of the model."
+    )
+    parser.add_argument(
+        "--checkpoint_key",
+        default="teacher",
+        type=str,
+        help='Key to use in the checkpoint (example: "teacher")',
+    )
+    parser.add_argument(
+        "--num_workers",
+        default=10,
+        type=int,
+        help="Number of data loading workers per GPU.",
+    )
+    parser.add_argument(
+        "--dist_url",
+        default="env://",
+        type=str,
+        help="""url used to set up
+        distributed training; see https://pytorch.org/docs/stable/distributed.html""",
+    )
+    parser.add_argument(
+        "--local_rank",
+        default=0,
+        type=int,
+        help="Please ignore and do not set this argument.",
+    )
     args = parser.parse_args()
 
     utils.init_distributed_mode(args)
     print("git:\n  {}\n".format(utils.get_sha()))
-    print("\n".join("%s: %s" % (k, str(v)) for k, v in sorted(dict(vars(args)).items())))
+    print(
+        "\n".join("%s: %s" % (k, str(v)) for k, v in sorted(dict(vars(args)).items()))
+    )
     cudnn.benchmark = True
 
     # ============ building network ... ============
-    model = models.__dict__[args.arch](
-        patch_size=args.patch_size, 
-        num_classes=0)
+    model = models.__dict__[args.arch](patch_size=args.patch_size, num_classes=0)
     print(f"Model {args.arch} {args.patch_size}x{args.patch_size} built.")
     if args.use_cuda:
         model.cuda()
     model.eval()
-    utils.load_pretrained_weights(model, args.pretrained_weights, args.checkpoint_key, args.arch, args.patch_size)
+    utils.load_pretrained_weights(
+        model, args.pretrained_weights, args.checkpoint_key, args.arch, args.patch_size
+    )
 
     dataset = CopydaysDataset(args.data_path)
 
@@ -253,16 +324,28 @@ if __name__ == '__main__':
     # extract features for distractors
     if os.path.isdir(args.distractors_path):
         print("Using distractors...")
-        list_distractors = [os.path.join(args.distractors_path, s) for s in os.listdir(args.distractors_path) if is_image_file(s)]
+        list_distractors = [
+            os.path.join(args.distractors_path, s)
+            for s in os.listdir(args.distractors_path)
+            if is_image_file(s)
+        ]
         database.append(extract_features(list_distractors, model, args))
     if utils.get_rank() == 0:
         database = torch.cat(database)
-        print(f"Extraction of database and distractors features done. Shape: {database.shape}")
+        print(
+            f"Extraction of database and distractors features done. Shape: {database.shape}"
+        )
 
     # ============ Whitening ... ============
     if os.path.isdir(args.whitening_path):
-        print(f"Extracting features on images from {args.whitening_path} for learning the whitening operator.")
-        list_whit = [os.path.join(args.whitening_path, s) for s in os.listdir(args.whitening_path) if is_image_file(s)]
+        print(
+            f"Extracting features on images from {args.whitening_path} for learning the whitening operator."
+        )
+        list_whit = [
+            os.path.join(args.whitening_path, s)
+            for s in os.listdir(args.whitening_path)
+            if is_image_file(s)
+        ]
         features_for_whitening = extract_features(list_whit, model, args)
         if utils.get_rank() == 0:
             # center
@@ -271,7 +354,10 @@ if __name__ == '__main__':
             queries -= mean_feature
             pca = utils.PCA(dim=database.shape[-1], whit=0.5)
             # compute covariance
-            cov = torch.mm(features_for_whitening.T, features_for_whitening) / features_for_whitening.shape[0]
+            cov = (
+                torch.mm(features_for_whitening.T, features_for_whitening)
+                / features_for_whitening.shape[0]
+            )
             pca.train_pca(cov.cpu().numpy())
             database = pca.apply(database)
             queries = pca.apply(queries)
@@ -285,9 +371,8 @@ if __name__ == '__main__':
         # similarity
         similarity = torch.mm(queries, database.T)
         distances, indices = similarity.topk(20, largest=True, sorted=True)
-        
+
         # evaluate
         retrieved = dataset.eval_result(indices, distances)
-    
-    dist.barrier()
 
+    dist.barrier()

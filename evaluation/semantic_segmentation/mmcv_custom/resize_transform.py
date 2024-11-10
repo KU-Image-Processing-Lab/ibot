@@ -11,9 +11,9 @@ https://github.com/open-mmlab/mmsegmentation/
 
 import mmcv
 import numpy as np
-
-from mmseg.datasets.builder import PIPELINES
 from mmcv.parallel import DataContainer as DC
+from mmseg.datasets.builder import PIPELINES
+
 
 @PIPELINES.register_module()
 class SETR_Resize(object):
@@ -43,13 +43,15 @@ class SETR_Resize(object):
             image.
     """
 
-    def __init__(self,
-                 img_scale=None,
-                 multiscale_mode='range',
-                 ratio_range=None,
-                 keep_ratio=True,
-                 crop_size=None,
-                 setr_multi_scale=False):
+    def __init__(
+        self,
+        img_scale=None,
+        multiscale_mode="range",
+        ratio_range=None,
+        keep_ratio=True,
+        crop_size=None,
+        setr_multi_scale=False,
+    ):
 
         if img_scale is None:
             self.img_scale = None
@@ -65,7 +67,7 @@ class SETR_Resize(object):
             assert len(self.img_scale) == 1
         else:
             # mode 2: given multiple scales or a range of scales
-            assert multiscale_mode in ['value', 'range']
+            assert multiscale_mode in ["value", "range"]
 
         self.multiscale_mode = multiscale_mode
         self.ratio_range = ratio_range
@@ -109,12 +111,8 @@ class SETR_Resize(object):
         assert mmcv.is_list_of(img_scales, tuple) and len(img_scales) == 2
         img_scale_long = [max(s) for s in img_scales]
         img_scale_short = [min(s) for s in img_scales]
-        long_edge = np.random.randint(
-            min(img_scale_long),
-            max(img_scale_long) + 1)
-        short_edge = np.random.randint(
-            min(img_scale_short),
-            max(img_scale_short) + 1)
+        long_edge = np.random.randint(min(img_scale_long), max(img_scale_long) + 1)
+        short_edge = np.random.randint(min(img_scale_short), max(img_scale_short) + 1)
         img_scale = (long_edge, short_edge)
         return img_scale, None
 
@@ -165,65 +163,69 @@ class SETR_Resize(object):
 
         if self.ratio_range is not None:
             scale, scale_idx = self.random_sample_ratio(
-                self.img_scale[0], self.ratio_range)
+                self.img_scale[0], self.ratio_range
+            )
         elif len(self.img_scale) == 1:
             scale, scale_idx = self.img_scale[0], 0
-        elif self.multiscale_mode == 'range':
+        elif self.multiscale_mode == "range":
             scale, scale_idx = self.random_sample(self.img_scale)
-        elif self.multiscale_mode == 'value':
+        elif self.multiscale_mode == "value":
             scale, scale_idx = self.random_select(self.img_scale)
         else:
             raise NotImplementedError
 
-        results['scale'] = scale
-        results['scale_idx'] = scale_idx
+        results["scale"] = scale
+        results["scale_idx"] = scale_idx
 
     def _resize_img(self, results):
         """Resize images with ``results['scale']``."""
 
         if self.keep_ratio:
             if self.setr_multi_scale:
-                if min(results['scale']) < self.crop_size[0]:
+                if min(results["scale"]) < self.crop_size[0]:
                     new_short = self.crop_size[0]
                 else:
-                    new_short = min(results['scale'])
-                    
-                h, w = results['img'].shape[:2]
+                    new_short = min(results["scale"])
+
+                h, w = results["img"].shape[:2]
                 if h > w:
                     new_h, new_w = new_short * h / w, new_short
                 else:
                     new_h, new_w = new_short, new_short * w / h
-                results['scale'] = (new_h, new_w)
+                results["scale"] = (new_h, new_w)
 
             img, scale_factor = mmcv.imrescale(
-                results['img'], results['scale'], return_scale=True)
+                results["img"], results["scale"], return_scale=True
+            )
             # the w_scale and h_scale has minor difference
             # a real fix should be done in the mmcv.imrescale in the future
             new_h, new_w = img.shape[:2]
-            h, w = results['img'].shape[:2]
+            h, w = results["img"].shape[:2]
             w_scale = new_w / w
             h_scale = new_h / h
         else:
             img, w_scale, h_scale = mmcv.imresize(
-                results['img'], results['scale'], return_scale=True)
-        scale_factor = np.array([w_scale, h_scale, w_scale, h_scale],
-                                dtype=np.float32)
-        results['img'] = img
-        results['img_shape'] = img.shape
-        results['pad_shape'] = img.shape  # in case that there is no padding
-        results['scale_factor'] = scale_factor
-        results['keep_ratio'] = self.keep_ratio
+                results["img"], results["scale"], return_scale=True
+            )
+        scale_factor = np.array([w_scale, h_scale, w_scale, h_scale], dtype=np.float32)
+        results["img"] = img
+        results["img_shape"] = img.shape
+        results["pad_shape"] = img.shape  # in case that there is no padding
+        results["scale_factor"] = scale_factor
+        results["keep_ratio"] = self.keep_ratio
 
     def _resize_seg(self, results):
         """Resize semantic segmentation map with ``results['scale']``."""
-        for key in results.get('seg_fields', []):
+        for key in results.get("seg_fields", []):
             if self.keep_ratio:
                 gt_seg = mmcv.imrescale(
-                    results[key], results['scale'], interpolation='nearest')
+                    results[key], results["scale"], interpolation="nearest"
+                )
             else:
                 gt_seg = mmcv.imresize(
-                    results[key], results['scale'], interpolation='nearest')
-            results['gt_semantic_seg'] = gt_seg
+                    results[key], results["scale"], interpolation="nearest"
+                )
+            results["gt_semantic_seg"] = gt_seg
 
     def __call__(self, results):
         """Call function to resize images, bounding boxes, masks, semantic
@@ -237,7 +239,7 @@ class SETR_Resize(object):
                 'keep_ratio' keys are added into result dict.
         """
 
-        if 'scale' not in results:
+        if "scale" not in results:
             self._random_scale(results)
         self._resize_img(results)
         self._resize_seg(results)
@@ -245,15 +247,17 @@ class SETR_Resize(object):
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        repr_str += (f'(img_scale={self.img_scale}, '
-                     f'multiscale_mode={self.multiscale_mode}, '
-                     f'ratio_range={self.ratio_range}, '
-                     f'keep_ratio={self.keep_ratio})')
+        repr_str += (
+            f"(img_scale={self.img_scale}, "
+            f"multiscale_mode={self.multiscale_mode}, "
+            f"ratio_range={self.ratio_range}, "
+            f"keep_ratio={self.keep_ratio})"
+        )
         return repr_str
 
 
 @PIPELINES.register_module()
-class CenterCrop(PIPELINES.get('RandomCrop')):
+class CenterCrop(PIPELINES.get("RandomCrop")):
 
     def __init__(self, **kwargs):
         super(CenterCrop, self).__init__(**kwargs)
@@ -267,9 +271,10 @@ class CenterCrop(PIPELINES.get('RandomCrop')):
 
         return crop_y1, crop_y2, crop_x1, crop_x2
 
+
 @PIPELINES.register_module(force=True)
-class Collect(PIPELINES.get('Collect')):
-    
+class Collect(PIPELINES.get("Collect")):
+
     def __call__(self, results):
         """Call function to collect keys in results. The keys in ``meta_keys``
         will be converted to :obj:mmcv.DataContainer.
@@ -289,7 +294,7 @@ class Collect(PIPELINES.get('Collect')):
             if key not in results.keys():
                 continue
             img_meta[key] = results[key]
-        data['img_metas'] = DC(img_meta, cpu_only=True)
+        data["img_metas"] = DC(img_meta, cpu_only=True)
         for key in self.keys:
             data[key] = results[key]
         return data

@@ -4,10 +4,10 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-import random
 import math
-import numpy as np
+import random
 
+import numpy as np
 from torchvision.datasets import ImageFolder
 
 
@@ -18,22 +18,39 @@ class ImageFolderInstance(ImageFolder):
 
 
 class ImageFolderMask(ImageFolder):
-    def __init__(self, *args, patch_size, pred_ratio, pred_ratio_var, pred_aspect_ratio,
-                 pred_shape='block', pred_start_epoch=0, **kwargs):
+    def __init__(
+        self,
+        *args,
+        patch_size,
+        pred_ratio,
+        pred_ratio_var,
+        pred_aspect_ratio,
+        pred_shape="block",
+        pred_start_epoch=0,
+        **kwargs
+    ):
         super(ImageFolderMask, self).__init__(*args, **kwargs)
         self.psz = patch_size
-        self.pred_ratio = pred_ratio[0] if isinstance(pred_ratio, list) and \
-            len(pred_ratio) == 1 else pred_ratio
-        self.pred_ratio_var = pred_ratio_var[0] if isinstance(pred_ratio_var, list) and \
-            len(pred_ratio_var) == 1 else pred_ratio_var
-        if isinstance(self.pred_ratio, list) and not isinstance(self.pred_ratio_var, list):
+        self.pred_ratio = (
+            pred_ratio[0]
+            if isinstance(pred_ratio, list) and len(pred_ratio) == 1
+            else pred_ratio
+        )
+        self.pred_ratio_var = (
+            pred_ratio_var[0]
+            if isinstance(pred_ratio_var, list) and len(pred_ratio_var) == 1
+            else pred_ratio_var
+        )
+        if isinstance(self.pred_ratio, list) and not isinstance(
+            self.pred_ratio_var, list
+        ):
             self.pred_ratio_var = [self.pred_ratio_var] * len(self.pred_ratio)
         self.log_aspect_ratio = tuple(map(lambda x: math.log(x), pred_aspect_ratio))
         self.pred_shape = pred_shape
         self.pred_start_epoch = pred_start_epoch
 
     def get_pred_ratio(self):
-        if hasattr(self, 'epoch') and self.epoch < self.pred_start_epoch:
+        if hasattr(self, "epoch") and self.epoch < self.pred_start_epoch:
             return 0
 
         if isinstance(self.pred_ratio, list):
@@ -45,8 +62,14 @@ class ImageFolderMask(ImageFolder):
             pred_ratio = random.choice(pred_ratio)
         else:
             assert self.pred_ratio >= self.pred_ratio_var
-            pred_ratio = random.uniform(self.pred_ratio - self.pred_ratio_var, self.pred_ratio +
-                                        self.pred_ratio_var) if self.pred_ratio_var > 0 else self.pred_ratio
+            pred_ratio = (
+                random.uniform(
+                    self.pred_ratio - self.pred_ratio_var,
+                    self.pred_ratio + self.pred_ratio_var,
+                )
+                if self.pred_ratio_var > 0
+                else self.pred_ratio
+            )
 
         return pred_ratio
 
@@ -66,7 +89,7 @@ class ImageFolderMask(ImageFolder):
 
             high = self.get_pred_ratio() * H * W
 
-            if self.pred_shape == 'block':
+            if self.pred_shape == "block":
                 # following BEiT (https://arxiv.org/abs/2106.08254), see at
                 # https://github.com/microsoft/unilm/blob/b94ec76c36f02fb2b0bf0dcb0b8554a2185173cd/beit/masking_generator.py#L55
                 mask = np.zeros((H, W), dtype=bool)
@@ -85,7 +108,7 @@ class ImageFolderMask(ImageFolder):
                             top = random.randint(0, H - h)
                             left = random.randint(0, W - w)
 
-                            num_masked = mask[top: top + h, left: left + w].sum()
+                            num_masked = mask[top : top + h, left : left + w].sum()
                             if 0 < h * w - num_masked <= max_mask_patches:
                                 for i in range(top, top + h):
                                     for j in range(left, left + w):
@@ -101,11 +124,13 @@ class ImageFolderMask(ImageFolder):
                     else:
                         mask_count += delta
 
-            elif self.pred_shape == 'rand':
-                mask = np.hstack([
-                    np.zeros(H * W - int(high)),
-                    np.ones(int(high)),
-                ]).astype(bool)
+            elif self.pred_shape == "rand":
+                mask = np.hstack(
+                    [
+                        np.zeros(H * W - int(high)),
+                        np.ones(int(high)),
+                    ]
+                ).astype(bool)
                 np.random.shuffle(mask)
                 mask = mask.reshape(H, W)
 

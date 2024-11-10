@@ -5,29 +5,32 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
+
 import torch.nn as nn
 import torch.utils.checkpoint as checkpoint
-
 from mmcv_custom import load_checkpoint
-from mmseg.utils import get_root_logger
 from mmseg.models.builder import BACKBONES
+from mmseg.utils import get_root_logger
+
 from models import VisionTransformer
+
 
 @BACKBONES.register_module()
 class VisionTransformer(VisionTransformer):
-    def __init__(self,
-                 patch_size,
-                 embed_dim,
-                 with_fpn=True,
-                 frozen_stages=-1,
-                 out_indices=[3, 5, 7, 11],
-                 out_with_norm=False,
-                 use_checkpoint=False,
-                 **kwargs):
+    def __init__(
+        self,
+        patch_size,
+        embed_dim,
+        with_fpn=True,
+        frozen_stages=-1,
+        out_indices=[3, 5, 7, 11],
+        out_with_norm=False,
+        use_checkpoint=False,
+        **kwargs,
+    ):
         super(VisionTransformer, self).__init__(
-            patch_size=patch_size, 
-            embed_dim=embed_dim, 
-            **kwargs)
+            patch_size=patch_size, embed_dim=embed_dim, **kwargs
+        )
         self.patch_size = patch_size
         self.with_fpn = with_fpn
         self.frozen_stages = frozen_stages
@@ -68,7 +71,7 @@ class VisionTransformer(VisionTransformer):
             )
         else:
             logger = get_root_logger()
-            logger.info('Build model without FPN.')
+            logger.info("Build model without FPN.")
 
     def train(self, mode=True):
         """Convert the model into training mode while keep layers freezed."""
@@ -85,9 +88,9 @@ class VisionTransformer(VisionTransformer):
             self.pos_drop.eval()
 
         for i in range(1, self.frozen_stages + 1):
-            
-            if i  == len(self.blocks):
-                norm_layer = getattr(self, 'norm') #f'norm{i-1}')
+
+            if i == len(self.blocks):
+                norm_layer = getattr(self, "norm")  # f'norm{i-1}')
                 norm_layer.eval()
                 for param in norm_layer.parameters():
                     param.requires_grad = False
@@ -96,7 +99,7 @@ class VisionTransformer(VisionTransformer):
             m.eval()
             for param in m.parameters():
                 param.requires_grad = False
-            
+
     def init_weights(self, pretrained=None):
         """Initialize the weights in backbone.
         Args:
@@ -107,14 +110,16 @@ class VisionTransformer(VisionTransformer):
         if isinstance(pretrained, str):
             self.apply(self._init_weights)
             logger = get_root_logger()
-            if  os.path.isfile(pretrained):
+            if os.path.isfile(pretrained):
                 load_checkpoint(self, pretrained, strict=False, logger=logger)
             else:
-                logger.info(f"checkpoint path {pretrained} is invalid, we skip it and initialize net randomly")
+                logger.info(
+                    f"checkpoint path {pretrained} is invalid, we skip it and initialize net randomly"
+                )
         elif pretrained is None:
             self.apply(self._init_weights)
         else:
-            raise TypeError('pretrained must be a str or None')
+            raise TypeError("pretrained must be a str or None")
 
     def forward(self, x):
         B, _, H, W = x.shape
@@ -127,7 +132,7 @@ class VisionTransformer(VisionTransformer):
             else:
                 x = blk(x)
             if i in self.out_indices:
-                xp = self.norm(x[:, 1:, :]).permute(0, 2, 1).reshape(B, -1, Hp, Wp)       
+                xp = self.norm(x[:, 1:, :]).permute(0, 2, 1).reshape(B, -1, Hp, Wp)
                 features.append(xp.contiguous())
 
         if self.with_fpn:

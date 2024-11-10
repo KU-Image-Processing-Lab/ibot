@@ -10,15 +10,19 @@ https://github.com/open-mmlab/mmcv/
 """
 
 import os.path as osp
+
 import torch
+
 try:
     import apex
 except:
-    print('apex is not installed')
+    print("apex is not installed")
 
 from mmcv.runner import RUNNERS, IterBasedRunner
-from .checkpoint import save_checkpoint
 from torch.optim import Optimizer
+
+from .checkpoint import save_checkpoint
+
 
 @RUNNERS.register_module()
 class IterBasedRunnerAmp(IterBasedRunner):
@@ -27,12 +31,14 @@ class IterBasedRunnerAmp(IterBasedRunner):
     This runner train models iteration by iteration.
     """
 
-    def save_checkpoint(self,
-                        out_dir,
-                        filename_tmpl='iter_{}.pth',
-                        meta=None,
-                        save_optimizer=True,
-                        create_symlink=False):
+    def save_checkpoint(
+        self,
+        out_dir,
+        filename_tmpl="iter_{}.pth",
+        meta=None,
+        save_optimizer=True,
+        create_symlink=False,
+    ):
         """Save checkpoint to file.
 
         Args:
@@ -51,8 +57,7 @@ class IterBasedRunnerAmp(IterBasedRunner):
         elif isinstance(meta, dict):
             meta.update(iter=self.iter + 1, epoch=self.epoch + 1)
         else:
-            raise TypeError(
-                f'meta should be a dict or None, but got {type(meta)}')
+            raise TypeError(f"meta should be a dict or None, but got {type(meta)}")
         if self.meta is not None:
             meta.update(self.meta)
 
@@ -69,39 +74,36 @@ class IterBasedRunnerAmp(IterBasedRunner):
         #     else:
         #         shutil.copy(filepath, dst_file)
 
-    def resume(self,
-               checkpoint,
-               resume_optimizer=True,
-               map_location='default'):
-        if map_location == 'default':
+    def resume(self, checkpoint, resume_optimizer=True, map_location="default"):
+        if map_location == "default":
             if torch.cuda.is_available():
                 device_id = torch.cuda.current_device()
                 checkpoint = self.load_checkpoint(
                     checkpoint,
-                    map_location=lambda storage, loc: storage.cuda(device_id))
+                    map_location=lambda storage, loc: storage.cuda(device_id),
+                )
             else:
                 checkpoint = self.load_checkpoint(checkpoint)
         else:
-            checkpoint = self.load_checkpoint(
-                checkpoint, map_location=map_location)
+            checkpoint = self.load_checkpoint(checkpoint, map_location=map_location)
 
-        self._epoch = checkpoint['meta']['epoch']
-        self._iter = checkpoint['meta']['iter']
-        self._inner_iter = checkpoint['meta']['iter']
-        if 'optimizer' in checkpoint and resume_optimizer:
+        self._epoch = checkpoint["meta"]["epoch"]
+        self._iter = checkpoint["meta"]["iter"]
+        self._inner_iter = checkpoint["meta"]["iter"]
+        if "optimizer" in checkpoint and resume_optimizer:
             if isinstance(self.optimizer, Optimizer):
-                self.optimizer.load_state_dict(checkpoint['optimizer'])
+                self.optimizer.load_state_dict(checkpoint["optimizer"])
             elif isinstance(self.optimizer, dict):
                 for k in self.optimizer.keys():
-                    self.optimizer[k].load_state_dict(
-                        checkpoint['optimizer'][k])
+                    self.optimizer[k].load_state_dict(checkpoint["optimizer"][k])
             else:
                 raise TypeError(
-                    'Optimizer should be dict or torch.optim.Optimizer '
-                    f'but got {type(self.optimizer)}')
+                    "Optimizer should be dict or torch.optim.Optimizer "
+                    f"but got {type(self.optimizer)}"
+                )
 
-        if 'amp' in checkpoint:
-            apex.amp.load_state_dict(checkpoint['amp'])
-            self.logger.info('load amp state dict')
+        if "amp" in checkpoint:
+            apex.amp.load_state_dict(checkpoint["amp"])
+            self.logger.info("load amp state dict")
 
-        self.logger.info(f'resumed from epoch: {self.epoch}, iter {self.iter}')
+        self.logger.info(f"resumed from epoch: {self.epoch}, iter {self.iter}")

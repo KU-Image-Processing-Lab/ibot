@@ -14,15 +14,17 @@ https://github.com/microsoft/Swin-Transformer
 """
 
 _base_ = [
-    '../_base_/models/upernet.py', '../_base_/datasets/ade20k.py',
-    '../_base_/default_runtime.py', '../_base_/schedules/schedule_160k.py'
+    "../_base_/models/upernet.py",
+    "../_base_/datasets/ade20k.py",
+    "../_base_/default_runtime.py",
+    "../_base_/schedules/schedule_160k.py",
 ]
 crop_size = (512, 512)
 find_unused_parameters = True
 
 model = dict(
     backbone=dict(
-        type='VisionTransformer',
+        type="VisionTransformer",
         img_size=[512],
         patch_size=16,
         embed_dim=768,
@@ -31,18 +33,15 @@ model = dict(
         mlp_ratio=4,
         qkv_bias=True,
         drop_path_rate=0.1,
-        out_indices=[3, 5, 7, 11]
+        out_indices=[3, 5, 7, 11],
     ),
     decode_head=dict(
         in_channels=[768, 768, 768, 768],
         num_classes=150,
         channels=768,
     ),
-    auxiliary_head=dict(
-        in_channels=768,
-        num_classes=150
-    ), 
-    test_cfg = dict(mode='slide', crop_size=crop_size, stride=(341, 341))
+    auxiliary_head=dict(in_channels=768, num_classes=150),
+    test_cfg=dict(mode="slide", crop_size=crop_size, stride=(341, 341)),
 )
 
 # AdamW optimizer, no weight decay for position embedding & layer norm in backbone
@@ -51,20 +50,31 @@ model = dict(
 #                                                  'relative_position_bias_table': dict(decay_mult=0.),
 #                                                  'norm': dict(decay_mult=0.)}))
 
-optimizer = dict(_delete_=True, type='AdamW', lr=3e-5, betas=(0.9, 0.999), weight_decay=0.05,
-                 constructor='LayerDecayOptimizerConstructor', 
-                 paramwise_cfg=dict(num_layers=12, layer_decay_rate=0.9))
+optimizer = dict(
+    _delete_=True,
+    type="AdamW",
+    lr=3e-5,
+    betas=(0.9, 0.999),
+    weight_decay=0.05,
+    constructor="LayerDecayOptimizerConstructor",
+    paramwise_cfg=dict(num_layers=12, layer_decay_rate=0.9),
+)
 
-lr_config = dict(_delete_=True, policy='poly',
-                 warmup='linear',
-                 warmup_iters=1500,
-                 warmup_ratio=1e-6,
-                 power=1.0, min_lr=0.0, by_epoch=False)
+lr_config = dict(
+    _delete_=True,
+    policy="poly",
+    warmup="linear",
+    warmup_iters=1500,
+    warmup_ratio=1e-6,
+    power=1.0,
+    min_lr=0.0,
+    by_epoch=False,
+)
 
 # By default, models are trained on 8 GPUs with 2 images per GPU
-data=dict(samples_per_gpu=2)
+data = dict(samples_per_gpu=2)
 
-runner = dict(type='IterBasedRunnerAmp')
+runner = dict(type="IterBasedRunnerAmp")
 
 # do not use mmdet version fp16
 fp16 = None

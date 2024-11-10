@@ -5,18 +5,20 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
+
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint as checkpoint
-
 from mmcv_custom import load_checkpoint
-from mmdet.utils import get_root_logger
 from mmdet.models.builder import BACKBONES
+from mmdet.utils import get_root_logger
+
 from models import VisionTransformer
 
+
 class PatchEmbed(nn.Module):
-    """ Image to Patch Embedding
-    """
+    """Image to Patch Embedding"""
+
     def __init__(self, img_size=[224, 224], patch_size=16, in_chans=3, embed_dim=768):
         super().__init__()
         self.num_patches_w = img_size[0] // patch_size
@@ -27,40 +29,50 @@ class PatchEmbed(nn.Module):
         self.patch_size = patch_size
         self.num_patches = num_patches
 
-        self.proj = nn.Conv2d(in_chans, embed_dim, kernel_size=patch_size, stride=patch_size)
-            
+        self.proj = nn.Conv2d(
+            in_chans, embed_dim, kernel_size=patch_size, stride=patch_size
+        )
+
     def forward(self, x, mask=None):
         B, C, H, W = x.shape
         return self.proj(x)
 
+
 @BACKBONES.register_module()
 class VisionTransformer(VisionTransformer):
-    def __init__(self,
-                 img_size,
-                 patch_size,
-                 embed_dim,
-                 in_chans=3,
-                 with_fpn=True,
-                 frozen_stages=-1,
-                 out_indices=[3, 5, 7, 11],
-                 out_with_norm=False,
-                 use_checkpoint=False,
-                 **kwargs):
+    def __init__(
+        self,
+        img_size,
+        patch_size,
+        embed_dim,
+        in_chans=3,
+        with_fpn=True,
+        frozen_stages=-1,
+        out_indices=[3, 5, 7, 11],
+        out_with_norm=False,
+        use_checkpoint=False,
+        **kwargs,
+    ):
         super(VisionTransformer, self).__init__(
             img_size=img_size,
             patch_size=patch_size,
             in_chans=in_chans,
-            embed_dim=embed_dim, 
-            **kwargs)
-        
+            embed_dim=embed_dim,
+            **kwargs,
+        )
+
         # support non-square image as input
         if len(img_size) == 1:
             img_size = img_size * 2
         self.patch_embed = PatchEmbed(
-            img_size=img_size, patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim)
+            img_size=img_size,
+            patch_size=patch_size,
+            in_chans=in_chans,
+            embed_dim=embed_dim,
+        )
         num_patches = self.patch_embed.num_patches
         self.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim))
-        
+
         self.patch_size = patch_size
         self.with_fpn = with_fpn
         self.frozen_stages = frozen_stages
@@ -101,7 +113,7 @@ class VisionTransformer(VisionTransformer):
             )
         else:
             logger = get_root_logger()
-            logger.info('Build model without FPN.')
+            logger.info("Build model without FPN.")
 
     def train(self, mode=True):
         """Convert the model into training mode while keep layers freezed."""
@@ -118,9 +130,9 @@ class VisionTransformer(VisionTransformer):
             self.pos_drop.eval()
 
         for i in range(1, self.frozen_stages + 1):
-            
-            if i  == len(self.blocks):
-                norm_layer = getattr(self, 'norm') #f'norm{i-1}')
+
+            if i == len(self.blocks):
+                norm_layer = getattr(self, "norm")  # f'norm{i-1}')
                 norm_layer.eval()
                 for param in norm_layer.parameters():
                     param.requires_grad = False
@@ -129,7 +141,7 @@ class VisionTransformer(VisionTransformer):
             m.eval()
             for param in m.parameters():
                 param.requires_grad = False
-            
+
     def init_weights(self, pretrained=None):
         """Initialize the weights in backbone.
         Args:
@@ -140,21 +152,27 @@ class VisionTransformer(VisionTransformer):
         if isinstance(pretrained, str):
             self.apply(self._init_weights)
             logger = get_root_logger()
-            if  os.path.isfile(pretrained):
+            if os.path.isfile(pretrained):
                 load_checkpoint(self, pretrained, strict=False, logger=logger)
             else:
-                logger.info(f"checkpoint path {pretrained} is invalid, we skip it and initialize net randomly")
+                logger.info(
+                    f"checkpoint path {pretrained} is invalid, we skip it and initialize net randomly"
+                )
         elif pretrained is None:
             self.apply(self._init_weights)
         else:
-            raise TypeError('pretrained must be a str or None')
+            raise TypeError("pretrained must be a str or None")
 
     def interpolate_pos_encoding(self, x, w, h):
         npatch = x.shape[1] - 1
         N = self.pos_embed.shape[1] - 1
         w0 = w // self.patch_embed.patch_size
         h0 = h // self.patch_embed.patch_size
-        if npatch == N and w0 == self.patch_embed.num_patches_w and h0 == self.patch_embed.num_patches_h:
+        if (
+            npatch == N
+            and w0 == self.patch_embed.num_patches_w
+            and h0 == self.patch_embed.num_patches_h
+        ):
             return self.pos_embed
         class_pos_embed = self.pos_embed[:, 0]
         patch_pos_embed = self.pos_embed[:, 1:]
@@ -163,11 +181,19 @@ class VisionTransformer(VisionTransformer):
         # see discussion at https://github.com/facebookresearch/dino/issues/8
         w0, h0 = w0 + 0.1, h0 + 0.1
         patch_pos_embed = nn.functional.interpolate(
-            patch_pos_embed.reshape(1, self.patch_embed.num_patches_w, self.patch_embed.num_patches_h, dim).permute(0, 3, 1, 2),
-            scale_factor=(w0 / self.patch_embed.num_patches_w, h0 / self.patch_embed.num_patches_h),
-            mode='bicubic',
+            patch_pos_embed.reshape(
+                1, self.patch_embed.num_patches_w, self.patch_embed.num_patches_h, dim
+            ).permute(0, 3, 1, 2),
+            scale_factor=(
+                w0 / self.patch_embed.num_patches_w,
+                h0 / self.patch_embed.num_patches_h,
+            ),
+            mode="bicubic",
         )
-        assert int(w0) == patch_pos_embed.shape[-2] and int(h0) == patch_pos_embed.shape[-1]
+        assert (
+            int(w0) == patch_pos_embed.shape[-2]
+            and int(h0) == patch_pos_embed.shape[-1]
+        )
         patch_pos_embed = patch_pos_embed.permute(0, 2, 3, 1).view(1, -1, dim)
         return torch.cat((class_pos_embed.unsqueeze(0), patch_pos_embed), dim=1)
 
@@ -182,7 +208,7 @@ class VisionTransformer(VisionTransformer):
             else:
                 x = blk(x)
             if i in self.out_indices:
-                xp = self.norm(x[:, 1:, :]).permute(0, 2, 1).reshape(B, -1, Hp, Wp)       
+                xp = self.norm(x[:, 1:, :]).permute(0, 2, 1).reshape(B, -1, Hp, Wp)
                 features.append(xp.contiguous())
 
         if self.with_fpn:
