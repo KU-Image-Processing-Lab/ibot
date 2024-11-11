@@ -354,7 +354,7 @@ def get_args_parser():
     parser.add_argument("--seed", default=0, type=int, help="Random seed.")
     parser.add_argument(
         "--num_workers",
-        default=10,
+        default=4,
         type=int,
         help="Number of data loading workers per GPU.",
     )

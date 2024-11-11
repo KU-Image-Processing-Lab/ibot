@@ -291,6 +291,8 @@ class VisionTransformer(nn.Module):
             ).permute(0, 3, 1, 2),
             scale_factor=(w0 / math.sqrt(N), h0 / math.sqrt(N)),
             mode="bicubic",
+            align_corners=False,
+            recompute_scale_factor=True,
         )
         assert (
             int(w0) == patch_pos_embed.shape[-2]
