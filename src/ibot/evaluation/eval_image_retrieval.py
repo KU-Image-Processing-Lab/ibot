@@ -14,6 +14,7 @@ import os
 import pickle
 import sys
 
+import models
 import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
@@ -24,7 +25,6 @@ from torch import nn
 from torchvision import models as torchvision_models
 from torchvision import transforms as pth_transforms
 
-import models
 import utils
 
 

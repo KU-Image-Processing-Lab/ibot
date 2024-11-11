@@ -17,13 +17,13 @@ import queue
 from urllib.request import urlopen
 
 import cv2
+import models
 import numpy as np
 import torch
 from PIL import Image
 from torch.nn import functional as F
 from tqdm import tqdm
 
-import models
 import utils
 
 

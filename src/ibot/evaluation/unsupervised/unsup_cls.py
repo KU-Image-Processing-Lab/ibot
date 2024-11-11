@@ -8,17 +8,17 @@ import argparse
 import copy
 import os
 
+import models
 import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
+from loader import ImageFolder
+from models.head import DINOHead
 from munkres import Munkres
 from sklearn import metrics
 from torchvision import transforms as pth_transforms
 
-import models
 import utils
-from loader import ImageFolder
-from models.head import DINOHead
 
 
 def eval_pred(label, pred, calc_acc=False):

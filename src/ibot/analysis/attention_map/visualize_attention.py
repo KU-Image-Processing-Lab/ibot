@@ -17,10 +17,12 @@ import random
 import cv2
 import matplotlib
 import matplotlib.pyplot as plt
+import models
 import numpy as np
 import torch
 import torch.nn as nn
 import torchvision
+from loader import ImageFolderInstance
 from matplotlib.patches import Polygon
 from PIL import Image
 from skimage.measure import find_contours
@@ -28,9 +30,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms as pth_transforms
 from tqdm import tqdm
 
-import models
 import utils
-from loader import ImageFolderInstance
 
 matplotlib.use("Agg")
 

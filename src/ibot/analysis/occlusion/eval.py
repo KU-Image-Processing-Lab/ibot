@@ -19,15 +19,15 @@ import torch
 import torchvision
 import torchvision.datasets as datasets
 import torchvision.utils as vutils
+from analysis import imagenet_models
 from einops import rearrange
+from loader import ImageFolder
 from timm.utils import accuracy
 from torch.utils.data import DataLoader
 from torchvision.transforms import transforms
 from tqdm import tqdm
 
 import utils
-from analysis import imagenet_models
-from loader import ImageFolder
 
 
 def main(args, device, verbose=True):

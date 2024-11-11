@@ -20,6 +20,7 @@ import time
 from pathlib import Path
 from typing import Iterable, Optional
 
+import models
 import numpy as np
 import scipy.io as scio
 import torch
@@ -37,7 +38,6 @@ from torch.nn import functional as F
 from torchvision import datasets, transforms
 from torchvision.datasets.folder import ImageFolder, default_loader
 
-import models
 import utils
 
 

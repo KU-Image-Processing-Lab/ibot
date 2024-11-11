@@ -18,9 +18,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.datasets as dset
 import torchvision.transforms as trn
-from calibration_tools import *
-
 from analysis import imagenet_models
+from calibration_tools import *
 
 parser = ArgumentParser()
 parser.add_argument(

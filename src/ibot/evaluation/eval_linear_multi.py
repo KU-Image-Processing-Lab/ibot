@@ -16,14 +16,14 @@ import json
 import os
 from pathlib import Path
 
+import models
 import torch
 import torch.backends.cudnn as cudnn
+from loader import ImageFolder
 from torch import nn
 from torchvision import transforms as pth_transforms
 
-import models
 import utils
-from loader import ImageFolder
 
 
 def eval_linear(args):

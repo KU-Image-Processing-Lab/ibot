@@ -18,9 +18,8 @@ import torch
 import torch.backends.cudnn as cudnn
 import torchvision.datasets as dset
 import torchvision.transforms as trn
-from torch.autograd import Variable as V
-
 from analysis import imagenet_models
+from torch.autograd import Variable as V
 
 parser = argparse.ArgumentParser(
     description="Evaluates robustness of various nets on ImageNet",

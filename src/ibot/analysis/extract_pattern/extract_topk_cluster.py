@@ -8,19 +8,19 @@ import argparse
 import math
 import os
 
+import models
 import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
 import torch.distributed as dist
+from loader import ImageFolderInstance
+from models.head import iBOTHead
 from PIL import Image, ImageDraw, ImageFile
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from tqdm import tqdm
 
-import models
 import utils
-from loader import ImageFolderInstance
-from models.head import iBOTHead
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 

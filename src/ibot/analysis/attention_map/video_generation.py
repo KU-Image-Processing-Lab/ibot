@@ -16,14 +16,13 @@ import sys
 
 import cv2
 import matplotlib.pyplot as plt
+import models
 import numpy as np
 import torch
 import torch.nn as nn
 from PIL import Image
 from torchvision import transforms as pth_transforms
 from tqdm import tqdm
-
-import models
 
 FOURCC = {
     "mp4": cv2.VideoWriter_fourcc(*"MP4V"),

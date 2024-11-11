@@ -13,23 +13,23 @@ import sys
 import time
 from pathlib import Path
 
+import models
 import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
 import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
+from evaluation.unsupervised.unsup_cls import eval_pred
+from loader import ImageFolderMask
+from models.head import iBOTHead
 from PIL import Image
 from tensorboardX import SummaryWriter
 from torchvision import datasets
 from torchvision import models as torchvision_models
 from torchvision import transforms
 
-import models
 import utils
-from evaluation.unsupervised.unsup_cls import eval_pred
-from loader import ImageFolderMask
-from models.head import iBOTHead
 
 
 def get_args_parser():

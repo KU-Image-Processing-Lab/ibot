@@ -12,11 +12,10 @@ https://github.com/MadryLab/backgrounds_challenge
 import os
 
 import torch as ch
+from analysis import imagenet_models
 from tools import folder
 from torch.utils.data import DataLoader
 from torchvision import transforms
-
-from analysis import imagenet_models
 
 
 def make_loaders(

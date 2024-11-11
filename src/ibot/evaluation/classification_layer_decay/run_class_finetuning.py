@@ -16,9 +16,16 @@ import os
 import time
 from pathlib import Path
 
+import evaluation.classification_layer_decay.modeling_finetune
+import evaluation.classification_layer_decay.utils as utils
 import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
+from evaluation.classification_layer_decay.engine_for_finetuning import (
+    evaluate, train_one_epoch)
+from evaluation.classification_layer_decay.utils import \
+    NativeScalerWithGradNormCount as NativeScaler
+from loader import ImageFolder
 from optim_factory import (LayerDecayValueAssigner, create_optimizer,
                            get_parameter_groups)
 from scipy import interpolate
@@ -31,14 +38,6 @@ from timm.loss import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
 from timm.models import create_model
 from timm.utils import ModelEma
 from torchvision import datasets, transforms
-
-import evaluation.classification_layer_decay.modeling_finetune
-import evaluation.classification_layer_decay.utils as utils
-from evaluation.classification_layer_decay.engine_for_finetuning import (
-    evaluate, train_one_epoch)
-from evaluation.classification_layer_decay.utils import \
-    NativeScalerWithGradNormCount as NativeScaler
-from loader import ImageFolder
 
 
 def get_args():

@@ -9,19 +9,19 @@ import os
 import random
 
 import matplotlib.pyplot as plt
+import models
 import numpy as np
 import torch
 import torch.nn as nn
 import torchvision
 import torchvision.transforms.functional as TF
+from loader import ImageFolderInstance
 from PIL import Image, ImageDraw, ImageFile
 from torch.utils.data import DataLoader, Sampler
 from torchvision import transforms
 from tqdm import tqdm
 
-import models
 import utils
-from loader import ImageFolderInstance
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 

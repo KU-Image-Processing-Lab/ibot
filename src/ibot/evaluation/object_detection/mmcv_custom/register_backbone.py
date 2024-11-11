@@ -12,7 +12,6 @@ import torch.utils.checkpoint as checkpoint
 from mmcv_custom import load_checkpoint
 from mmdet.models.builder import BACKBONES
 from mmdet.utils import get_root_logger
-
 from models import VisionTransformer
 
 

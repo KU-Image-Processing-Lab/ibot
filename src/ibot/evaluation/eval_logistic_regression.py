@@ -15,15 +15,15 @@ import copy
 import os
 
 import cyanure as ars
+import models
 import torch
 import torch.backends.cudnn as cudnn
 import torch.distributed as dist
+from loader import ImageFolderInstance
 from torch import nn
 from torchvision import transforms as pth_transforms
 
-import models
 import utils
-from loader import ImageFolderInstance
 
 
 def eval_logistic_regression(args):
