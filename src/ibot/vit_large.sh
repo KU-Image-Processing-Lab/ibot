@@ -1,5 +1,5 @@
 ./run.sh imagenet_pretrain "vit_large" vit_large teacher 16 \
-  --data_path ../dataset/mae/dataset/TrainDataset/images/ \
+  --data_path ../../dataset/mae/dataset/TrainDataset/images/ \
   --teacher_temp 0.07 \
   --warmup_teacher_temp_epochs 50 \
   --weight_decay_end 0.48 \
