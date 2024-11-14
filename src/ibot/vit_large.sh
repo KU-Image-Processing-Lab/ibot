@@ -1,4 +1,6 @@
-./run.sh imagenet_pretrain "vit_large" vit_large teacher 16 \
+DATE=`date +%Y%m%d%H%M`
+
+./run.sh imagenet_pretrain "vit_large_${DATE}" vit_large teacher 16 \
   --data_path ../../dataset/mae/dataset/TrainDataset/images/ \
   --teacher_temp 0.07 \
   --warmup_teacher_temp_epochs 50 \
@@ -19,3 +21,9 @@
   --min_lr 0.0002 \
   --num_workers 4 \
   --lambda1 0.0
+
+python3 ./extract_backbone_weights.py \
+    ./work_dirs/vit_large/checkpoint0240.pth \
+    ./work_dirs/vit_large/extracted_backbone_weights.pth \
+    --checkpoint_key 'student' \
+    --with_head false
