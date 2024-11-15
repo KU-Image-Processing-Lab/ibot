@@ -522,7 +522,11 @@ class CrossValidationDatasetMAE:
 
 
 class CrossValidationDatasetImagenet(CrossValidationDatasetMAE):
-    def __init__(self, root_dir: str = "CrossValidation", save_dir: str = "imagenet/dataset/TrainDataset/images"):
+    def __init__(
+        self,
+        root_dir: str = "CrossValidation",
+        save_dir: str = "imagenet/dataset/TrainDataset/images",
+    ):
         super().__init__(root_dir, save_dir)
 
         self.mask_root = Path("dataset/masks")
@@ -542,13 +546,17 @@ class CrossValidationDatasetImagenet(CrossValidationDatasetMAE):
         os.makedirs(self.save_dir / f"{index}" / "1", exist_ok=True)
         for image_path, label in zip(image_list, label_list):
             image_path = Path(image_path)
-            save_file_path = self.save_dir / f"{index}" / str(label) / f"{image_path.stem}.png"
+            save_file_path = (
+                self.save_dir / f"{index}" / str(label) / f"{image_path.stem}.png"
+            )
             os.system(f"cp {image_path} {save_file_path}")
 
     def _get_label_list(self, mae_list) -> list:
         label_list = []
         for image_path in mae_list:
-            mask = cv2.imread(str(self.mask_root / f"{image_path.stem}.png"), cv2.IMREAD_GRAYSCALE)
+            mask = cv2.imread(
+                str(self.mask_root / f"{image_path.stem}.png"), cv2.IMREAD_GRAYSCALE
+            )
             if mask is None:
                 label = 0
             else:
