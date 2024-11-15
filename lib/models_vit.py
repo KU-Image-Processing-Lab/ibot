@@ -113,13 +113,15 @@ def vit_large_patch16(pretrained=False, **kwargs):
     )
     if pretrained:
         ############################################################################################
-        checkpoint = torch.load("./weights/checkpoint-399_vit_l_352.pth")
+        # checkpoint = torch.load("./weights/checkpoint-399_vit_l_352.pth")
         # checkpoint = torch.load('checkpoint-399_vit_l_352_491.pth')
         # checkpoint = torch.load('mae_pretrain_vit_large.pth')
         # checkpoint = torch.load('checkpoint-399_vit_l_352_kvasir.pth')
         # checkpoint = torch.load('checkpoint-399_vit_l_352_cal_polyp.pth')
+        # checkpoint_model = checkpoint["model"]
 
-        checkpoint_model = checkpoint["model"]
+        checkpoint = torch.load("./src/ibot/work_dirs/vit_large/extracted_backbone_weights.pth")
+        checkpoint_model = checkpoint["state_dict"]
 
         # interpolate position embedding
         interpolate_pos_embed(model, checkpoint_model)

@@ -1,7 +1,5 @@
-DATE=`date +%Y%m%d%H%M`
-
-./run.sh imagenet_pretrain "vit_large_${DATE}" vit_large teacher 16 \
-  --data_path ../../dataset/mae/dataset/TrainDataset/images/ \
+./run.sh polyp_pretrain "vit_large" vit_large teacher 8 \
+  --data_path ../../dataset/imagenet/dataset/TrainDataset/images/0 \
   --teacher_temp 0.07 \
   --warmup_teacher_temp_epochs 50 \
   --weight_decay_end 0.48 \
@@ -20,7 +18,7 @@ DATE=`date +%Y%m%d%H%M`
   --freeze_last_layer 3 \
   --min_lr 0.0002 \
   --num_workers 4 \
-  --lambda1 0.0
+  --lambda1 1.0
 
 python3 ./extract_backbone_weights.py \
     ./work_dirs/vit_large/checkpoint0240.pth \

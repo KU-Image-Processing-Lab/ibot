@@ -45,6 +45,7 @@ def get_args_parser():
             "vit_small",
             "vit_base",
             "vit_large",
+            "vit_huge",
             "deit_tiny",
             "deit_small",
             "swin_tiny",

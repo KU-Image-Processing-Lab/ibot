@@ -2,6 +2,7 @@ import argparse
 import os
 import random
 from pathlib import Path
+from typing import Tuple
 
 import cv2
 import numpy as np
@@ -478,7 +479,7 @@ class CrossValidationDatasetMAE:
             self.root_path.glob(f"cv{index}_TrainDataset/images/*.png")
         )
 
-    def _get_mae_dataset(self, index: int = 0) -> tuple[list[Path], list[str]]:
+    def _get_mae_dataset(self, index: int = 0) -> Tuple[list, list]:
 
         mae_list = list(self.mae_path.glob(f"{index}/*.png"))
         assert len(mae_list) == 1141, f"mae dataset is not 1141, but {len(mae_list)}"
@@ -520,12 +521,47 @@ class CrossValidationDatasetMAE:
             self._make_mae_dataset(index, self.train_list, not_train_file_name_list)
 
 
+class CrossValidationDatasetImagenet(CrossValidationDatasetMAE):
+    def __init__(self, root_dir: str = "CrossValidation", save_dir: str = "imagenet/dataset/TrainDataset/images"):
+        super().__init__(root_dir, save_dir)
+
+        self.mask_root = Path("dataset/masks")
+
+    def __call__(self) -> None:
+        for index in range(5):
+            try:
+                image_list, _ = self._get_mae_dataset(index)
+                label_list = self._get_label_list(image_list)
+                self._make_imagenet_dataset(index, image_list, label_list)
+            except Exception as e:
+                print(f"index: {index}, error: {e}")
+                exit()
+
+    def _make_imagenet_dataset(self, index, image_list, label_list) -> None:
+        os.makedirs(self.save_dir / f"{index}" / "0", exist_ok=True)
+        os.makedirs(self.save_dir / f"{index}" / "1", exist_ok=True)
+        for image_path, label in zip(image_list, label_list):
+            image_path = Path(image_path)
+            save_file_path = self.save_dir / f"{index}" / str(label) / f"{image_path.stem}.png"
+            os.system(f"cp {image_path} {save_file_path}")
+
+    def _get_label_list(self, mae_list) -> list:
+        label_list = []
+        for image_path in mae_list:
+            mask = cv2.imread(str(self.mask_root / f"{image_path.stem}.png"), cv2.IMREAD_GRAYSCALE)
+            if mask is None:
+                label = 0
+            else:
+                label = 1 if np.sum(mask) > 0 else 0
+            label_list.append(label)
+        return label_list
+
+
 def arg_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--data_type",
         type=str,
-        default="default",
         help="default, original, crop",
     )
     return parser.parse_args()
@@ -553,6 +589,10 @@ if __name__ == "__main__":
     elif data_type == "mae":
         mae = CrossValidationDatasetMAE()
         mae()
+
+    elif data_type == "imagenet":
+        imagenet = CrossValidationDatasetImagenet()
+        imagenet()
 
     elif data_type == "original":
         for index, seed in enumerate([31, 42, 71, 91], start=1):

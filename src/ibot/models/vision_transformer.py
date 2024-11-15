@@ -419,3 +419,16 @@ def vit_large(patch_size=16, **kwargs):
         **kwargs
     )
     return model
+
+
+def vit_huge(patch_size=14, **kwargs):
+    model = VisionTransformer(
+        patch_size=patch_size,
+        embed_dim=1280,
+        depth=32,
+        num_heads=16,
+        mlp_ratio=4,
+        qkv_bias=True,
+        **kwargs
+    )
+    return model
