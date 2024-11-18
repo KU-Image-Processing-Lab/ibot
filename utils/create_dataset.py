@@ -595,20 +595,20 @@ if __name__ == "__main__":
         imagenet()
 
     elif data_type == "original":
-        for index, seed in enumerate([31, 42, 71, 91], start=1):
-            cv = CrossValidationDataset(
-                root_path="dataset/original_dataset_only_left",
-                save_dir="CrossValidation_original",
-                verbose=True,
-                seed=seed,
-            )
-            cv(index=index)
+        # for index, seed in enumerate([31, 42, 71, 91], start=1):
+        #     cv = CrossValidationDataset(
+        #         root_path="dataset/original_dataset_only_left",
+        #         save_dir="CrossValidation_original",
+        #         verbose=True,
+        #         seed=seed,
+        #     )
+        #     cv(index=index)
 
-            cv_original = CrossValidationDatasetOriginal(verbose=True)
-            for index in range(0, 5):
-                print(f">>> cv{index}")
-                cv_original(index=index)
-                print("-" * 50)
+        cv_original = CrossValidationDatasetOriginal(verbose=True)
+        for index in range(0, 5):
+            print(f">>> cv{index}")
+            cv_original(index=index)
+            print("-" * 50)
 
     elif data_type == "crop":
         param_d_list = [
