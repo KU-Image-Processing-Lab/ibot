@@ -120,7 +120,9 @@ def vit_large_patch16(pretrained=False, **kwargs):
         # checkpoint = torch.load('checkpoint-399_vit_l_352_cal_polyp.pth')
         # checkpoint_model = checkpoint["model"]
 
-        checkpoint = torch.load("./src/ibot/work_dirs/vit_large/extracted_backbone_weights.pth")
+        checkpoint = torch.load(
+            "./src/ibot/work_dirs/vit_large/extracted_backbone_weights.pth"
+        )
         checkpoint_model = checkpoint["state_dict"]
 
         # interpolate position embedding
