@@ -10,6 +10,7 @@ from functools import partial
 # timm: https://github.com/rwightman/pytorch-image-models/tree/master/timm
 # DeiT: https://github.com/facebookresearch/deit
 # --------------------------------------------------------
+import sys
 import numpy as np
 import timm.models.vision_transformer
 import torch
@@ -100,7 +101,7 @@ def vit_base_patch16(pretrained=False, **kwargs):
     return model
 
 
-def vit_large_patch16(pretrained=False, **kwargs):
+def vit_large_patch16(pretrained=False, pretrain_arch="mae", **kwargs):
     model = VisionTransformer(
         patch_size=16,
         embed_dim=1024,
@@ -111,37 +112,49 @@ def vit_large_patch16(pretrained=False, **kwargs):
         norm_layer=partial(nn.LayerNorm, eps=1e-6),
         **kwargs
     )
+
     if pretrained:
-        ############################################################################################
-        # checkpoint = torch.load("./weights/checkpoint-399_vit_l_352.pth")
-        # checkpoint = torch.load('checkpoint-399_vit_l_352_491.pth')
-        # checkpoint = torch.load('mae_pretrain_vit_large.pth')
-        # checkpoint = torch.load('checkpoint-399_vit_l_352_kvasir.pth')
-        # checkpoint = torch.load('checkpoint-399_vit_l_352_cal_polyp.pth')
-        # checkpoint_model = checkpoint["model"]
+        if pretrain_arch == "mae":
+            ############################################################################################
+            checkpoint = torch.load("./weights/checkpoint-399_vit_l_352.pth")
+            # checkpoint = torch.load('checkpoint-399_vit_l_352_491.pth')
+            # checkpoint = torch.load('mae_pretrain_vit_large.pth')
+            # checkpoint = torch.load('checkpoint-399_vit_l_352_kvasir.pth')
+            # checkpoint = torch.load('checkpoint-399_vit_l_352_cal_polyp.pth')
+            checkpoint_model = checkpoint["model"]
 
-        checkpoint = torch.load(
-            "./src/ibot/work_dirs/vit_large/extracted_backbone_weights.pth"
-        )
-        checkpoint_model = checkpoint["state_dict"]
+            # interpolate position embedding
+            interpolate_pos_embed(model, checkpoint_model)
 
-        # interpolate position embedding
-        interpolate_pos_embed(model, checkpoint_model)
+            # load pre-trained model
+            msg = model.load_state_dict(checkpoint_model, strict=False)
+            # load_state_dict()のstrictをFalseにすると，ロード側のパラメータを設定する際，ロードされる側にしか存在しないものを無視する
 
-        # load pre-trained model
-        msg = model.load_state_dict(checkpoint_model, strict=False)
-        # load_state_dict()のstrictをFalseにすると，ロード側のパラメータを設定する際，ロードされる側にしか存在しないものを無視する
+            # print(checkpoint_model.keys()) # pthファイルのすべての重みkeyを表示
 
-        # print(checkpoint_model.keys()) # pthファイルのすべての重みkeyを表示
-
-        print(msg)
-        # IncompatibleKeys(missing_keys=[], unexpected_keys=[])はパラメータをロードした際に、
-        # missing_keysは読み込んだpthファイルのモデルには存在しないが、ロード先のモデルには存在するパラメータ名
-        # unexpected_keysは読み込んだpthファイルのモデルには存在するが、ロード先のモデルには存在しないパラメータ名
-        # missing_keysもunexpected_keysも [ ] の場合、空リストなので、対応できなかったパラメータはなく、
-        # 「きちんと学習済みモデルが読み込め、ロードできましたよ」ということを意味しています。
-        # エラーメッセージではなく、情報の出力、そして中身も空リストなので、何の対応も必要ありません。
-        ############################################################################################
+            print(msg)
+            # IncompatibleKeys(missing_keys=[], unexpected_keys=[])はパラメータをロードした際に、
+            # missing_keysは読み込んだpthファイルのモデルには存在しないが、ロード先のモデルには存在するパラメータ名
+            # unexpected_keysは読み込んだpthファイルのモデルには存在するが、ロード先のモデルには存在しないパラメータ名
+            # missing_keysもunexpected_keysも [ ] の場合、空リストなので、対応できなかったパラメータはなく、
+            # 「きちんと学習済みモデルが読み込め、ロードできましたよ」ということを意味しています。
+            # エラーメッセージではなく、情報の出力、そして中身も空リストなので、何の対応も必要ありません。
+            ############################################################################################
+        elif pretrain_arch == "ibot":
+            try:
+                if kwargs["pretrained_ibot"]:
+                    checkpoint = torch.load(
+                        "./src/ibot/work_dirs/vit_large/extracted_backbone_weights.pth"
+                    )
+                    checkpoint_model = checkpoint["state_dict"]
+                    interpolate_pos_embed(model, checkpoint_model)
+                    msg = model.load_state_dict(checkpoint_model, strict=False)
+                    print(msg)
+            except Exception as e:
+                print(e)
+                sys.exit(1)
+        else:
+            raise ValueError("Invalid architecure")
 
     pe = model.pos_embed[:, 1:, :].detach()  # torch.Size([1, 196, 1024])
     pe = pe.transpose(-1, -2)  # torch.Size([1, 1024, 196])

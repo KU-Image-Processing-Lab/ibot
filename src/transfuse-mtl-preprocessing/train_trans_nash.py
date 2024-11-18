@@ -95,6 +95,8 @@ def train(**kwargs):
     del kwargs
 
     val_loss = 0
+    save_path = pathlib.Path(f"snapshots/{opt.train_save}/")
+    os.makedirs(save_path, exist_ok=True)
 
     for phase in ["train", "val"]:
         if phase == "train":
@@ -272,48 +274,45 @@ def train(**kwargs):
             # val_p_loss = p_loss_record.show()
             if val_loss < best_loss:
                 best_loss = val_loss
-                save_path = "snapshots/{}/".format(opt.train_save)
                 torch.save(
-                    models["Preprocess"].state_dict(), save_path + "Preprocess-best.pth"
+                    models["Preprocess"].state_dict(), save_path / "Preprocess-best.pth"
                 )
                 torch.save(
-                    models["TransFuse"].state_dict(), save_path + "TransFuse-best.pth"
+                    models["TransFuse"].state_dict(), save_path / "TransFuse-best.pth"
                 )
                 torch.save(
                     models["Discriminator"].state_dict(),
-                    save_path + "Discriminator-best.pth",
+                    save_path / "Discriminator-best.pth",
                 )
-                print("[Saving best Snapshot:]", save_path + "TransFuse-best.pth")
+                print("[Saving best Snapshot:]", save_path / "TransFuse-best.pth")
             if val_d_loss < best2_loss:
                 best2_loss = val_d_loss
-                save_path = "snapshots/{}/".format(opt.train_save)
                 torch.save(
                     models["Preprocess"].state_dict(),
-                    save_path + "Preprocess-best2.pth",
+                    save_path / "Preprocess-best2.pth",
                 )
                 torch.save(
-                    models["TransFuse"].state_dict(), save_path + "TransFuse-best2.pth"
+                    models["TransFuse"].state_dict(), save_path / "TransFuse-best2.pth"
                 )
                 torch.save(
                     models["Discriminator"].state_dict(),
-                    save_path + "Discriminator-best2.pth",
+                    save_path / "Discriminator-best2.pth",
                 )
-                print("[Saving best Snapshot:]", save_path + "Discriminator-best2.pth")
+                print("[Saving best Snapshot:]", save_path / "Discriminator-best2.pth")
 
-    save_path = "snapshots/{}/".format(opt.train_save)
     if (epoch + 1) % opt.save_epoch == 0:
         torch.save(
-            models["Preprocess"].state_dict(), save_path + "Preprocess-%d.pth" % epoch
+            models["Preprocess"].state_dict(), save_path / "Preprocess-%d.pth" % epoch
         )
         torch.save(
-            models["TransFuse"].state_dict(), save_path + "TransFuse-%d.pth" % epoch
+            models["TransFuse"].state_dict(), save_path / "TransFuse-%d.pth" % epoch
         )
         torch.save(
             models["Discriminator"].state_dict(),
-            save_path + "Discriminator-%d.pth" % epoch,
+            save_path / "Discriminator-%d.pth" % epoch,
         )
 
-        print("[Saving Snapshot:]", save_path + "TransFuse-%d.pth" % epoch)
+        print("[Saving Snapshot:]", str(save_path) + "TransFuse-%d.pth" % epoch)
     print("train_loss: {0:.4f}, val_loss: {1:.4f}".format(train_loss, val_loss))
     print("train_d_loss: {0:.4f}, val_d_loss: {1:.4f}".format(train_d_loss, val_d_loss))
     # print("train_p_loss: {0:.4f}, val_p_loss: {1:.4f}".format(train_p_loss, val_p_loss))
@@ -484,7 +483,7 @@ def set_device():
 
 def get_models(opt: argparse.Namespace, device: torch.device) -> dict:
     model0 = get_preprocess_model(opt)
-    model1 = TransFuse_L(pretrained=True)
+    model1 = TransFuse_L(pretrained=True, pretrain_arch="ibot")
     model2 = get_discriminator(opt)
 
     if opt.tuning:
@@ -568,7 +567,6 @@ def plot_loss(
 def main():
     opt = arg_parser()
     save_parameter(opt)
-    os.makedirs(opt.train_save, exist_ok=True)
 
     device = set_device()
     models = get_models(opt, device)

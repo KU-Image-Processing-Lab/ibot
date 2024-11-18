@@ -80,7 +80,7 @@ class BiFusion_block(nn.Module):
 
 class TransFuse_L(nn.Module):
     def __init__(
-        self, num_classes=1, drop_rate=0.2, normal_init=True, pretrained=False
+        self, num_classes=1, drop_rate=0.2, normal_init=True, pretrained=False, pretrain_arch="mae"
     ):
         super(TransFuse_L, self).__init__()
 
@@ -93,7 +93,7 @@ class TransFuse_L(nn.Module):
         self.Resnet.layer4 = nn.Identity()
 
         # self.transformer = deit_base(pretrained=pretrained)
-        self.transformer = vit_large(pretrained=pretrained)
+        self.transformer = vit_large(pretrained=pretrained, pretrain_arch=pretrain_arch)
         # self.transformer = vit_large(pretrained=False)
 
         #############################################################################################
